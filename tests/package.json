@@ -1,0 +1,14 @@
+{
+  "name": "mytab-e2e-tests",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Playwright regression suite for the myTab Chrome extension (FlashPaint feature)",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
+}
