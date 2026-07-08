@@ -140,8 +140,15 @@ function getOverlays() { return [...wrapper.querySelectorAll('.img-overlay')] }
 // Layers panel — lists every image/shape/text on the canvas, top layer first (reverse DOM order,
 // since later siblings render on top); click a row to select that object. Refreshes automatically
 // via a MutationObserver whenever overlays are added/removed/reordered/(de)selected.
+//
+// Has three states: fully hidden, collapsed to a small draggable dot, or expanded to the full
+// (semi-transparent) panel. The dot and panel share one dragged position so switching between them
+// never "jumps" to a default spot.
 const layersPanelBtn = document.getElementById('layers-panel-btn')
 const layersPanel = document.getElementById('layers-panel')
+const layersPanelHeader = document.getElementById('layers-panel-header')
+const layersPanelCollapseBtn = document.getElementById('layers-panel-collapse-btn')
+const layersPanelDot = document.getElementById('layers-panel-dot')
 const layersPanelList = document.getElementById('layers-panel-list')
 
 const LAYER_TYPE_ICON = {
@@ -196,11 +203,80 @@ function renderLayersPanel() {
   })
 }
 
-layersPanelBtn.addEventListener('click', () => {
-  layersPanel.hidden = !layersPanel.hidden
-  layersPanelBtn.classList.toggle('active', !layersPanel.hidden)
+// Clamped to the wrapper's bounds — needed because the dot (38px) and the expanded panel (200px)
+// share one dragged position, so a dot parked near the right edge would otherwise put the wider
+// panel partly off-screen when expanded, and dragging could otherwise lose either shape off-screen.
+function setLayersPos(el, x, y) {
+  const maxX = Math.max(0, wrapper.clientWidth - el.offsetWidth)
+  const maxY = Math.max(0, wrapper.clientHeight - el.offsetHeight)
+  el.style.left = Math.min(Math.max(x, 0), maxX) + 'px'
+  el.style.top = Math.min(Math.max(y, 0), maxY) + 'px'
+  el.style.right = 'auto'
+}
+
+function showLayersDot(x, y) {
+  layersPanel.hidden = true
+  layersPanelDot.hidden = false
+  setLayersPos(layersPanelDot, x, y)
+  layersPanelBtn.classList.add('active')
+}
+
+function showLayersExpanded(x, y) {
+  layersPanelDot.hidden = true
+  layersPanel.hidden = false
+  setLayersPos(layersPanel, x, y)
+  layersPanelBtn.classList.add('active')
   renderLayersPanel()
+}
+
+function hideLayersPanel() {
+  layersPanelDot.hidden = true
+  layersPanel.hidden = true
+  layersPanelBtn.classList.remove('active')
+}
+
+layersPanelBtn.addEventListener('click', () => {
+  const isVisible = !layersPanelDot.hidden || !layersPanel.hidden
+  if (isVisible) {
+    hideLayersPanel()
+  } else {
+    showLayersDot((wrapper.clientWidth || 800) - 50, 12)
+  }
 })
+
+layersPanelCollapseBtn.addEventListener('click', () => {
+  showLayersDot(parseFloat(layersPanel.style.left) || 0, parseFloat(layersPanel.style.top) || 0)
+})
+
+// Shared drag helper — dragging is distinguished from clicking by movement distance, since the
+// dot needs both behaviors (click to expand, drag to reposition) on the very same element.
+function makeLayersDraggable(el, handleEl, onClick) {
+  let dragging = false, moved = false
+  let startMouse = { x: 0, y: 0 }, startPos = { x: 0, y: 0 }
+  handleEl.addEventListener('mousedown', e => {
+    if (e.target.closest('#layers-panel-collapse-btn')) return
+    dragging = true
+    moved = false
+    startMouse = { x: e.clientX, y: e.clientY }
+    startPos = { x: parseFloat(el.style.left) || 0, y: parseFloat(el.style.top) || 0 }
+    e.preventDefault()
+  })
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return
+    const dx = e.clientX - startMouse.x, dy = e.clientY - startMouse.y
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true
+    setLayersPos(el, startPos.x + dx, startPos.y + dy)
+  })
+  document.addEventListener('mouseup', () => {
+    if (dragging && !moved && onClick) onClick()
+    dragging = false
+  })
+}
+
+makeLayersDraggable(layersPanelDot, layersPanelDot, () => {
+  showLayersExpanded(parseFloat(layersPanelDot.style.left) || 0, parseFloat(layersPanelDot.style.top) || 0)
+})
+makeLayersDraggable(layersPanel, layersPanelHeader, null)
 
 new MutationObserver(() => renderLayersPanel())
   .observe(zoomLayer, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] })
@@ -875,7 +951,8 @@ document.addEventListener('click', e => {
   // which would make .contains() checks against the (now-disconnected) target unreliable
   const path = e.composedPath()
   if (activeOverlay && tool !== 'selection' && tool !== 'crop' &&
-      !path.includes(activeOverlay) && !path.includes(flashpaintToolbar) && !path.includes(layersPanel)) {
+      !path.includes(activeOverlay) && !path.includes(flashpaintToolbar) &&
+      !path.includes(layersPanel) && !path.includes(layersPanelDot)) {
     deactivateImg()
   }
 })

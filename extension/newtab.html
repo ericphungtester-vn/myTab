@@ -427,8 +427,12 @@
             <canvas id="flashpaint-canvas"></canvas>
             <div id="canvas-hint">Paste a screenshot (Ctrl+V), drag an image in, or click Paste</div>
           </div>
+          <button id="layers-panel-dot" class="layers-panel-dot" aria-label="Open Layers panel" title="Layers — drag to move" hidden><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7L12 12L22 7Z"/><path d="M2 12L12 17L22 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 17L12 22L22 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
           <div id="layers-panel" class="layers-panel" hidden>
-            <div class="layers-panel-header">Layers</div>
+            <div id="layers-panel-header" class="layers-panel-header">
+              <span>Layers</span>
+              <button id="layers-panel-collapse-btn" aria-label="Collapse to a dot" title="Collapse to a dot">–</button>
+            </div>
             <div id="layers-panel-list" class="layers-panel-list"></div>
           </div>
         </div>
