@@ -931,6 +931,10 @@ body {
   border-color: var(--hover-border);
   background: var(--hover-bg);
 }
+.vf-folder.drag-over > .bm-folder-header {
+  background: var(--hover-bg);
+  outline: 1px dashed var(--primary);
+}
 
 .bookmark-item.dragging,
 .bm-folder.dragging {
@@ -1373,7 +1377,7 @@ body {
   min-width: 52px;
   font-size: 12px;
   font-weight: 600;
-  background: #F1F5F9;
+  background: var(--subtle-bg);
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 1px 5px;

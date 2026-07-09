@@ -30,19 +30,27 @@ function faviconHTML(url, title) {
     const letter = (title || domain)[0].toUpperCase()
     const color = FAVICON_COLORS[letter.charCodeAt(0) % FAVICON_COLORS.length]
     const src = `https://www.google.com/s2/favicons?sz=32&domain_url=${encodeURIComponent(url)}`
+    // letter is attacker-influenceable (first char of a bookmark title) and lands inside a JS
+    // string literal within an inline onerror= attribute — escape backslash/quote so it can't
+    // break out of that string.
+    const safeLetter = letter.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
     return `<div class="bookmark-favicon" style="background:#F3F4F6">
       <img src="${src}" width="16" height="16" style="width:16px;height:16px;object-fit:contain" draggable="false"
-           onerror="const p=this.closest('.bookmark-favicon');p.style.background='${color}';p.textContent='${letter}'">
+           onerror="const p=this.closest('.bookmark-favicon');p.style.background='${color}';p.textContent='${safeLetter}'">
     </div>`
   } catch {
     return `<div class="bookmark-favicon" style="background:#E5E7EB"></div>`
   }
 }
 
+// Safe for both text content AND double-quoted HTML attributes — the textContent->innerHTML
+// trick alone only escapes &, <, > (quotes aren't special in a text-node context), but this
+// output also gets interpolated into attributes like data-url="..." elsewhere in this file, where
+// an unescaped " would break out of the attribute and inject arbitrary markup/handlers.
 function escapeHtml(str) {
   const d = document.createElement('div')
   d.textContent = str
-  return d.innerHTML
+  return d.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;')
 }
 
 function getDomain(url) {
@@ -52,15 +60,15 @@ function getDomain(url) {
 function bookmarkItemHTML(bm, opts = {}) {
   const label = escapeHtml(bm.title || getDomain(bm.url))
   const draggable = opts.draggable ? 'draggable="true"' : ''
-  const indexAttr = opts.index !== undefined ? `data-index="${opts.index}"` : ''
+  const idAttr = bm.id !== undefined ? `data-item-id="${escapeHtml(String(bm.id))}"` : ''
   return `
-    <div class="bookmark-item bookmark-item--clickable" tabindex="0" ${draggable} ${indexAttr}
+    <div class="bookmark-item bookmark-item--clickable" tabindex="0" ${draggable} ${idAttr}
          data-url="${escapeHtml(bm.url)}" title="${label}">
       ${faviconHTML(bm.url, bm.title)}
       <div class="bookmark-info">
         <div class="bookmark-title">${label}</div>
       </div>
-      ${opts.deletable ? `<button class="bookmark-delete" data-index="${opts.index}" title="Delete">×</button>` : ''}
+      ${opts.deletable ? `<button class="bookmark-delete" data-item-id="${escapeHtml(String(bm.id))}" title="Delete">×</button>` : ''}
     </div>
   `
 }
@@ -88,6 +96,7 @@ let warnSkipRename = false
 let warnSkipDelete = false
 let warnSkipItemRename = false
 let warnSkipItemDelete = false
+let warnSkipVfDelete = false
 
 function saveCollapsedFolders() { syncSet({ 'bm-collapsed': [...collapsedFolderIds] }) }
 function saveExpandedVfs() { syncSet({ 'vf-expanded': [...expandedVfIds] }) }
@@ -210,16 +219,24 @@ function initCollapsedState() {
   saveCollapsedFolders()
 }
 
+// A "Your Bookmarks" node is either a folder (no .url) or an actual bookmark item (.url set,
+// added by dragging a Chrome bookmark in) — dispatch to the right renderer for either case.
+function renderYourBookmarkNode(node) {
+  return node.url ? bookmarkItemHTML(node, { deletable: true }) : renderVirtualFolder(node)
+}
+
 function renderYourBookmarks() {
   const el = document.getElementById('your-bookmarks')
   if (!el) return
   const arrowStyle = yourBmCollapsed ? 'style="transform:rotate(-90deg)"' : ''
   const colsHtml = colOrder.map((dataCol, displayPos) => {
-    const vfs = virtualFolders.filter(vf => !vf.parentId && vf.col === dataCol)
-    const barHtml = vfs.length ? `<div class="bm-col-bar"><div class="bm-col-handle" draggable="true" title="Drag to reorder column">⠿</div><button class="bm-col-add-btn your-bm-col-add-btn" data-col="${dataCol}" title="New folder">+</button></div>` : ''
+    const roots = virtualFolders.filter(vf => !vf.parentId && vf.col === dataCol)
+    // Bar (drag handle + "New folder") is always shown, even on an empty column — otherwise an
+    // empty column has no way to ever create its first folder.
+    const barHtml = `<div class="bm-col-bar"><div class="bm-col-handle" draggable="true" title="Drag to reorder column">⠿</div><button class="bm-col-add-btn your-bm-col-add-btn" data-col="${dataCol}" title="New folder">+</button></div>`
     return `<div class="bm-column" data-col="${dataCol}" data-display-pos="${displayPos}">
       ${barHtml}
-      ${vfs.map(vf => renderVirtualFolder(vf, false)).join('')}
+      ${roots.map(renderYourBookmarkNode).join('')}
     </div>`
   }).join('')
   el.innerHTML = `
@@ -362,8 +379,8 @@ function renderVirtualFolder(vf) {
   const title = escapeHtml(vf.title || 'New folder')
   const collapsedClass = expandedVfIds.has(vf.id) ? '' : ' collapsed'
   const noteHtml = ''
-  const childVfs = virtualFolders.filter(v => v.parentId === vf.id)
-  const childHtml = childVfs.map(child => renderVirtualFolder(child)).join('')
+  const children = virtualFolders.filter(v => v.parentId === vf.id)
+  const childHtml = children.map(renderYourBookmarkNode).join('')
   return `<div class="bm-folder vf-folder${collapsedClass}" data-vf-id="${vf.id}">
     <div class="bm-folder-header">
       <span class="bm-folder-arrow">▾</span>
@@ -386,7 +403,9 @@ function renderChromeBookmarks(filter) {
   renderYourBookmarks()
 
   if (query) {
-    const filtered = allChromeBookmarks.filter(bm =>
+    // Also search "Your Bookmarks" items (not the Chrome tree) so search covers everything visible
+    const yourItems = virtualFolders.filter(v => v.url)
+    const filtered = [...allChromeBookmarks, ...yourItems].filter(bm =>
       bm.title.toLowerCase().includes(query) || bm.url.toLowerCase().includes(query)
     )
     container.className = 'bookmarks-list'
@@ -446,6 +465,15 @@ async function loadChromeBookmarks() {
   const panel = document.getElementById('your-bookmarks')
 
   panel.addEventListener('click', e => {
+    const delBtn = e.target.closest('.bookmark-delete')
+    if (delBtn) {
+      e.stopPropagation()
+      const itemId = delBtn.dataset.itemId
+      virtualFolders = virtualFolders.filter(v => v.id !== itemId)
+      saveVirtualFolders()
+      renderYourBookmarks()
+      return
+    }
     if (e.target.closest('.your-bm-col-add-btn')) {
       e.stopPropagation()
       const btn = e.target.closest('.your-bm-col-add-btn')
@@ -503,6 +531,53 @@ async function loadChromeBookmarks() {
       if (ke.key === 'Enter') { ke.preventDefault(); commitRename() }
       if (ke.key === 'Escape') { saved = true; renderYourBookmarks() }
     })
+  })
+})()
+
+// Drop a Chrome bookmark onto "Your Bookmarks" (a folder, or empty column space) to copy it in as
+// a real bookmark item. Reads the node id off the same dataTransfer payload initChromeDragDrop
+// already sets on dragstart — folders aren't accepted here, only actual bookmarks (nodes with a url).
+;(function initYourBookmarksDropTarget() {
+  const panel = document.getElementById('your-bookmarks')
+
+  function clearDropIndicator() {
+    panel.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'))
+  }
+
+  panel.addEventListener('dragover', e => {
+    if (!e.dataTransfer.types.includes('text/plain')) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+    clearDropIndicator()
+    const vfFolder = e.target.closest('.vf-folder[data-vf-id]')
+    const target = vfFolder || e.target.closest('.bm-column')
+    target?.classList.add('drag-over')
+  })
+
+  panel.addEventListener('dragleave', e => {
+    if (!panel.contains(e.relatedTarget)) clearDropIndicator()
+  })
+
+  panel.addEventListener('drop', e => {
+    const nodeId = e.dataTransfer.getData('text/plain')
+    if (!nodeId) return
+    e.preventDefault()
+    clearDropIndicator()
+    const node = findInTree(chromeBookmarkTree, nodeId)
+    if (!node || !node.url) return
+    const vfFolderEl = e.target.closest('.vf-folder[data-vf-id]')
+    const parentId = vfFolderEl ? vfFolderEl.dataset.vfId : null
+    const parentVf = parentId ? virtualFolders.find(v => v.id === parentId) : null
+    const col = parentVf ? parentVf.col : parseInt(e.target.closest('.bm-column')?.dataset.col ?? '0')
+    virtualFolders.push({
+      id: 'vfitem-' + Date.now().toString(36) + Math.random().toString(36).slice(2),
+      title: node.title || getDomain(node.url),
+      url: node.url,
+      parentId,
+      col
+    })
+    saveVirtualFolders()
+    renderYourBookmarks()
   })
 })()
 
@@ -665,17 +740,40 @@ async function openUrlsGrouped(urls, groupTitle) {
 
   document.getElementById('vf-delete-btn').addEventListener('click', e => {
     e.stopPropagation()
-    if (!activeVfId) return
-    function deleteSubtree(id) {
-      virtualFolders.filter(v => v.parentId === id).forEach(child => deleteSubtree(child.id))
-      virtualFolders = virtualFolders.filter(v => v.id !== id)
-      expandedVfIds.delete(id)
-    }
-    deleteSubtree(activeVfId)
-    saveVirtualFolders()
-    saveExpandedVfs()
+    const vfId = activeVfId
+    const vf = virtualFolders.find(v => v.id === vfId)
+    const title = vf ? vf.title : 'folder'
     hideMenu()
-    renderYourBookmarks()
+    if (!vfId) return
+
+    function doDelete() {
+      function deleteSubtree(id) {
+        virtualFolders.filter(v => v.parentId === id).forEach(child => deleteSubtree(child.id))
+        virtualFolders = virtualFolders.filter(v => v.id !== id)
+        expandedVfIds.delete(id)
+      }
+      deleteSubtree(vfId)
+      saveVirtualFolders()
+      saveExpandedVfs()
+      renderYourBookmarks()
+    }
+
+    if (warnSkipVfDelete) {
+      if (window.confirm(`Xóa "${title}" và toàn bộ nội dung bên trong khỏi Your Bookmarks?`)) doDelete()
+      return
+    }
+
+    showBmWarnModal({
+      title: 'Xóa folder',
+      text: `Thao tác này sẽ xóa "${title}" và toàn bộ nội dung bên trong khỏi Your Bookmarks. Dữ liệu này không nằm trong Chrome Bookmarks nên không thể khôi phục.`,
+      okLabel: 'Xóa',
+      isDanger: true,
+      withInput: false,
+      onConfirm: (skip) => {
+        if (skip) { warnSkipVfDelete = true; syncSet({ 'bm-warn-skip-vf-delete': true }) }
+        doDelete()
+      }
+    })
   })
 
   document.addEventListener('click', hideMenu)
@@ -1173,7 +1271,7 @@ document.getElementById('bm-open-all-mode-select').addEventListener('change', e 
 
 // ---- Init ----
 async function initBookmarkState() {
-  const data = await syncGet(['bm-cols', 'chrome-bm-col-map', 'chrome-bm-col-order', 'chrome-bm-folder-order', 'virtual-folders', 'col-order', 'bm-auto-expand', 'bm-auto-group', 'bm-open-all-mode', 'bm-collapsed', 'vf-expanded', 'your-bm-collapsed', 'bm-warn-skip-rename', 'bm-warn-skip-delete', 'bm-warn-skip-item-rename', 'bm-warn-skip-item-delete'])
+  const data = await syncGet(['bm-cols', 'chrome-bm-col-map', 'chrome-bm-col-order', 'chrome-bm-folder-order', 'virtual-folders', 'col-order', 'bm-auto-expand', 'bm-auto-group', 'bm-open-all-mode', 'bm-collapsed', 'vf-expanded', 'your-bm-collapsed', 'bm-warn-skip-rename', 'bm-warn-skip-delete', 'bm-warn-skip-item-rename', 'bm-warn-skip-item-delete', 'bm-warn-skip-vf-delete'])
   bmCols = parseInt(data['bm-cols'] ?? '1')
   chromeBmColMap = data['chrome-bm-col-map'] ?? {}
   chromeBmColOrder = data['chrome-bm-col-order'] ?? {}
@@ -1203,6 +1301,7 @@ async function initBookmarkState() {
   warnSkipDelete = data['bm-warn-skip-delete'] ?? false
   warnSkipItemRename = data['bm-warn-skip-item-rename'] ?? false
   warnSkipItemDelete = data['bm-warn-skip-item-delete'] ?? false
+  warnSkipVfDelete = data['bm-warn-skip-vf-delete'] ?? false
   loadChromeBookmarks()
 }
 initBookmarkState()

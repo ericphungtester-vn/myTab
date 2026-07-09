@@ -25,6 +25,22 @@ bindSliderValue(opacityInput, 'opacity-value', '%')
 bindSliderValue(blurInput, 'blur-value', 'px')
 bindSliderValue(shadowInput, 'shadow-value', 'px')
 
+// Nudges a just-opened dropdown picker so it never spills past the viewport's left/right edges.
+// Needed because a toolbar group (and whichever picker it contains) can get relocated into the
+// right-anchored "»" overflow menu when the window is narrow, putting its button right at the
+// screen edge — the picker's own CSS anchor (left:0, or centered) assumes there's room to spare,
+// which is no longer true there. Uses margin-left as an independent nudge so it composes with
+// whatever anchor/transform each picker's own CSS already uses.
+function keepPickerOnScreen(picker) {
+  picker.style.marginLeft = '0px'
+  const rect = picker.getBoundingClientRect()
+  const margin = 8
+  let shift = 0
+  if (rect.right > window.innerWidth - margin) shift -= (rect.right - (window.innerWidth - margin))
+  if (rect.left + shift < margin) shift = margin - rect.left
+  if (shift) picker.style.marginLeft = shift + 'px'
+}
+
 // Responsive toolbar overflow — when the toolbar is too narrow to show every group,
 // trailing groups move (not clone) into a "»" dropdown so nothing is ever cut off or broken.
 ;(function () {
@@ -319,7 +335,7 @@ function alignSelectedGroup(mode) {
 
 ;(function () {
   const picker = document.getElementById('align-selection-picker')
-  const showPicker = v => { picker.style.display = v ? 'flex' : 'none' }
+  const showPicker = v => { picker.style.display = v ? 'flex' : 'none'; if (v) keepPickerOnScreen(picker) }
 
   alignSelectionBtn.addEventListener('click', () => { showPicker(picker.style.display === 'none') })
 
@@ -572,7 +588,7 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
 // without deselecting it (unlike other tools, which always deactivate the current image)
 ;(function () {
   const picker = document.getElementById('selection-picker')
-  const showPicker = v => { picker.style.display = v ? 'flex' : 'none' }
+  const showPicker = v => { picker.style.display = v ? 'flex' : 'none'; if (v) keepPickerOnScreen(picker) }
 
   selectionBtn.addEventListener('click', () => {
     showPicker(picker.style.display === 'none')
@@ -835,7 +851,7 @@ function applyCrop() {
 ;(function () {
   const shapeBtn = document.getElementById('shape-btn')
   const picker = document.getElementById('shape-picker')
-  const showPicker = v => { picker.style.display = v ? 'flex' : 'none' }
+  const showPicker = v => { picker.style.display = v ? 'flex' : 'none'; if (v) keepPickerOnScreen(picker) }
 
   shapeBtn.addEventListener('click', () => { showPicker(picker.style.display === 'none') })
 
@@ -860,7 +876,7 @@ function applyCrop() {
   const picker = document.getElementById('canvas-size-picker')
   const wInput = document.getElementById('canvas-size-w')
   const hInput = document.getElementById('canvas-size-h')
-  const showPicker = v => { picker.style.display = v ? 'flex' : 'none' }
+  const showPicker = v => { picker.style.display = v ? 'flex' : 'none'; if (v) keepPickerOnScreen(picker) }
 
   btn.addEventListener('click', () => {
     wInput.value = canvas.width
@@ -898,7 +914,7 @@ function setPasteModeBtnEnabled(on) { pasteModeBtn.disabled = !on }
   const btn = pasteModeBtn
   const picker = document.getElementById('paste-mode-picker')
   const opts = picker.querySelectorAll('.paste-mode-opt')
-  const showPicker = v => { picker.style.display = v ? 'flex' : 'none' }
+  const showPicker = v => { picker.style.display = v ? 'flex' : 'none'; if (v) keepPickerOnScreen(picker) }
 
   btn.addEventListener('click', () => { showPicker(picker.style.display === 'none') })
 
@@ -917,7 +933,7 @@ function setPasteModeBtnEnabled(on) { pasteModeBtn.disabled = !on }
 // Text alignment — single trigger button showing the current alignment; click opens a picker to change it
 ;(function () {
   const picker = document.getElementById('align-picker')
-  const showPicker = v => { picker.style.display = v ? 'flex' : 'none' }
+  const showPicker = v => { picker.style.display = v ? 'flex' : 'none'; if (v) keepPickerOnScreen(picker) }
 
   alignBtn.addEventListener('click', () => { showPicker(picker.style.display === 'none') })
 
@@ -2135,7 +2151,7 @@ document.getElementById('layer-back').addEventListener('click', sendToBack)
 // Layer order — single trigger button; click opens a picker of one-shot actions
 ;(function () {
   const picker = document.getElementById('layer-order-picker')
-  const showPicker = v => { picker.style.display = v ? 'flex' : 'none' }
+  const showPicker = v => { picker.style.display = v ? 'flex' : 'none'; if (v) keepPickerOnScreen(picker) }
 
   layerOrderBtn.addEventListener('click', () => { showPicker(picker.style.display === 'none') })
 
@@ -2152,7 +2168,7 @@ document.getElementById('layer-back').addEventListener('click', sendToBack)
 ;(function () {
   const btn = document.getElementById('file-menu-btn')
   const picker = document.getElementById('file-menu-picker')
-  const showPicker = v => { picker.style.display = v ? 'flex' : 'none' }
+  const showPicker = v => { picker.style.display = v ? 'flex' : 'none'; if (v) keepPickerOnScreen(picker) }
 
   btn.addEventListener('click', () => { showPicker(picker.style.display === 'none') })
 
