@@ -1859,4 +1859,93 @@ body {
 }
 
 .field-error-msg { font-size: 10px; color: #EF4444; margin-top: 4px; }
+
+/* ---- Quick Bar: pinned bookmarks/folders, visible across every tab ---- */
+.quick-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 16px;
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  flex-shrink: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.quick-bar::-webkit-scrollbar { display: none; }
+.quick-bar[hidden] { display: none; }
+
+.quick-bar-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  max-width: 180px;
+  padding: 5px 8px;
+  border: none;
+  border-radius: var(--radius);
+  background: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text);
+  font-family: var(--font);
+}
+.quick-bar-item:hover { background: var(--hover-bg); }
+.quick-bar-item .quick-bar-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.quick-bar-item .quick-bar-chevron { flex-shrink: 0; color: var(--text-muted); font-size: 9px; }
+.quick-bar-item .bookmark-favicon { width: 14px; height: 14px; }
+.quick-bar-item .bookmark-favicon img { width: 12px; height: 12px; }
+.quick-bar-item .bm-folder-icon { flex-shrink: 0; color: #F59E0B; }
+
+.quick-bar-menu {
+  position: fixed;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  padding: 4px 0;
+  z-index: 9999;
+  min-width: 200px;
+  max-width: 320px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.quick-bar-menu[hidden] { display: none; }
+
+.quick-bar-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 14px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--font);
+}
+.quick-bar-menu-row:hover { background: var(--hover-bg); }
+.quick-bar-menu-row .bm-folder-icon { color: #F59E0B; flex-shrink: 0; }
+.quick-bar-menu-row .bookmark-favicon { flex-shrink: 0; }
+.quick-bar-menu-row .quick-bar-menu-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.quick-bar-menu-row .quick-bar-chevron { color: var(--text-muted); font-size: 10px; flex-shrink: 0; }
+.quick-bar-menu-back {
+  color: var(--text-secondary);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+}
+.quick-bar-menu-empty { padding: 10px 14px; font-size: 11px; color: var(--text-muted); }
 .field-classes { font-size: 10px; color: var(--text-muted); font-family: monospace; margin-top: 4px; }

@@ -37,6 +37,10 @@
     </div>
   </header>
 
+  <!-- Quick Bar: pinned bookmarks/folders for fast access, visible across every tab -->
+  <div id="quick-bar" class="quick-bar" hidden></div>
+  <div id="quick-bar-menu" class="quick-bar-menu" hidden></div>
+
   <!-- Help Panel -->
   <div id="help-panel" class="help-panel">
     <div class="help-panel-content">
@@ -665,12 +669,16 @@
     <button id="bm-ctx-copy-url" class="vf-context-item">Copy URL</button>
     <button id="bm-ctx-copy-title" class="vf-context-item">Copy title</button>
     <hr class="vf-context-sep">
+    <button id="bm-ctx-toggle-pin" class="vf-context-item">Pin to Quick Bar</button>
+    <hr class="vf-context-sep">
     <button id="bm-ctx-rename-item" class="vf-context-item">Rename</button>
     <button id="bm-ctx-delete-item" class="vf-context-item vf-context-item--danger">Delete</button>
   </div>
 
   <div id="bm-folder-ctx" class="vf-context-menu">
     <button id="bm-ctx-open-all" class="vf-context-item">Open all in new tabs</button>
+    <hr class="vf-context-sep">
+    <button id="bm-ctx-folder-toggle-pin" class="vf-context-item">Pin to Quick Bar</button>
     <hr class="vf-context-sep">
     <button id="bm-ctx-new-subfolder" class="vf-context-item">New subfolder</button>
     <button id="bm-ctx-rename-folder" class="vf-context-item">Rename</button>

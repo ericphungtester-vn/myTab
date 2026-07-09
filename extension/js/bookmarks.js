@@ -401,6 +401,7 @@ function renderChromeBookmarks(filter) {
   const query = lastChromeFilter.toLowerCase()
 
   renderYourBookmarks()
+  renderQuickBar()
 
   if (query) {
     // Also search "Your Bookmarks" items (not the Chrome tree) so search covers everything visible
@@ -459,6 +460,139 @@ async function loadChromeBookmarks() {
     renderChromeBookmarks('')
   })
 }
+
+// ---- Quick Bar: pinned bookmarks/folders, shown below the header on every tab ----
+let quickBarItems = [] // Chrome bookmark/folder node ids, in pinned order
+function saveQuickBarItems() { syncSet({ 'quick-bar-items': quickBarItems }) }
+
+function renderQuickBar() {
+  const bar = document.getElementById('quick-bar')
+  if (!bar) return
+  const nodes = quickBarItems.map(id => findInTree(chromeBookmarkTree, id)).filter(Boolean)
+  // Drop stale ids (bookmark/folder was deleted elsewhere) instead of silently rendering nothing
+  if (nodes.length !== quickBarItems.length) {
+    quickBarItems = nodes.map(n => n.id)
+    saveQuickBarItems()
+  }
+  bar.hidden = nodes.length === 0
+  if (!nodes.length) { bar.innerHTML = ''; return }
+
+  bar.innerHTML = nodes.map(node => {
+    const label = escapeHtml(node.title || (node.url ? getDomain(node.url) : 'Folder'))
+    if (node.url) {
+      return `<button class="quick-bar-item" data-node-id="${escapeHtml(node.id)}" title="${label}">
+        ${faviconHTML(node.url, node.title)}<span class="quick-bar-label">${label}</span>
+      </button>`
+    }
+    return `<button class="quick-bar-item" data-node-id="${escapeHtml(node.id)}" data-folder="true" title="${label}">
+      <svg class="bm-folder-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20 6h-8l-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2z"/></svg>
+      <span class="quick-bar-label">${label}</span><span class="quick-bar-chevron">▾</span>
+    </button>`
+  }).join('')
+}
+
+function isPinnedToQuickBar(nodeId) { return quickBarItems.includes(nodeId) }
+function toggleQuickBarPin(nodeId) {
+  if (isPinnedToQuickBar(nodeId)) quickBarItems = quickBarItems.filter(id => id !== nodeId)
+  else quickBarItems.push(nodeId)
+  saveQuickBarItems()
+  renderQuickBar()
+}
+
+// Dropdown for a pinned folder — a single panel that drills into subfolders (replacing its own
+// content and pushing a "back" entry) rather than opening real sibling flyouts side by side.
+// Simpler and more robust than nested hover-menus, at the cost of a little visual fidelity.
+;(function initQuickBar() {
+  const bar = document.getElementById('quick-bar')
+  const menu = document.getElementById('quick-bar-menu')
+  let menuStack = [] // folder nodes, root-first; last entry is the level currently shown
+
+  function hideMenu() { menu.hidden = true; menuStack = [] }
+
+  function renderMenuLevel() {
+    const folder = menuStack[menuStack.length - 1]
+    const children = sortChildrenForFolder(folder.children || [], folder.id)
+    const backRow = menuStack.length > 1
+      ? `<button class="quick-bar-menu-row quick-bar-menu-back" data-back="true">‹ ${escapeHtml(menuStack[menuStack.length - 2].title || 'Back')}</button>`
+      : ''
+    if (!children.length) {
+      menu.innerHTML = backRow + '<div class="quick-bar-menu-empty">Empty folder</div>'
+      return
+    }
+    menu.innerHTML = backRow + children.map(child => {
+      const label = escapeHtml(child.title || (child.url ? getDomain(child.url) : 'Folder'))
+      if (child.url) {
+        return `<button class="quick-bar-menu-row" data-url="${escapeHtml(child.url)}" title="${label}">
+          ${faviconHTML(child.url, child.title)}<span class="quick-bar-menu-label">${label}</span>
+        </button>`
+      }
+      return `<button class="quick-bar-menu-row" data-node-id="${escapeHtml(child.id)}" title="${label}">
+        <svg class="bm-folder-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20 6h-8l-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2z"/></svg>
+        <span class="quick-bar-menu-label">${label}</span><span class="quick-bar-chevron">›</span>
+      </button>`
+    }).join('')
+  }
+
+  function openMenu(folderNode, anchorEl) {
+    menuStack = [folderNode]
+    renderMenuLevel()
+    menu.hidden = false
+    const rect = anchorEl.getBoundingClientRect()
+    const width = Math.min(320, Math.max(200, menu.scrollWidth))
+    menu.style.left = Math.min(rect.left, window.innerWidth - width - 8) + 'px'
+    menu.style.top = Math.min(rect.bottom + 4, window.innerHeight - 100) + 'px'
+  }
+
+  bar.addEventListener('click', e => {
+    const btn = e.target.closest('.quick-bar-item')
+    if (!btn) return
+    const nodeId = btn.dataset.nodeId
+    const node = findInTree(chromeBookmarkTree, nodeId)
+    if (!node) return
+    if (node.url) { window.open(node.url, '_blank'); return }
+    if (!menu.hidden && menuStack[0]?.id === nodeId) { hideMenu(); return }
+    openMenu(node, btn)
+  })
+
+  menu.addEventListener('click', e => {
+    const row = e.target.closest('.quick-bar-menu-row')
+    if (!row) return
+    if (row.dataset.back) { menuStack.pop(); renderMenuLevel(); return }
+    if (row.dataset.url) { window.open(row.dataset.url, '_blank'); hideMenu(); return }
+    const child = findInTree(chromeBookmarkTree, row.dataset.nodeId)
+    if (child) { menuStack.push(child); renderMenuLevel() }
+  })
+
+  // Right-click a pinned item to get the same context menu (rename/delete/copy/pin-toggle) as
+  // its counterpart in the main list — reuses that menu rather than duplicating it, since it's
+  // the exact same underlying Chrome bookmark/folder either way.
+  bar.addEventListener('contextmenu', e => {
+    const btn = e.target.closest('.quick-bar-item')
+    if (!btn) return
+    e.preventDefault()
+    e.stopPropagation() // matches the pattern in chrome-bookmarks-list's own contextmenu handler
+                         // — without it, document's "close menu on outside contextmenu" listener
+                         // (initBmContextMenus) sees this same event bubble past and immediately
+                         // hides the menu that openBmItemCtx/openBmFolderCtx just opened below
+    hideMenu()
+    const nodeId = btn.dataset.nodeId
+    const node = findInTree(chromeBookmarkTree, nodeId)
+    if (!node) return
+    if (node.url) window.openBmItemCtx(nodeId, node.title || '', node.url, e.clientX, e.clientY)
+    else window.openBmFolderCtx(nodeId, node.title || '', e.clientX, e.clientY)
+  })
+
+  // Uses composedPath() (a dispatch-time snapshot) rather than e.target + .contains() — clicking
+  // a row inside the menu rebuilds menu.innerHTML synchronously (renderMenuLevel), which detaches
+  // e.target from the DOM before this listener runs later in the same bubble phase, making a
+  // .contains(e.target) check wrongly conclude the click landed outside the menu.
+  document.addEventListener('click', e => {
+    if (menu.hidden) return
+    const path = e.composedPath()
+    if (!path.includes(menu) && !path.includes(bar)) hideMenu()
+  })
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') hideMenu() })
+})()
 
 // Your Bookmarks panel: add button + folder toggle + dblclick rename + context menu
 ;(function initYourBookmarks() {
@@ -808,17 +942,37 @@ async function openUrlsGrouped(urls, groupTitle) {
     })
   }
 
+  // Exposed so other UI that represents the same underlying Chrome bookmark/folder (currently
+  // just the Quick Bar) can open the exact same context menu instead of duplicating it.
+  function openItemCtx(nodeId, title, url, x, y) {
+    window._hideVfCtxMenu?.()
+    hideCtx()
+    ctxUrl = url
+    ctxTitle = title
+    ctxNodeId = nodeId
+    document.getElementById('bm-ctx-toggle-pin').textContent =
+      nodeId && isPinnedToQuickBar(nodeId) ? 'Unpin from Quick Bar' : 'Pin to Quick Bar'
+    showMenu(itemCtx, x, y, 170, 175)
+  }
+  window.openBmItemCtx = openItemCtx
+
+  function openFolderCtx(nodeId, title, x, y) {
+    window._hideVfCtxMenu?.()
+    hideCtx()
+    ctxFolderNodeId = nodeId
+    ctxFolderTitle = title
+    document.getElementById('bm-ctx-folder-toggle-pin').textContent =
+      isPinnedToQuickBar(nodeId) ? 'Unpin from Quick Bar' : 'Pin to Quick Bar'
+    showMenu(folderCtx, x, y, 190, 160)
+  }
+  window.openBmFolderCtx = openFolderCtx
+
   document.getElementById('chrome-bookmarks-list').addEventListener('contextmenu', e => {
     const item = e.target.closest('.bookmark-item--clickable')
     if (item) {
       e.preventDefault()
       e.stopPropagation()
-      window._hideVfCtxMenu?.()
-      hideCtx()
-      ctxUrl = item.dataset.url
-      ctxTitle = item.querySelector('.bookmark-title')?.textContent || ''
-      ctxNodeId = item.dataset.nodeId || null
-      showMenu(itemCtx, e.clientX, e.clientY, 170, 175)
+      openItemCtx(item.dataset.nodeId || null, item.querySelector('.bookmark-title')?.textContent || '', item.dataset.url, e.clientX, e.clientY)
       return
     }
     const header = e.target.closest('.bm-folder-header')
@@ -826,11 +980,7 @@ async function openUrlsGrouped(urls, groupTitle) {
     if (folder) {
       e.preventDefault()
       e.stopPropagation()
-      window._hideVfCtxMenu?.()
-      hideCtx()
-      ctxFolderNodeId = folder.dataset.nodeId
-      ctxFolderTitle = folder.querySelector('.bm-folder-name')?.textContent || ''
-      showMenu(folderCtx, e.clientX, e.clientY, 190, 160)
+      openFolderCtx(folder.dataset.nodeId, folder.querySelector('.bm-folder-name')?.textContent || '', e.clientX, e.clientY)
     }
   })
 
@@ -838,6 +988,8 @@ async function openUrlsGrouped(urls, groupTitle) {
   document.getElementById('bm-ctx-same-tab').addEventListener('click', () => { if (ctxUrl) window.location.href = ctxUrl; hideCtx() })
   document.getElementById('bm-ctx-copy-url').addEventListener('click', () => { if (ctxUrl) navigator.clipboard.writeText(ctxUrl); hideCtx() })
   document.getElementById('bm-ctx-copy-title').addEventListener('click', () => { if (ctxTitle) navigator.clipboard.writeText(ctxTitle); hideCtx() })
+  document.getElementById('bm-ctx-toggle-pin').addEventListener('click', () => { if (ctxNodeId) toggleQuickBarPin(ctxNodeId); hideCtx() })
+  document.getElementById('bm-ctx-folder-toggle-pin').addEventListener('click', () => { if (ctxFolderNodeId) toggleQuickBarPin(ctxFolderNodeId); hideCtx() })
 
   document.getElementById('bm-ctx-rename-item').addEventListener('click', () => {
     const nodeId = ctxNodeId
@@ -1271,7 +1423,8 @@ document.getElementById('bm-open-all-mode-select').addEventListener('change', e 
 
 // ---- Init ----
 async function initBookmarkState() {
-  const data = await syncGet(['bm-cols', 'chrome-bm-col-map', 'chrome-bm-col-order', 'chrome-bm-folder-order', 'virtual-folders', 'col-order', 'bm-auto-expand', 'bm-auto-group', 'bm-open-all-mode', 'bm-collapsed', 'vf-expanded', 'your-bm-collapsed', 'bm-warn-skip-rename', 'bm-warn-skip-delete', 'bm-warn-skip-item-rename', 'bm-warn-skip-item-delete', 'bm-warn-skip-vf-delete'])
+  const data = await syncGet(['bm-cols', 'chrome-bm-col-map', 'chrome-bm-col-order', 'chrome-bm-folder-order', 'virtual-folders', 'col-order', 'bm-auto-expand', 'bm-auto-group', 'bm-open-all-mode', 'bm-collapsed', 'vf-expanded', 'your-bm-collapsed', 'bm-warn-skip-rename', 'bm-warn-skip-delete', 'bm-warn-skip-item-rename', 'bm-warn-skip-item-delete', 'bm-warn-skip-vf-delete', 'quick-bar-items'])
+  quickBarItems = Array.isArray(data['quick-bar-items']) ? data['quick-bar-items'] : []
   bmCols = parseInt(data['bm-cols'] ?? '1')
   chromeBmColMap = data['chrome-bm-col-map'] ?? {}
   chromeBmColOrder = data['chrome-bm-col-order'] ?? {}
