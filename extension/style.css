@@ -1906,6 +1906,15 @@ body {
 .quick-bar-item .bookmark-favicon { width: 14px; height: 14px; }
 .quick-bar-item .bookmark-favicon img { width: 12px; height: 12px; }
 .quick-bar-item .bm-folder-icon { flex-shrink: 0; color: #F59E0B; }
+.quick-bar-reset-btn {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-left: 2px;
+  border-left: 1px solid var(--border);
+  border-radius: 0;
+  padding-left: 10px;
+}
+.quick-bar-reset-btn:hover { color: var(--danger); background: var(--danger-bg); }
 
 .quick-bar-menu {
   position: fixed;

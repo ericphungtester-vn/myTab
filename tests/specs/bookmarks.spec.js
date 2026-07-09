@@ -80,6 +80,25 @@ test('deleting a "Your Bookmarks" folder asks for confirmation', async ({ contex
   await expect(page.locator('.vf-folder')).toHaveCount(1)
 })
 
+test('confirming (OK) a warn-modal action actually runs it, not just closes the dialog', async ({ context }) => {
+  // Regression guard: showBmWarnModal's OK handler previously cleared its stored callback
+  // (inside closeModal()) *before* checking and invoking it, so clicking OK on ANY confirmation
+  // in the app (rename, delete item/folder, this one) silently did nothing — the dialog closed
+  // as if it worked, but the underlying action never ran.
+  const page = await bookmarksPage(context)
+  await page.click('.your-bm-col-add-btn')
+  await page.waitForTimeout(200)
+  await expect(page.locator('.vf-folder')).toHaveCount(1)
+
+  await page.locator('.vf-folder').click({ button: 'right' })
+  await page.click('#vf-delete-btn')
+  await page.waitForTimeout(200)
+  await page.click('#bm-warn-ok')
+  await page.waitForTimeout(200)
+
+  await expect(page.locator('.vf-folder')).toHaveCount(0)
+})
+
 test('search results also include "Your Bookmarks" items', async ({ context }) => {
   const page = await bookmarksPage(context)
   await page.evaluate(() => {

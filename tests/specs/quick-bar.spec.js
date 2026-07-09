@@ -332,3 +332,39 @@ test('pinning past the 37-item limit is rejected with a toast, shown even on the
   await page.waitForTimeout(150)
   expect(await page.evaluate(id => quickBarItems.includes(id), ids[37])).toBe(true)
 })
+
+test('the reset button asks for confirmation before unpinning everything', async ({ context }) => {
+  const page = await bookmarksPage(context)
+  await seedTree(page)
+
+  await page.locator('.bookmark-item--clickable[title="Solo Link"]').click({ button: 'right' })
+  await page.click('#bm-ctx-toggle-pin')
+  await page.waitForTimeout(150)
+  await page.locator('.bm-folder-header', { hasText: 'Work' }).click({ button: 'right' })
+  await page.click('#bm-ctx-folder-toggle-pin')
+  await page.waitForTimeout(150)
+  expect(await page.evaluate(() => quickBarItems.length)).toBe(2)
+
+  await page.click('.quick-bar-reset-btn')
+  await page.waitForTimeout(200)
+
+  await expect(page.locator('#bm-warn-modal.active')).toBeVisible()
+  expect(await page.locator('#bm-warn-title').textContent()).toBe('Reset Quick Bar')
+
+  // Cancel — nothing should be unpinned
+  await page.click('#bm-warn-cancel')
+  await page.waitForTimeout(150)
+  expect(await page.evaluate(() => quickBarItems.length)).toBe(2)
+  await expect(page.locator('#quick-bar')).toBeVisible()
+
+  // Confirm — now it unpins everything and shows a toast
+  await page.click('.quick-bar-reset-btn')
+  await page.waitForTimeout(200)
+  await page.click('#bm-warn-ok')
+  await page.waitForTimeout(200)
+
+  expect(await page.evaluate(() => quickBarItems.length)).toBe(0)
+  await expect(page.locator('#quick-bar')).toBeHidden()
+  await expect(page.locator('.flashpaint-toast')).toBeVisible()
+  await expect(page.locator('.flashpaint-toast')).toContainText('Unpinned all')
+})

@@ -97,6 +97,7 @@ let warnSkipDelete = false
 let warnSkipItemRename = false
 let warnSkipItemDelete = false
 let warnSkipVfDelete = false
+let warnSkipQuickBarReset = false
 
 function saveCollapsedFolders() { syncSet({ 'bm-collapsed': [...collapsedFolderIds] }) }
 function saveExpandedVfs() { syncSet({ 'vf-expanded': [...expandedVfIds] }) }
@@ -124,8 +125,12 @@ function saveExpandedVfs() { syncSet({ 'vf-expanded': [...expandedVfIds] }) }
   function handleOk() {
     const skip = skipCb.checked
     const inputVal = inputWrap.classList.contains('hidden') ? null : inputEl.value
+    // Capture the callback before closing — closeModal() clears _onConfirm, so reading it
+    // afterward always saw null and silently no-op'd every confirmation in the app (rename,
+    // delete item/folder, reset Quick Bar): the modal closed, but the actual action never ran.
+    const onConfirm = _onConfirm
     closeModal()
-    if (_onConfirm) _onConfirm(skip, inputVal)
+    if (onConfirm) onConfirm(skip, inputVal)
   }
 
   function handleBackdrop(e) { if (e.target === modal) closeModal() }
@@ -491,9 +496,36 @@ function renderQuickBar() {
       <svg class="bm-folder-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20 6h-8l-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2z"/></svg>
       <span class="quick-bar-label">${label}</span><span class="quick-bar-chevron">▾</span>
     </button>`
-  }).join('') + '<button class="quick-bar-item quick-bar-overflow-btn" title="Show all pinned items" hidden>▾</button>'
+  }).join('') +
+    '<button class="quick-bar-item quick-bar-overflow-btn" title="Show all pinned items" hidden>▾</button>' +
+    '<button class="quick-bar-item quick-bar-reset-btn" title="Unpin all">⟲</button>'
 
   window.recalcQuickBarOverflow?.()
+}
+
+function doResetQuickBar() {
+  quickBarItems = []
+  saveQuickBarItems()
+  renderQuickBar()
+  showToast?.('Unpinned all Quick Bar items')
+}
+
+function resetQuickBar() {
+  if (warnSkipQuickBarReset) {
+    if (window.confirm(`Unpin all ${quickBarItems.length} Quick Bar items?`)) doResetQuickBar()
+    return
+  }
+  showBmWarnModal({
+    title: 'Reset Quick Bar',
+    text: `This will unpin all ${quickBarItems.length} items from the Quick Bar. Nothing is deleted from your actual bookmarks, but this can't be undone here.`,
+    okLabel: 'Unpin all',
+    isDanger: true,
+    withInput: false,
+    onConfirm: (skip) => {
+      if (skip) { warnSkipQuickBarReset = true; syncSet({ 'bm-warn-skip-quickbar-reset': true }) }
+      doResetQuickBar()
+    }
+  })
 }
 
 function isPinnedToQuickBar(nodeId) { return quickBarItems.includes(nodeId) }
@@ -568,6 +600,10 @@ function toggleQuickBarPin(nodeId) {
       recalcOverflow()
       return
     }
+    if (btn.classList.contains('quick-bar-reset-btn')) {
+      resetQuickBar()
+      return
+    }
     const nodeId = btn.dataset.nodeId
     const node = findInTree(chromeBookmarkTree, nodeId)
     if (!node) return
@@ -584,7 +620,7 @@ function toggleQuickBarPin(nodeId) {
   function recalcOverflow() {
     const toggleBtn = bar.querySelector('.quick-bar-overflow-btn')
     if (!toggleBtn) return
-    const items = [...bar.querySelectorAll('.quick-bar-item:not(.quick-bar-overflow-btn)')]
+    const items = [...bar.querySelectorAll('.quick-bar-item:not(.quick-bar-overflow-btn):not(.quick-bar-reset-btn)')]
     items.forEach(el => { el.hidden = false })
     bar.classList.remove('expanded')
     toggleBtn.hidden = true
@@ -1482,7 +1518,7 @@ document.getElementById('bm-open-all-mode-select').addEventListener('change', e 
 
 // ---- Init ----
 async function initBookmarkState() {
-  const data = await syncGet(['bm-cols', 'chrome-bm-col-map', 'chrome-bm-col-order', 'chrome-bm-folder-order', 'virtual-folders', 'col-order', 'bm-auto-expand', 'bm-auto-group', 'bm-open-all-mode', 'bm-collapsed', 'vf-expanded', 'your-bm-collapsed', 'bm-warn-skip-rename', 'bm-warn-skip-delete', 'bm-warn-skip-item-rename', 'bm-warn-skip-item-delete', 'bm-warn-skip-vf-delete', 'quick-bar-items', 'quick-bar-expanded'])
+  const data = await syncGet(['bm-cols', 'chrome-bm-col-map', 'chrome-bm-col-order', 'chrome-bm-folder-order', 'virtual-folders', 'col-order', 'bm-auto-expand', 'bm-auto-group', 'bm-open-all-mode', 'bm-collapsed', 'vf-expanded', 'your-bm-collapsed', 'bm-warn-skip-rename', 'bm-warn-skip-delete', 'bm-warn-skip-item-rename', 'bm-warn-skip-item-delete', 'bm-warn-skip-vf-delete', 'bm-warn-skip-quickbar-reset', 'quick-bar-items', 'quick-bar-expanded'])
   quickBarItems = Array.isArray(data['quick-bar-items']) ? data['quick-bar-items'] : []
   quickBarExpanded = data['quick-bar-expanded'] ?? false
   bmCols = parseInt(data['bm-cols'] ?? '1')
@@ -1515,6 +1551,7 @@ async function initBookmarkState() {
   warnSkipItemRename = data['bm-warn-skip-item-rename'] ?? false
   warnSkipItemDelete = data['bm-warn-skip-item-delete'] ?? false
   warnSkipVfDelete = data['bm-warn-skip-vf-delete'] ?? false
+  warnSkipQuickBarReset = data['bm-warn-skip-quickbar-reset'] ?? false
   loadChromeBookmarks()
 }
 initBookmarkState()
