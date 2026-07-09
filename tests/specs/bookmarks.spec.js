@@ -111,3 +111,19 @@ test('search results also include "Your Bookmarks" items', async ({ context }) =
 
   await expect(page.locator('#chrome-bookmarks-list .bookmark-item--clickable', { hasText: 'Searchable Personal Link' })).toBeVisible()
 })
+
+test('hovering a bookmark shows the default arrow cursor, not a grab hand', async ({ context }) => {
+  // Every bookmark item is draggable="true" (for reordering), and that attribute selector used to
+  // beat the item's own cursor rule on specificity, so hovering ANY bookmark showed a grab hand
+  // even though the primary action is a plain click to open it.
+  const page = await bookmarksPage(context)
+  await addChromeBookmark(page, { title: 'Cursor Test', url: 'https://example.com/cursor' })
+  await page.reload()
+  await page.waitForTimeout(500)
+  await page.click('.bm-folder-header')
+  await page.waitForTimeout(200)
+
+  const cursor = await page.evaluate(() =>
+    getComputedStyle(document.querySelector('.bookmark-item--clickable')).cursor)
+  expect(cursor).toBe('default')
+})

@@ -941,17 +941,27 @@ body {
   opacity: 0.4;
 }
 
+/* Suppress the browser's native "stuck hover" during an active HTML5 drag (dragover events
+   replace mousemove while dragging, so :hover never gets a chance to clear from the drag source)
+   and the focus ring a mousedown on this tabindex div would otherwise trigger — the dragged item
+   should show exactly one clear signal (reduced opacity), not three competing ones. */
+.bookmark-item--clickable.dragging:hover,
+.bookmark-item--clickable.dragging:focus {
+  background: transparent;
+  outline: none;
+}
+.bm-folder.dragging .bm-folder-header:hover { background: transparent; }
+
 .bm-folder.drop-before,
 .bookmark-item.drop-before {
-  box-shadow: 0 -2px 0 #3B82F6;
+  box-shadow: 0 -2px 0 var(--primary);
 }
 
 .bm-folder.drop-after,
 .bookmark-item.drop-after {
-  box-shadow: 0 2px 0 #3B82F6;
+  box-shadow: 0 2px 0 var(--primary);
 }
 
-[draggable="true"].bookmark-item--clickable { cursor: grab; }
 .bm-folder-header[draggable="true"] { cursor: grab; }
 .bm-folder-header[draggable="true"]:active { cursor: grabbing; }
 
@@ -964,11 +974,11 @@ body {
 }
 
 .bookmark-item--clickable {
-  cursor: pointer;
+  cursor: default;
   transition: background 0.12s;
 }
 
-.bookmark-item--clickable:hover { background: #F9FAFB; }
+.bookmark-item--clickable:hover { background: var(--hover-bg); }
 
 .bookmark-favicon {
   width: 24px;
