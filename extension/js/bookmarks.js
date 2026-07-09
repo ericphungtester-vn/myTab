@@ -497,8 +497,10 @@ function renderQuickBar() {
       <span class="quick-bar-label">${label}</span><span class="quick-bar-chevron">▾</span>
     </button>`
   }).join('') +
-    '<button class="quick-bar-item quick-bar-overflow-btn" title="Show all pinned items" hidden>▾</button>' +
-    '<button class="quick-bar-item quick-bar-reset-btn" title="Unpin all">⟲</button>'
+    '<div class="quick-bar-controls">' +
+      '<button class="quick-bar-item quick-bar-overflow-btn" title="Show all pinned items" hidden>▾</button>' +
+      '<button class="quick-bar-item quick-bar-reset-btn" title="Unpin all">⟲</button>' +
+    '</div>'
 
   window.recalcQuickBarOverflow?.()
 }

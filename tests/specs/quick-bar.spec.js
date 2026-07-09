@@ -368,3 +368,20 @@ test('the reset button asks for confirmation before unpinning everything', async
   await expect(page.locator('.flashpaint-toast')).toBeVisible()
   await expect(page.locator('.flashpaint-toast')).toContainText('Unpinned all')
 })
+
+test('the overflow/reset controls sit at the right edge of the bar even with a single pinned item', async ({ context }) => {
+  const page = await bookmarksPage(context)
+  await seedTree(page)
+
+  await page.locator('.bookmark-item--clickable[title="Solo Link"]').click({ button: 'right' })
+  await page.click('#bm-ctx-toggle-pin')
+  await page.waitForTimeout(150)
+
+  const barBox = await page.locator('#quick-bar').boundingBox()
+  const controlsBox = await page.locator('.quick-bar-controls').boundingBox()
+  const itemBox = await page.locator('#quick-bar .quick-bar-item[data-node-id]').boundingBox()
+
+  // The controls' right edge should be near the bar's own right edge, not snug against the item
+  expect(barBox.x + barBox.width - (controlsBox.x + controlsBox.width)).toBeLessThan(20)
+  expect(controlsBox.x - (itemBox.x + itemBox.width)).toBeGreaterThan(50)
+})
