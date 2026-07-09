@@ -87,8 +87,9 @@
             <ul>
               <li><strong>Left-click</strong> a bookmark to open it in a new tab.</li>
               <li><strong>Middle-click</strong> (scroll-wheel click) to open in a new tab.</li>
-              <li><strong>Right-click</strong> a bookmark item for options: Open in new tab, Open in current tab, Copy URL, Copy title, Rename, Delete. Rename and Delete act directly on Chrome Bookmarks and show a warning dialog with a <em>"Đừng nhắc lại"</em> checkbox.</li>
-              <li><strong>Right-click a folder</strong> for options: Open all in new tabs, New subfolder, Rename, Delete folder. <strong>Open all in new tabs</strong> opens every bookmark in the folder and automatically groups them into a named tab group (group name = folder name). Rename and Delete show a warning dialog with a <em>"Đừng nhắc lại"</em> checkbox — check it to skip the warning on future actions.</li>
+              <li><strong>Right-click</strong> a bookmark item for options: Open in new tab, Open in current tab, Copy URL, Copy title, Rename, Delete. Rename and Delete act directly on Chrome Bookmarks and show a warning dialog with a <em>"Don't ask again"</em> checkbox.</li>
+              <li><strong>Right-click a folder</strong> for options: Open all in new tabs, New subfolder, Rename, Delete folder. <strong>Open all in new tabs</strong> opens every bookmark in the folder and automatically groups them into a named tab group (group name = folder name). Rename and Delete show a warning dialog with a <em>"Don't ask again"</em> checkbox — check it to skip the warning on future actions.</li>
+              <li><strong>Dialog language</strong>: every warning dialog (rename, delete, Reset Quick Bar) has a small <strong>EN/VI</strong> button in its top-right corner — click it to switch that dialog's text between English and Vietnamese. The choice is remembered for every future dialog and syncs across devices. The rest of the app's UI stays English-only for now.</li>
             </ul>
             <p><strong>Keyboard</strong></p>
             <ul>
@@ -709,6 +710,7 @@
 
   <div id="bm-warn-modal" class="bm-warn-overlay">
     <div class="bm-warn-dialog">
+      <button id="bm-warn-lang-toggle" class="bm-warn-lang-toggle" type="button" title="Switch dialog language">VI</button>
       <div id="bm-warn-title" class="bm-warn-title"></div>
       <p id="bm-warn-text" class="bm-warn-text"></p>
       <div id="bm-warn-input-wrap" class="bm-warn-input-wrap">
@@ -716,10 +718,10 @@
       </div>
       <label class="bm-warn-skip-label">
         <input type="checkbox" id="bm-warn-skip-cb">
-        <span>Đừng nhắc lại</span>
+        <span>Don't ask again</span>
       </label>
       <div class="bm-warn-actions">
-        <button id="bm-warn-cancel" class="bm-warn-btn bm-warn-btn--cancel">Hủy</button>
+        <button id="bm-warn-cancel" class="bm-warn-btn bm-warn-btn--cancel">Cancel</button>
         <button id="bm-warn-ok" class="bm-warn-btn"></button>
       </div>
     </div>

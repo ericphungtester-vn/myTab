@@ -102,6 +102,65 @@ let warnSkipQuickBarReset = false
 function saveCollapsedFolders() { syncSet({ 'bm-collapsed': [...collapsedFolderIds] }) }
 function saveExpandedVfs() { syncSet({ 'vf-expanded': [...expandedVfIds] }) }
 
+// ---- Warn-modal language (English/Vietnamese) — independent of the rest of the UI, which stays
+// English-only for now. Applies to the confirmation dialog and its native-confirm() fallback. ----
+let bmLang = 'en'
+function saveBmLang() { syncSet({ 'bm-warn-lang': bmLang }) }
+
+const BM_WARN_UI_I18N = {
+  en: { cancel: 'Cancel', dontAskAgain: "Don't ask again" },
+  vi: { cancel: 'Hủy', dontAskAgain: 'Đừng nhắc lại' }
+}
+
+const BM_WARN_MSG_I18N = {
+  'rename-bookmark': {
+    en: { title: 'Rename bookmark', text: () => "This will change the bookmark's title directly in Chrome Bookmarks and sync it to all your devices.", okLabel: 'Save' },
+    vi: { title: 'Đổi tên bookmark', text: () => 'Thao tác này sẽ thay đổi tên bookmark trực tiếp trong Chrome Bookmarks và đồng bộ sang tất cả thiết bị.', okLabel: 'Lưu' }
+  },
+  'delete-bookmark': {
+    en: { title: 'Delete bookmark', text: name => `This will permanently delete "${name}" from Chrome Bookmarks. This can't be undone.`, okLabel: 'Delete' },
+    vi: { title: 'Xóa bookmark', text: name => `Thao tác này sẽ xóa vĩnh viễn "${name}" khỏi Chrome Bookmarks. Không thể hoàn tác.`, okLabel: 'Xóa' }
+  },
+  'rename-folder': {
+    en: { title: 'Rename folder', text: () => "This will change the folder's name directly in Chrome Bookmarks and sync it to all your devices.", okLabel: 'Save' },
+    vi: { title: 'Đổi tên folder', text: () => 'Thao tác này sẽ thay đổi tên folder trực tiếp trong Chrome Bookmarks và đồng bộ sang tất cả thiết bị.', okLabel: 'Lưu' }
+  },
+  'delete-folder-chrome': {
+    en: { title: 'Delete folder', text: name => `This will permanently delete "${name}" and every bookmark inside it from Chrome Bookmarks. This can't be undone.`, okLabel: 'Delete' },
+    vi: { title: 'Xóa folder', text: name => `Thao tác này sẽ xóa vĩnh viễn "${name}" và toàn bộ bookmark bên trong khỏi Chrome Bookmarks. Không thể hoàn tác.`, okLabel: 'Xóa' }
+  },
+  'delete-folder-vf': {
+    en: { title: 'Delete folder', text: name => `This will delete "${name}" and everything inside it from Your Bookmarks. This data isn't stored in Chrome Bookmarks, so it can't be recovered.`, okLabel: 'Delete' },
+    vi: { title: 'Xóa folder', text: name => `Thao tác này sẽ xóa "${name}" và toàn bộ nội dung bên trong khỏi Your Bookmarks. Dữ liệu này không nằm trong Chrome Bookmarks nên không thể khôi phục.`, okLabel: 'Xóa' }
+  },
+  'reset-quickbar': {
+    en: { title: 'Reset Quick Bar', text: count => `This will unpin all ${count} items from the Quick Bar. Nothing is deleted from your actual bookmarks, but this can't be undone here.`, okLabel: 'Unpin all' },
+    vi: { title: 'Đặt lại Quick Bar', text: count => `Thao tác này sẽ bỏ pin toàn bộ ${count} mục trong Quick Bar. Không có gì bị xóa khỏi bookmark thật, nhưng không thể hoàn tác ở đây.`, okLabel: 'Bỏ pin tất cả' }
+  }
+}
+
+// Native window.confirm() fallback text (shown once "don't ask again" was checked previously) —
+// kept in the same two languages as the modal it replaces.
+const BM_WARN_CONFIRM_I18N = {
+  'delete-folder-vf': {
+    en: name => `Delete "${name}" and everything inside it from Your Bookmarks?`,
+    vi: name => `Xóa "${name}" và toàn bộ nội dung bên trong khỏi Your Bookmarks?`
+  },
+  'delete-bookmark': {
+    en: name => `Delete bookmark "${name}"?`,
+    vi: name => `Xóa bookmark "${name}"?`
+  },
+  'delete-folder-chrome': {
+    en: name => `Delete "${name}" and everything inside it?`,
+    vi: name => `Xóa "${name}" và toàn bộ nội dung bên trong?`
+  },
+  'reset-quickbar': {
+    en: count => `Unpin all ${count} Quick Bar items?`,
+    vi: count => `Bỏ pin toàn bộ ${count} mục trong Quick Bar?`
+  }
+}
+function bmConfirmText(key, name) { return BM_WARN_CONFIRM_I18N[key][bmLang](name) }
+
 ;(function initBmWarnModal() {
   const modal = document.getElementById('bm-warn-modal')
   const titleEl = document.getElementById('bm-warn-title')
@@ -109,10 +168,13 @@ function saveExpandedVfs() { syncSet({ 'vf-expanded': [...expandedVfIds] }) }
   const inputWrap = document.getElementById('bm-warn-input-wrap')
   const inputEl = document.getElementById('bm-warn-input')
   const skipCb = document.getElementById('bm-warn-skip-cb')
+  const skipLabelEl = document.querySelector('.bm-warn-skip-label span')
   const okBtn = document.getElementById('bm-warn-ok')
   const cancelBtn = document.getElementById('bm-warn-cancel')
+  const langToggleBtn = document.getElementById('bm-warn-lang-toggle')
 
   let _onConfirm = null
+  let _current = null // { key, param, isDanger, withInput, inputDefault } for the open dialog, so the language toggle can re-render it without closing
 
   function closeModal() {
     modal.classList.remove('active')
@@ -120,6 +182,7 @@ function saveExpandedVfs() { syncSet({ 'vf-expanded': [...expandedVfIds] }) }
     cancelBtn.removeEventListener('click', closeModal)
     modal.removeEventListener('click', handleBackdrop)
     _onConfirm = null
+    _current = null
   }
 
   function handleOk() {
@@ -135,19 +198,34 @@ function saveExpandedVfs() { syncSet({ 'vf-expanded': [...expandedVfIds] }) }
 
   function handleBackdrop(e) { if (e.target === modal) closeModal() }
 
-  window.showBmWarnModal = function({ title, text, okLabel, isDanger, withInput, inputDefault, onConfirm }) {
-    titleEl.textContent = title
-    textEl.textContent = text
-    okBtn.textContent = okLabel
+  // Re-renders the open dialog's text in the current bmLang — deliberately never touches
+  // inputEl.value, since this also runs when the language toggle is clicked mid-edit and
+  // shouldn't wipe out anything the user already typed.
+  function render() {
+    const { key, param, isDanger, withInput } = _current
+    const msg = BM_WARN_MSG_I18N[key][bmLang]
+    const ui = BM_WARN_UI_I18N[bmLang]
+    titleEl.textContent = msg.title
+    textEl.textContent = msg.text(param)
+    okBtn.textContent = msg.okLabel
     okBtn.className = 'bm-warn-btn ' + (isDanger ? 'bm-warn-btn--danger' : 'bm-warn-btn--ok')
-    skipCb.checked = false
+    cancelBtn.textContent = ui.cancel
+    skipLabelEl.textContent = ui.dontAskAgain
+    langToggleBtn.textContent = bmLang === 'en' ? 'VI' : 'EN'
+    inputWrap.classList.toggle('hidden', !withInput)
+  }
 
-    if (withInput) {
-      inputWrap.classList.remove('hidden')
-      inputEl.value = inputDefault || ''
-    } else {
-      inputWrap.classList.add('hidden')
-    }
+  langToggleBtn.addEventListener('click', () => {
+    bmLang = bmLang === 'en' ? 'vi' : 'en'
+    saveBmLang()
+    render()
+  })
+
+  window.showBmWarnModal = function({ key, param, isDanger, withInput, inputDefault, onConfirm }) {
+    _current = { key, param, isDanger, withInput }
+    skipCb.checked = false
+    inputEl.value = inputDefault || ''
+    render()
 
     _onConfirm = onConfirm
     modal.classList.add('active')
@@ -514,13 +592,12 @@ function doResetQuickBar() {
 
 function resetQuickBar() {
   if (warnSkipQuickBarReset) {
-    if (window.confirm(`Unpin all ${quickBarItems.length} Quick Bar items?`)) doResetQuickBar()
+    if (window.confirm(bmConfirmText('reset-quickbar', quickBarItems.length))) doResetQuickBar()
     return
   }
   showBmWarnModal({
-    title: 'Reset Quick Bar',
-    text: `This will unpin all ${quickBarItems.length} items from the Quick Bar. Nothing is deleted from your actual bookmarks, but this can't be undone here.`,
-    okLabel: 'Unpin all',
+    key: 'reset-quickbar',
+    param: quickBarItems.length,
     isDanger: true,
     withInput: false,
     onConfirm: (skip) => {
@@ -990,14 +1067,13 @@ async function openUrlsGrouped(urls, groupTitle) {
     }
 
     if (warnSkipVfDelete) {
-      if (window.confirm(`Xóa "${title}" và toàn bộ nội dung bên trong khỏi Your Bookmarks?`)) doDelete()
+      if (window.confirm(bmConfirmText('delete-folder-vf', title))) doDelete()
       return
     }
 
     showBmWarnModal({
-      title: 'Xóa folder',
-      text: `Thao tác này sẽ xóa "${title}" và toàn bộ nội dung bên trong khỏi Your Bookmarks. Dữ liệu này không nằm trong Chrome Bookmarks nên không thể khôi phục.`,
-      okLabel: 'Xóa',
+      key: 'delete-folder-vf',
+      param: title,
       isDanger: true,
       withInput: false,
       onConfirm: (skip) => {
@@ -1100,15 +1176,13 @@ async function openUrlsGrouped(urls, groupTitle) {
     }
 
     if (warnSkipItemRename) {
-      const name = window.prompt('Rename bookmark:', currentTitle)
+      const name = window.prompt(bmLang === 'en' ? 'Rename bookmark:' : 'Đổi tên bookmark:', currentTitle)
       if (name !== null) doRename(name)
       return
     }
 
     showBmWarnModal({
-      title: 'Đổi tên bookmark',
-      text: 'Thao tác này sẽ thay đổi tên bookmark trực tiếp trong Chrome Bookmarks và đồng bộ sang tất cả thiết bị.',
-      okLabel: 'Lưu',
+      key: 'rename-bookmark',
       isDanger: false,
       withInput: true,
       inputDefault: currentTitle,
@@ -1130,14 +1204,13 @@ async function openUrlsGrouped(urls, groupTitle) {
     }
 
     if (warnSkipItemDelete) {
-      if (window.confirm(`Xóa bookmark "${title}"?`)) doDelete()
+      if (window.confirm(bmConfirmText('delete-bookmark', title))) doDelete()
       return
     }
 
     showBmWarnModal({
-      title: 'Xóa bookmark',
-      text: `Thao tác này sẽ xóa vĩnh viễn "${title}" khỏi Chrome Bookmarks. Không thể hoàn tác.`,
-      okLabel: 'Xóa',
+      key: 'delete-bookmark',
+      param: title,
       isDanger: true,
       withInput: false,
       onConfirm: (skip) => {
@@ -1176,15 +1249,13 @@ async function openUrlsGrouped(urls, groupTitle) {
     }
 
     if (warnSkipRename) {
-      const name = window.prompt('Rename folder:', currentTitle)
+      const name = window.prompt(bmLang === 'en' ? 'Rename folder:' : 'Đổi tên folder:', currentTitle)
       if (name !== null) doRename(name)
       return
     }
 
     showBmWarnModal({
-      title: 'Đổi tên folder',
-      text: 'Thao tác này sẽ thay đổi tên folder trực tiếp trong Chrome Bookmarks và đồng bộ sang tất cả thiết bị.',
-      okLabel: 'Lưu',
+      key: 'rename-folder',
       isDanger: false,
       withInput: true,
       inputDefault: currentTitle,
@@ -1206,14 +1277,13 @@ async function openUrlsGrouped(urls, groupTitle) {
     }
 
     if (warnSkipDelete) {
-      if (window.confirm(`Xóa "${title}" và toàn bộ nội dung bên trong?`)) doDelete()
+      if (window.confirm(bmConfirmText('delete-folder-chrome', title))) doDelete()
       return
     }
 
     showBmWarnModal({
-      title: 'Xóa folder',
-      text: `Thao tác này sẽ xóa vĩnh viễn "${title}" và toàn bộ bookmark bên trong khỏi Chrome Bookmarks. Không thể hoàn tác.`,
-      okLabel: 'Xóa',
+      key: 'delete-folder-chrome',
+      param: title,
       isDanger: true,
       withInput: false,
       onConfirm: (skip) => {
@@ -1520,7 +1590,8 @@ document.getElementById('bm-open-all-mode-select').addEventListener('change', e 
 
 // ---- Init ----
 async function initBookmarkState() {
-  const data = await syncGet(['bm-cols', 'chrome-bm-col-map', 'chrome-bm-col-order', 'chrome-bm-folder-order', 'virtual-folders', 'col-order', 'bm-auto-expand', 'bm-auto-group', 'bm-open-all-mode', 'bm-collapsed', 'vf-expanded', 'your-bm-collapsed', 'bm-warn-skip-rename', 'bm-warn-skip-delete', 'bm-warn-skip-item-rename', 'bm-warn-skip-item-delete', 'bm-warn-skip-vf-delete', 'bm-warn-skip-quickbar-reset', 'quick-bar-items', 'quick-bar-expanded'])
+  const data = await syncGet(['bm-cols', 'chrome-bm-col-map', 'chrome-bm-col-order', 'chrome-bm-folder-order', 'virtual-folders', 'col-order', 'bm-auto-expand', 'bm-auto-group', 'bm-open-all-mode', 'bm-collapsed', 'vf-expanded', 'your-bm-collapsed', 'bm-warn-skip-rename', 'bm-warn-skip-delete', 'bm-warn-skip-item-rename', 'bm-warn-skip-item-delete', 'bm-warn-skip-vf-delete', 'bm-warn-skip-quickbar-reset', 'bm-warn-lang', 'quick-bar-items', 'quick-bar-expanded'])
+  bmLang = data['bm-warn-lang'] === 'vi' ? 'vi' : 'en'
   quickBarItems = Array.isArray(data['quick-bar-items']) ? data['quick-bar-items'] : []
   quickBarExpanded = data['quick-bar-expanded'] ?? false
   bmCols = parseInt(data['bm-cols'] ?? '1')

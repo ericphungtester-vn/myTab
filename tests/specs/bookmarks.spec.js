@@ -72,7 +72,7 @@ test('deleting a "Your Bookmarks" folder asks for confirmation', async ({ contex
   await page.waitForTimeout(200)
 
   await expect(page.locator('#bm-warn-modal.active')).toBeVisible()
-  await expect(page.locator('#bm-warn-title')).toHaveText('Xóa folder')
+  await expect(page.locator('#bm-warn-title')).toHaveText('Delete folder')
 
   // Cancel — the folder must survive
   await page.click('#bm-warn-cancel')
@@ -126,4 +126,68 @@ test('hovering a bookmark shows the default arrow cursor, not a grab hand', asyn
   const cursor = await page.evaluate(() =>
     getComputedStyle(document.querySelector('.bookmark-item--clickable')).cursor)
   expect(cursor).toBe('default')
+})
+
+test('the warn-modal language toggle switches its text to Vietnamese and back, and persists', async ({ context }) => {
+  const page = await bookmarksPage(context)
+  // parentId '1' = Bookmarks Bar (a stable Chrome node id) — omitting it defaults to Other
+  // Bookmarks, which this test's single .bm-folder-header click wouldn't expand
+  await addChromeBookmark(page, { title: 'Lang Test', url: 'https://example.com/lang', parentId: '1' })
+  await page.reload()
+  await page.waitForTimeout(500)
+  await page.click('.bm-folder-header')
+  await page.waitForTimeout(200)
+
+  await page.locator('.bookmark-item--clickable[title="Lang Test"]').click({ button: 'right' })
+  await page.click('#bm-ctx-delete-item')
+  await page.waitForTimeout(150)
+
+  await expect(page.locator('#bm-warn-title')).toHaveText('Delete bookmark')
+  expect(await page.locator('#bm-warn-lang-toggle').textContent()).toBe('VI')
+
+  await page.click('#bm-warn-lang-toggle')
+  await page.waitForTimeout(100)
+
+  await expect(page.locator('#bm-warn-title')).toHaveText('Xóa bookmark')
+  await expect(page.locator('#bm-warn-cancel')).toHaveText('Hủy')
+  await expect(page.locator('.bm-warn-skip-label span')).toHaveText('Đừng nhắc lại')
+  expect(await page.locator('#bm-warn-lang-toggle').textContent()).toBe('EN')
+
+  await page.click('#bm-warn-cancel')
+  await page.waitForTimeout(150)
+
+  // The choice carries over to the next dialog, and survives a reload
+  await page.locator('.bm-folder-header', { hasText: 'Bookmarks Bar' }).click({ button: 'right' })
+  await page.click('#bm-ctx-delete-folder')
+  await page.waitForTimeout(150)
+  await expect(page.locator('#bm-warn-title')).toHaveText('Xóa folder')
+  await page.click('#bm-warn-cancel')
+
+  // Bookmarks Bar's expanded state was already saved by the earlier click in this test, and that
+  // persists across reload — clicking the header again here would toggle it back closed
+  await page.reload()
+  await page.waitForTimeout(500)
+  await page.locator('.bookmark-item--clickable[title="Lang Test"]').click({ button: 'right' })
+  await page.click('#bm-ctx-delete-item')
+  await page.waitForTimeout(150)
+  await expect(page.locator('#bm-warn-title')).toHaveText('Xóa bookmark')
+})
+
+test('switching language mid-dialog does not clear text already typed into the rename input', async ({ context }) => {
+  const page = await bookmarksPage(context)
+  await addChromeBookmark(page, { title: 'Rename Me', url: 'https://example.com/rename', parentId: '1' })
+  await page.reload()
+  await page.waitForTimeout(500)
+  await page.click('.bm-folder-header')
+  await page.waitForTimeout(200)
+
+  await page.locator('.bookmark-item--clickable[title="Rename Me"]').click({ button: 'right' })
+  await page.click('#bm-ctx-rename-item')
+  await page.waitForTimeout(150)
+
+  await page.fill('#bm-warn-input', 'A New Title')
+  await page.click('#bm-warn-lang-toggle')
+  await page.waitForTimeout(100)
+
+  expect(await page.locator('#bm-warn-input').inputValue()).toBe('A New Title')
 })
