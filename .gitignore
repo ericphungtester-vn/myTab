@@ -12,3 +12,6 @@ tests/blob-report/
 # Editor
 .vscode/
 .idea/
+
+# Claude Code runtime lock file — session/PID-specific, not meaningful on another machine
+.claude/scheduled_tasks.lock
