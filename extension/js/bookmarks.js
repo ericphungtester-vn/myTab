@@ -462,8 +462,11 @@ async function loadChromeBookmarks() {
 }
 
 // ---- Quick Bar: pinned bookmarks/folders, shown below the header on every tab ----
+const QUICK_BAR_MAX_ITEMS = 37
 let quickBarItems = [] // Chrome bookmark/folder node ids, in pinned order
 function saveQuickBarItems() { syncSet({ 'quick-bar-items': quickBarItems }) }
+let quickBarExpanded = false
+function saveQuickBarExpanded() { syncSet({ 'quick-bar-expanded': quickBarExpanded }) }
 
 function renderQuickBar() {
   const bar = document.getElementById('quick-bar')
@@ -488,13 +491,22 @@ function renderQuickBar() {
       <svg class="bm-folder-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20 6h-8l-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2z"/></svg>
       <span class="quick-bar-label">${label}</span><span class="quick-bar-chevron">▾</span>
     </button>`
-  }).join('')
+  }).join('') + '<button class="quick-bar-item quick-bar-overflow-btn" title="Show all pinned items" hidden>▾</button>'
+
+  window.recalcQuickBarOverflow?.()
 }
 
 function isPinnedToQuickBar(nodeId) { return quickBarItems.includes(nodeId) }
 function toggleQuickBarPin(nodeId) {
-  if (isPinnedToQuickBar(nodeId)) quickBarItems = quickBarItems.filter(id => id !== nodeId)
-  else quickBarItems.push(nodeId)
+  if (isPinnedToQuickBar(nodeId)) {
+    quickBarItems = quickBarItems.filter(id => id !== nodeId)
+  } else {
+    if (quickBarItems.length >= QUICK_BAR_MAX_ITEMS) {
+      showToast?.(`Quick Bar is full (max ${QUICK_BAR_MAX_ITEMS} items) — unpin something first`, 'error')
+      return
+    }
+    quickBarItems.push(nodeId)
+  }
   saveQuickBarItems()
   renderQuickBar()
 }
@@ -533,19 +545,29 @@ function toggleQuickBarPin(nodeId) {
     }).join('')
   }
 
-  function openMenu(folderNode, anchorEl) {
-    menuStack = [folderNode]
-    renderMenuLevel()
-    menu.hidden = false
+  function positionMenu(anchorEl) {
     const rect = anchorEl.getBoundingClientRect()
     const width = Math.min(320, Math.max(200, menu.scrollWidth))
     menu.style.left = Math.min(rect.left, window.innerWidth - width - 8) + 'px'
     menu.style.top = Math.min(rect.bottom + 4, window.innerHeight - 100) + 'px'
   }
 
+  function openMenu(folderNode, anchorEl) {
+    menuStack = [folderNode]
+    renderMenuLevel()
+    menu.hidden = false
+    positionMenu(anchorEl)
+  }
+
   bar.addEventListener('click', e => {
     const btn = e.target.closest('.quick-bar-item')
     if (!btn) return
+    if (btn.classList.contains('quick-bar-overflow-btn')) {
+      quickBarExpanded = !quickBarExpanded
+      saveQuickBarExpanded()
+      recalcOverflow()
+      return
+    }
     const nodeId = btn.dataset.nodeId
     const node = findInTree(chromeBookmarkTree, nodeId)
     if (!node) return
@@ -553,6 +575,43 @@ function toggleQuickBarPin(nodeId) {
     if (!menu.hidden && menuStack[0]?.id === nodeId) { hideMenu(); return }
     openMenu(node, btn)
   })
+
+  // Pinned items that don't fit in the bar's single-row width are hidden by default (not just
+  // left to overflow behind a hidden scrollbar, which would give no clue they exist), folded
+  // behind a ▾ toggle that expands the bar to wrap onto extra rows and show everything — pressing
+  // it again (▴) collapses back to one row. Re-measured on resize and whenever the pinned set
+  // changes (renderQuickBar calls this).
+  function recalcOverflow() {
+    const toggleBtn = bar.querySelector('.quick-bar-overflow-btn')
+    if (!toggleBtn) return
+    const items = [...bar.querySelectorAll('.quick-bar-item:not(.quick-bar-overflow-btn)')]
+    items.forEach(el => { el.hidden = false })
+    bar.classList.remove('expanded')
+    toggleBtn.hidden = true
+
+    if (quickBarExpanded) {
+      bar.classList.add('expanded')
+      toggleBtn.hidden = false
+      toggleBtn.textContent = '▴'
+      toggleBtn.title = 'Show fewer'
+      return
+    }
+
+    if (bar.scrollWidth <= bar.clientWidth) return
+    toggleBtn.hidden = false
+    toggleBtn.textContent = '▾'
+    toggleBtn.title = 'Show all pinned items'
+    for (let i = items.length - 1; i >= 0 && bar.scrollWidth > bar.clientWidth; i--) {
+      items[i].hidden = true
+    }
+  }
+  window.recalcQuickBarOverflow = recalcOverflow
+
+  let overflowRaf = null
+  new ResizeObserver(() => {
+    if (overflowRaf) cancelAnimationFrame(overflowRaf)
+    overflowRaf = requestAnimationFrame(recalcOverflow)
+  }).observe(bar)
 
   menu.addEventListener('click', e => {
     const row = e.target.closest('.quick-bar-menu-row')
@@ -1423,8 +1482,9 @@ document.getElementById('bm-open-all-mode-select').addEventListener('change', e 
 
 // ---- Init ----
 async function initBookmarkState() {
-  const data = await syncGet(['bm-cols', 'chrome-bm-col-map', 'chrome-bm-col-order', 'chrome-bm-folder-order', 'virtual-folders', 'col-order', 'bm-auto-expand', 'bm-auto-group', 'bm-open-all-mode', 'bm-collapsed', 'vf-expanded', 'your-bm-collapsed', 'bm-warn-skip-rename', 'bm-warn-skip-delete', 'bm-warn-skip-item-rename', 'bm-warn-skip-item-delete', 'bm-warn-skip-vf-delete', 'quick-bar-items'])
+  const data = await syncGet(['bm-cols', 'chrome-bm-col-map', 'chrome-bm-col-order', 'chrome-bm-folder-order', 'virtual-folders', 'col-order', 'bm-auto-expand', 'bm-auto-group', 'bm-open-all-mode', 'bm-collapsed', 'vf-expanded', 'your-bm-collapsed', 'bm-warn-skip-rename', 'bm-warn-skip-delete', 'bm-warn-skip-item-rename', 'bm-warn-skip-item-delete', 'bm-warn-skip-vf-delete', 'quick-bar-items', 'quick-bar-expanded'])
   quickBarItems = Array.isArray(data['quick-bar-items']) ? data['quick-bar-items'] : []
+  quickBarExpanded = data['quick-bar-expanded'] ?? false
   bmCols = parseInt(data['bm-cols'] ?? '1')
   chromeBmColMap = data['chrome-bm-col-map'] ?? {}
   chromeBmColOrder = data['chrome-bm-col-order'] ?? {}

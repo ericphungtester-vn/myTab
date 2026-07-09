@@ -41,6 +41,9 @@
   <div id="quick-bar" class="quick-bar" hidden></div>
   <div id="quick-bar-menu" class="quick-bar-menu" hidden></div>
 
+  <!-- Toast notifications — page-level (not nested in a tab section) so showToast() works from any tab -->
+  <div id="flashpaint-toast-container" class="flashpaint-toast-container" aria-live="polite"></div>
+
   <!-- Help Panel -->
   <div id="help-panel" class="help-panel">
     <div class="help-panel-content">
@@ -57,7 +60,9 @@
             <p><strong>Auto-expand</strong>: if a column contains only one root folder, it expands automatically. If there are two or more root folders, all start collapsed — click a folder header to expand it. Expand/collapse state is saved and restored on next open.</p>
             <p><strong>Auto-expand subfolders</strong>: toggle in Settings to control whether nested folders (level 2 and deeper) start expanded or collapsed by default.</p>
             <p><strong>Folder count</strong>: each folder header shows a small badge with the number of items directly inside it.</p>
-            <p><strong>Your Bookmarks</strong>: a collapsible "Your Bookmarks" section appears above the Chrome bookmark columns. It contains all your custom folders (the blue ones). Click the header to collapse or expand it. Click <strong>+</strong> in the header to create a new custom folder.</p>
+            <p><strong>Your Bookmarks</strong>: a collapsible "Your Bookmarks" section appears above the Chrome bookmark columns. It contains all your custom folders (the blue ones) and can also hold real bookmarks — stored separately from Chrome's own bookmarks. Click the header to collapse or expand it. Click <strong>+</strong> in the header to create a new custom folder (this button is always there, even in an empty column).</p>
+            <p><strong>Adding a real bookmark to Your Bookmarks</strong>: drag a bookmark from the Chrome Bookmarks columns and drop it onto a custom folder (or empty space in a Your Bookmarks column, to add it at the top level). Each added item shows a small <strong>×</strong> button to remove it — this only removes it from Your Bookmarks, never from Chrome's actual bookmarks.</p>
+            <p><strong>Search</strong> looks across both Chrome Bookmarks and Your Bookmarks at once.</p>
             <p><strong>Column order</strong>: drag the <strong>⠿</strong> grip at the top-left of any column to move that column to a different position. A blue line appears on the left or right edge of the target column to show where it will land.</p>
             <p><strong>Column assignment</strong></p>
             <ul>
@@ -76,7 +81,7 @@
               <li>Click the <strong>+</strong> button in the <strong>Your Bookmarks</strong> header to create a new custom folder. Custom folders have a <span style="color:#60A5FA;font-weight:600">blue</span> icon to distinguish them from Chrome bookmark folders (which use a <span style="color:#F59E0B;font-weight:600">yellow</span> icon).</li>
               <li>The folder opens automatically so you can see a note reminding you it is not stored in Chrome bookmarks.</li>
               <li><strong>Double-click</strong> the folder name to rename it — once renamed, the note disappears and the folder behaves like any other folder.</li>
-              <li><strong>Right-click</strong> a custom folder for options: Open all in new tabs, New subfolder, Delete folder. <strong>Open all in new tabs</strong> opens every bookmark in the folder and automatically groups them into a named tab group (group name = folder name). <strong>New subfolder</strong> creates a nested folder directly inside the current one — nesting is unlimited and follows the hierarchy. Deleting a folder also deletes all its subfolders.</li>
+              <li><strong>Right-click</strong> a custom folder for options: Open all in new tabs, New subfolder, Delete folder. <strong>Open all in new tabs</strong> opens every bookmark in the folder and automatically groups them into a named tab group (group name = folder name). <strong>New subfolder</strong> creates a nested folder directly inside the current one — nesting is unlimited and follows the hierarchy. <strong>Delete folder</strong> shows a confirmation first (this data only exists in Your Bookmarks, so deleting it can't be undone by looking in Chrome's own bookmark manager) — deleting also deletes all its subfolders and any bookmarks added to it.</li>
             </ul>
             <p><strong>Opening bookmarks</strong></p>
             <ul>
@@ -95,6 +100,18 @@
             <p><strong>Scrolling</strong>: hover over a column and scroll with the mouse wheel or trackpad. The scrollbar is hidden to keep the layout clean. The <strong>⠿</strong> and <strong>+</strong> buttons at the top of each column stay fixed while scrolling.</p>
             <p><strong>Reset</strong>: use <em>Reset layout</em> in Settings to clear all column assignments, custom ordering, and saved collapse state.</p>
             <p>None of this changes your actual Chrome bookmark structure.</p>
+          </div>
+        </div>
+
+        <div class="guide-section">
+          <button class="guide-section-header">Quick Bar <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>A row of pinned bookmarks and folders just below the header — visible on every tab (Bookmarks, FlashPaint, About), not only while browsing Bookmarks.</p>
+            <p><strong>Pinning</strong>: right-click any bookmark or folder in the main list and choose <strong>Pin to Quick Bar</strong>. Right-click an already-pinned item directly in the bar to get the same menu, now showing <strong>Unpin from Quick Bar</strong> — no need to go find the original bookmark again.</p>
+            <p><strong>Opening items</strong>: click a pinned bookmark to open it in a new tab. Click a pinned folder (shown with a folder icon and a small <strong>▾</strong>) to open a dropdown of its contents — click a subfolder inside to drill into it (a <strong>‹ Back</strong> row appears at the top to go back up); click a bookmark inside to open it and close the dropdown.</p>
+            <p><strong>When pinned items don't fit on one row</strong>: a <strong>▾</strong> button appears at the end of the bar — click it to expand the bar onto as many rows as needed so every pinned item is visible at once. Click the button again (now <strong>▴</strong>) to collapse back to a single scrollable row. This expanded/collapsed state is remembered across reloads, and re-adjusts automatically if you resize the window.</p>
+            <p><strong>Limit</strong>: up to <strong>37</strong> pinned items. Trying to pin more shows a toast message and the item is not pinned — unpin something first to make room.</p>
+            <p>Pinned items and their order sync via Chrome Sync, the same as your other settings.</p>
           </div>
         </div>
 
@@ -157,6 +174,7 @@
           <div class="guide-section-body">
             <div class="flashpaint-help-section"><strong>Tools</strong></div>
             <div class="flashpaint-help-row"><span class="flashpaint-help-key">↖</span><span>Select — click image, shape, or text to select, drag to move, corner handle to resize (text rewraps to its new width), double-click text to edit; Delete/Backspace removes any selected image, shape, or text; with anything selected: Ctrl+C (or the Copy button) to copy, Ctrl+V to paste a copy; with an image selected, the color/stroke-width/opacity/blur/shadow controls restyle it live too (stroke becomes a border)</span></div>
+            <div class="flashpaint-help-row"><span class="flashpaint-help-key">Shift+Click</span><span>Multi-select — Shift+click additional images/shapes/text to add them to a selection group (shown with a highlighted outline). Dragging any member moves the whole group together. Delete removes every selected object. A plain click (no Shift) on anything clears the group back to a single selection. With 2+ selected, the <strong>Align Selection</strong> button in the toolbar becomes active — lines up the group's left/right/top/bottom edges, or centers them on one axis.</span></div>
             <div class="flashpaint-help-row"><span class="flashpaint-help-key">✏️</span><span>Draw — freehand stroke; becomes its own selectable object, like Shape — switch to Select to move/resize/recolor/copy/delete it later</span></div>
             <div class="flashpaint-help-row"><span class="flashpaint-help-key">▭</span><span>Shape — drag to draw; click button again to pick: rectangle, filled rectangle, circle, filled circle, checkmark, cross, arrow, solid line, dashed line, dashed arrow, parenthesis, curly brace, square bracket; switch to Select to move/resize it later, or select it and use the color/opacity/blur/shadow controls to restyle it</span></div>
             <div class="flashpaint-help-row"><span class="flashpaint-help-key">T</span><span>Text — click to place, paste to insert a paragraph, Ctrl+Enter to commit, Esc to cancel; while editing, the color/stroke-width/alignment/opacity/blur/shadow controls change this text live</span></div>
@@ -168,6 +186,9 @@
             <div class="flashpaint-help-section"><strong>Layer order</strong> <em>(image/shape/text must be selected)</em></div>
             <div class="flashpaint-help-row"><span class="flashpaint-help-key">Layer order</span><span>Single button — click to open a dropdown with 4 actions: send to back, send backward one step, bring forward one step, bring to front; picking one runs it immediately and closes the dropdown</span></div>
             <div class="flashpaint-help-section"><strong>Other</strong></div>
+            <div class="flashpaint-help-row"><span class="flashpaint-help-key">Layers</span><span>Toolbar button toggles a small draggable dot near the top-right of the canvas — click the dot to expand it into a semi-transparent panel listing every image/shape/text, topmost first; click a row to select that object (it stays highlighted in the list). Click <strong>–</strong> in the panel header to collapse back to the dot. Both the dot and the expanded panel can be dragged anywhere by their body/header — position, and whether it's collapsed or expanded, is remembered across reloads.</span></div>
+            <div class="flashpaint-help-row"><span class="flashpaint-help-key">Autosave</span><span>The canvas is saved automatically every few seconds while it has content, and restored the next time you open FlashPaint (a toast confirms "Restored your previous session"). Clicking <strong>Clear</strong> also clears the autosave, so a reload after Clear starts blank.</span></div>
+            <div class="flashpaint-help-row"><span class="flashpaint-help-key">🌙</span><span>Dark mode — the moon/sun toggle in the top-right header switches the whole app (not just FlashPaint) between light and dark; the choice syncs across devices.</span></div>
             <div class="flashpaint-help-row"><span class="flashpaint-help-key">Ctrl+V</span><span>Paste image, or drag an image file in from your computer — accepts any image format (PNG, JPG, GIF, WebP, SVG, etc.); each new image stacks on top, first image defaults to bottom; the current opacity/blur/shadow settings are applied right away, but new images start with no border — use Select to add one via the stroke-width control</span></div>
             <div class="flashpaint-help-row"><span class="flashpaint-help-key">Paste</span><span>Toolbar button — same as Ctrl+V, pastes an image from your clipboard onto the canvas</span></div>
             <div class="flashpaint-help-row"><span class="flashpaint-help-key">Copy</span><span>Toolbar button — same as Ctrl+C, copies the selected image, shape, or text; press Ctrl+V (or drag a new image in) to paste the copy. Disabled unless something is selected</span></div>
@@ -440,7 +461,6 @@
             <div id="layers-panel-list" class="layers-panel-list"></div>
           </div>
         </div>
-        <div id="flashpaint-toast-container" class="flashpaint-toast-container" aria-live="polite"></div>
       </div>
     </section>
 

@@ -1863,6 +1863,7 @@ body {
 /* ---- Quick Bar: pinned bookmarks/folders, visible across every tab ---- */
 .quick-bar {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 4px;
   padding: 6px 16px;
@@ -1875,7 +1876,11 @@ body {
 }
 .quick-bar::-webkit-scrollbar { display: none; }
 .quick-bar[hidden] { display: none; }
+/* Toggled by the ▾/▴ overflow button — wraps every pinned item onto as many rows as needed
+   instead of a single scrollable row, so nothing stays hidden behind a dropdown. */
+.quick-bar.expanded { flex-wrap: wrap; overflow-x: visible; row-gap: 2px; }
 
+.quick-bar-item[hidden] { display: none; }
 .quick-bar-item {
   display: flex;
   align-items: center;

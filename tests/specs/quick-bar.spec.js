@@ -186,3 +186,149 @@ test('right-clicking a pinned folder directly in the Quick Bar offers Unpin', as
   await page.waitForTimeout(200)
   await expect(page.locator('#quick-bar .quick-bar-item', { hasText: 'Work' })).toHaveCount(0)
 })
+
+test('pinning more items than fit shows a ▾ toggle that expands the bar to show everything', async ({ context }) => {
+  const page = await bookmarksPage(context)
+  const ids = await page.evaluate(async () => {
+    const bar = (await new Promise(r => chrome.bookmarks.getTree(r)))[0].children[0]
+    const ids = []
+    for (let i = 1; i <= 20; i++) {
+      const node = await new Promise(r => chrome.bookmarks.create({ title: `Bookmark Number ${i}`, url: `https://example.com/${i}`, parentId: bar.id }, r))
+      ids.push(node.id)
+    }
+    return ids
+  })
+  await page.reload()
+  await page.waitForTimeout(500)
+  await page.evaluate(ids => { quickBarItems = ids; saveQuickBarItems(); renderQuickBar() }, ids)
+  await page.waitForTimeout(300)
+
+  const toggleBtn = page.locator('#quick-bar .quick-bar-overflow-btn')
+  await expect(toggleBtn).toBeVisible()
+  expect(await toggleBtn.textContent()).toBe('▾')
+
+  // Nothing should be left overflowing the bar's own single-row width once hidden items are
+  // folded away
+  const stillOverflowing = await page.evaluate(() => {
+    const bar = document.getElementById('quick-bar')
+    return bar.scrollWidth > bar.clientWidth
+  })
+  expect(stillOverflowing).toBe(false)
+
+  const visibleBefore = await page.locator('#quick-bar .quick-bar-item:visible').count()
+
+  await toggleBtn.click()
+  await page.waitForTimeout(150)
+
+  expect(await toggleBtn.textContent()).toBe('▴')
+  await expect(page.locator('#quick-bar.expanded')).toBeVisible()
+  const item20 = page.locator('#quick-bar .quick-bar-item', { hasText: 'Bookmark Number 20' })
+  await expect(item20).toBeVisible()
+  const visibleAfter = await page.locator('#quick-bar .quick-bar-item:visible').count()
+  expect(visibleAfter).toBeGreaterThan(visibleBefore)
+
+  // Toggling again collapses back to a single row
+  await toggleBtn.click()
+  await page.waitForTimeout(150)
+  await expect(item20).toBeHidden()
+  await expect(page.locator('#quick-bar.expanded')).toHaveCount(0)
+})
+
+test('the expanded/collapsed state survives a reload', async ({ context }) => {
+  const page = await bookmarksPage(context)
+  const ids = await page.evaluate(async () => {
+    const bar = (await new Promise(r => chrome.bookmarks.getTree(r)))[0].children[0]
+    const ids = []
+    for (let i = 1; i <= 20; i++) {
+      const node = await new Promise(r => chrome.bookmarks.create({ title: `Bookmark Number ${i}`, url: `https://example.com/${i}`, parentId: bar.id }, r))
+      ids.push(node.id)
+    }
+    return ids
+  })
+  await page.reload()
+  await page.waitForTimeout(500)
+  await page.evaluate(ids => { quickBarItems = ids; saveQuickBarItems(); renderQuickBar() }, ids)
+  await page.waitForTimeout(300)
+
+  await page.click('.quick-bar-overflow-btn')
+  await page.waitForTimeout(150)
+  await expect(page.locator('#quick-bar.expanded')).toBeVisible()
+
+  await page.reload()
+  await page.waitForTimeout(500)
+
+  await expect(page.locator('#quick-bar.expanded')).toBeVisible()
+  expect(await page.locator('.quick-bar-overflow-btn').textContent()).toBe('▴')
+  await expect(page.locator('#quick-bar .quick-bar-item', { hasText: 'Bookmark Number 20' })).toBeVisible()
+})
+
+test('shrinking the window folds more items into overflow, and growing it back restores them', async ({ context }) => {
+  const page = await bookmarksPage(context)
+  const ids = await page.evaluate(async () => {
+    const bar = (await new Promise(r => chrome.bookmarks.getTree(r)))[0].children[0]
+    const ids = []
+    for (let i = 1; i <= 10; i++) {
+      const node = await new Promise(r => chrome.bookmarks.create({ title: `Item ${i}`, url: `https://example.com/${i}`, parentId: bar.id }, r))
+      ids.push(node.id)
+    }
+    return ids
+  })
+  await page.reload()
+  await page.waitForTimeout(500)
+  await page.evaluate(ids => { quickBarItems = ids; saveQuickBarItems(); renderQuickBar() }, ids)
+  await page.waitForTimeout(300)
+
+  const wideCount = await page.locator('#quick-bar .quick-bar-item:visible').count()
+
+  await page.setViewportSize({ width: 500, height: 900 })
+  await page.waitForTimeout(300)
+  await expect(page.locator('#quick-bar .quick-bar-overflow-btn')).toBeVisible()
+  const narrowCount = await page.locator('#quick-bar .quick-bar-item:visible').count()
+  expect(narrowCount).toBeLessThan(wideCount)
+
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.waitForTimeout(300)
+  const restoredCount = await page.locator('#quick-bar .quick-bar-item:visible').count()
+  expect(restoredCount).toBe(wideCount)
+})
+
+test('pinning past the 37-item limit is rejected with a toast, shown even on the Bookmarks tab', async ({ context }) => {
+  const page = await bookmarksPage(context)
+  const ids = await page.evaluate(async () => {
+    const bar = (await new Promise(r => chrome.bookmarks.getTree(r)))[0].children[0]
+    const ids = []
+    for (let i = 1; i <= 38; i++) {
+      const node = await new Promise(r => chrome.bookmarks.create({ title: `Item ${i}`, url: `https://example.com/${i}`, parentId: bar.id }, r))
+      ids.push(node.id)
+    }
+    return ids
+  })
+  await page.reload()
+  await page.waitForTimeout(500)
+
+  // Pre-fill to exactly the limit directly (pinning one at a time through the UI would be slow
+  // and isn't the thing under test), then attempt the one that should be rejected through the
+  // real toggle function
+  await page.evaluate(ids => {
+    quickBarItems = ids.slice(0, 37)
+    saveQuickBarItems()
+    renderQuickBar()
+  }, ids)
+  await page.waitForTimeout(200)
+  expect(await page.evaluate(() => quickBarItems.length)).toBe(37)
+
+  await page.evaluate(id => toggleQuickBarPin(id), ids[37])
+  await page.waitForTimeout(200)
+
+  expect(await page.evaluate(() => quickBarItems.length)).toBe(37)
+  expect(await page.evaluate(id => quickBarItems.includes(id), ids[37])).toBe(false)
+  await expect(page.locator('.flashpaint-toast')).toBeVisible()
+  await expect(page.locator('.flashpaint-toast')).toContainText('37')
+
+  // Unpinning one frees a slot so the next pin succeeds
+  await page.evaluate(id => toggleQuickBarPin(id), ids[0])
+  await page.waitForTimeout(150)
+  await page.evaluate(id => toggleQuickBarPin(id), ids[37])
+  await page.waitForTimeout(150)
+  expect(await page.evaluate(id => quickBarItems.includes(id), ids[37])).toBe(true)
+})
