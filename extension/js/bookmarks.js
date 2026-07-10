@@ -614,13 +614,17 @@ let lastColsPerPage = null
 function getColsPerPage() {
   const container = document.getElementById('chrome-bookmarks-list')
   const width = container?.clientWidth || container?.parentElement?.clientWidth || 800
-  const gap = 8, minColWidth = 180
+  const gap = 8, minColWidth = 210
   return Math.max(1, Math.floor((width + gap) / (minColWidth + gap)))
 }
 function getColWidthPx(container, colsPerPage) {
   const width = container?.clientWidth || container?.parentElement?.clientWidth || 800
   const gap = 8
-  return Math.max(1, Math.floor((width - (colsPerPage - 1) * gap) / colsPerPage))
+  // If there are fewer columns total than would fit on a page (e.g. bmCols=1 on a wide screen),
+  // size for however many actually exist so they stretch to fill the width, not for a full page
+  // of columns that was never going to be there.
+  const cols = Math.max(1, Math.min(colsPerPage, colOrder.length))
+  return Math.max(1, Math.floor((width - (cols - 1) * gap) / cols))
 }
 // Reconciles bmColPage with wherever scrollLeft actually is (drag auto-scroll moves it directly,
 // bypassing bmColPage) and refreshes the pager UI to match.

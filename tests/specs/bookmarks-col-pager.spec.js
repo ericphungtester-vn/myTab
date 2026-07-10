@@ -31,10 +31,24 @@ function scrollLeftOf(page, selector) {
   return page.$eval(selector, el => el.scrollLeft)
 }
 
+test('fewer columns than fit on a page stretch to fill the width, instead of being sized for a full page', async ({ context }) => {
+  const page = await bookmarksPage(context)
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.reload()
+  await page.waitForTimeout(500)
+
+  expect(await page.evaluate(() => bmCols)).toBe(1) // default
+  const [colWidth, containerWidth] = await page.evaluate(() => [
+    document.querySelector('#chrome-bookmarks-list .bm-column').getBoundingClientRect().width,
+    document.getElementById('chrome-bookmarks-list').clientWidth,
+  ])
+  expect(colWidth).toBeCloseTo(containerWidth, 0)
+})
+
 test('a narrow window paginates by scrolling, without ever removing columns from the DOM', async ({ context }) => {
   const page = await bookmarksPage(context)
   await seedColumns(page, 7)
-  await page.setViewportSize({ width: 900, height: 900 })
+  await page.setViewportSize({ width: 1000, height: 900 })
   await page.reload()
   await page.waitForTimeout(500)
 
@@ -65,7 +79,7 @@ test('a narrow window paginates by scrolling, without ever removing columns from
 test('widening the window past the pagination threshold hides the pager', async ({ context }) => {
   const page = await bookmarksPage(context)
   await seedColumns(page, 7)
-  await page.setViewportSize({ width: 900, height: 900 })
+  await page.setViewportSize({ width: 1000, height: 900 })
   await page.reload()
   await page.waitForTimeout(500)
   await expect(page.locator('#bm-col-next')).toBeVisible()
@@ -80,7 +94,7 @@ test('widening the window past the pagination threshold hides the pager', async 
 test('the pager is hidden while searching or when everything fits on one page', async ({ context }) => {
   const page = await bookmarksPage(context)
   await seedColumns(page, 7)
-  await page.setViewportSize({ width: 900, height: 900 })
+  await page.setViewportSize({ width: 1000, height: 900 })
   await page.reload()
   await page.waitForTimeout(500)
   await expect(page.locator('#bm-col-next')).toBeVisible()
@@ -98,7 +112,7 @@ test('the pager is hidden while searching or when everything fits on one page', 
 test('changing the column count in Settings resets back to page 1', async ({ context }) => {
   const page = await bookmarksPage(context)
   await seedColumns(page, 7)
-  await page.setViewportSize({ width: 900, height: 900 })
+  await page.setViewportSize({ width: 1000, height: 900 })
   await page.reload()
   await page.waitForTimeout(500)
 
@@ -141,7 +155,7 @@ test('the Columns slider goes up to 14, and Your Bookmarks pages in sync with Ch
   await page.locator('#bm-cols-slider').dispatchEvent('input')
   await page.locator('#bm-cols-slider').dispatchEvent('change')
   await page.waitForTimeout(300)
-  await page.setViewportSize({ width: 900, height: 900 })
+  await page.setViewportSize({ width: 1000, height: 900 })
   await page.reload()
   await page.waitForTimeout(500)
 
@@ -162,7 +176,7 @@ test('the Columns slider goes up to 14, and Your Bookmarks pages in sync with Ch
 test('dragging a folder near the right edge auto-scrolls to reveal columns on the next page, so it can be dropped there', async ({ context }) => {
   const page = await bookmarksPage(context)
   await seedColumns(page, 8)
-  await page.setViewportSize({ width: 900, height: 900 })
+  await page.setViewportSize({ width: 1000, height: 900 })
   await page.reload()
   await page.waitForTimeout(500)
 
