@@ -777,6 +777,35 @@ body {
 .your-bm-header .bm-folder-arrow { color: var(--text-muted); font-size: 10px; }
 .your-bm-header.chrome-bm-title { cursor: default; }
 .your-bm-header.chrome-bm-title:hover { background: none; }
+
+.bm-col-pager {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+.bm-col-pager button {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-secondary);
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+.bm-col-pager button:hover:not(:disabled) { background: var(--hover-bg); color: var(--primary); }
+.bm-col-pager button:disabled { opacity: 0.35; cursor: default; }
+.bm-col-pager button[hidden] { display: none; }
+.bm-col-page-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: none;
+  letter-spacing: normal;
+}
+.bm-col-page-label[hidden] { display: none; }
 .your-bm-body { padding: 0; }
 .your-bm-body .bm-column {
   max-height: calc(22px + 4 * 28px + 3 * var(--bm-gap, 8px));

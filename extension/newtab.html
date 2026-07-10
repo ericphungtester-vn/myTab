@@ -56,6 +56,7 @@
           <button class="guide-section-header">Column Layout <span class="guide-arrow">▾</span></button>
           <div class="guide-section-body">
             <p>Use the <strong>Columns</strong> slider in Settings to set 1–7 columns.</p>
+            <p><strong>Paging</strong>: if the window isn't wide enough to show every column at once, <strong>‹</strong> / <strong>›</strong> buttons appear next to the "Chrome Bookmarks" heading to page through them, with a page counter between them. They're hidden whenever everything already fits, while searching, or when there are no bookmarks. Resizing the window recalculates how many columns fit and re-pages automatically.</p>
             <p><strong>Default order</strong> within each column and inside every folder: folders A–Z first, then bookmark items A–Z.</p>
             <p><strong>Auto-expand</strong>: if a column contains only one root folder, it expands automatically. If there are two or more root folders, all start collapsed — click a folder header to expand it. Expand/collapse state is saved and restored on next open.</p>
             <p><strong>Auto-expand subfolders</strong>: toggle in Settings to control whether nested folders (level 2 and deeper) start expanded or collapsed by default.</p>
@@ -267,6 +268,11 @@
         <div id="your-bookmarks"></div>
         <div class="your-bm-header chrome-bm-title">
           <span>Chrome Bookmarks</span>
+          <div class="bm-col-pager">
+            <button id="bm-col-prev" aria-label="Previous columns" title="Previous columns" hidden>‹</button>
+            <span id="bm-col-page-label" class="bm-col-page-label" hidden></span>
+            <button id="bm-col-next" aria-label="More columns" title="More columns" hidden>›</button>
+          </div>
         </div>
         <p class="vf-note">Dragging items/folders here only changes how they're displayed in myTab — it doesn't move anything in Chrome's actual bookmarks</p>
         <div id="chrome-bookmarks-list" class="bookmarks-list"></div>

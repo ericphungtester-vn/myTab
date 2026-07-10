@@ -542,6 +542,7 @@ function renderChromeBookmarks(filter) {
       bm.title.toLowerCase().includes(query) || bm.url.toLowerCase().includes(query)
     )
     container.className = 'bookmarks-list'
+    renderColPager(1) // no columns shown while searching — hide the pager
     if (!filtered.length) {
       container.innerHTML = '<div class="empty-state">No results</div>'
       return
@@ -556,15 +557,27 @@ function renderChromeBookmarks(filter) {
   if (!chromeBookmarkTree.length) {
     container.className = 'bookmarks-list'
     container.innerHTML = '<div class="empty-state">No bookmarks found</div>'
+    renderColPager(1)
     return
   }
 
   // Build column HTMLs using extraction-aware rendering
   const columnRoots = collectColumnRoots()
 
+  // With many columns, squeezing them all into one equal-width row makes each one too narrow to
+  // read comfortably — instead show as many as reasonably fit per "page" and paginate the rest,
+  // keeping the underlying column assignments/order untouched (this is purely a viewing window).
+  const colsPerPage = getColsPerPage()
+  lastColsPerPage = colsPerPage
+  const totalPages = Math.max(1, Math.ceil(colOrder.length / colsPerPage))
+  bmColPage = Math.min(bmColPage, totalPages - 1)
+  const pageStart = bmColPage * colsPerPage
+  const pageEnd = pageStart + colsPerPage
+
   container.innerHTML = ''
   container.className = 'bm-columns'
   colOrder.forEach((dataCol, displayPos) => {
+    if (displayPos < pageStart || displayPos >= pageEnd) return
     const roots = columnRoots[dataCol]
     const collapseRoots = roots.filter(n => !n.url).length >= 2
     const chromeHtml = roots.map(node => renderNodeForCol(node, dataCol)).join('')
@@ -576,7 +589,50 @@ function renderChromeBookmarks(filter) {
     col.innerHTML = `${colBar}${chromeHtml}`
     container.appendChild(col)
   })
+
+  renderColPager(totalPages)
 }
+
+// ---- Column pagination — a viewing window over colOrder, not a change to it ----
+let bmColPage = 0
+let lastColsPerPage = null
+function getColsPerPage() {
+  const container = document.getElementById('chrome-bookmarks-list')
+  const width = container?.clientWidth || container?.parentElement?.clientWidth || 800
+  const gap = 8, minColWidth = 180
+  return Math.max(1, Math.floor((width + gap) / (minColWidth + gap)))
+}
+function renderColPager(totalPages) {
+  const prevBtn = document.getElementById('bm-col-prev')
+  const nextBtn = document.getElementById('bm-col-next')
+  const label = document.getElementById('bm-col-page-label')
+  const show = totalPages > 1
+  prevBtn.hidden = !show
+  nextBtn.hidden = !show
+  label.hidden = !show
+  if (!show) { label.textContent = ''; return }
+  label.textContent = `${bmColPage + 1} / ${totalPages}`
+  prevBtn.disabled = bmColPage === 0
+  nextBtn.disabled = bmColPage === totalPages - 1
+}
+document.getElementById('bm-col-prev').addEventListener('click', () => {
+  if (bmColPage === 0) return
+  bmColPage--
+  renderChromeBookmarks(lastChromeFilter)
+})
+document.getElementById('bm-col-next').addEventListener('click', () => {
+  bmColPage++
+  renderChromeBookmarks(lastChromeFilter)
+})
+// Re-render only when the number of columns that actually fit changes (not on every pixel of
+// resize), same throttle-and-diff approach used for the Quick Bar's overflow detection.
+let colResizeRaf = null
+new ResizeObserver(() => {
+  if (colResizeRaf) cancelAnimationFrame(colResizeRaf)
+  colResizeRaf = requestAnimationFrame(() => {
+    if (getColsPerPage() !== lastColsPerPage) renderChromeBookmarks(lastChromeFilter)
+  })
+}).observe(document.getElementById('chrome-bookmarks-list'))
 
 // Drops any virtual-nesting entry whose node or target folder no longer exists (deleted, or
 // renamed away, in real Chrome) — otherwise it'd sit there forever pointing at nothing.
@@ -1627,6 +1683,7 @@ document.getElementById('chrome-bm-search').addEventListener('input', e => {
 window.addEventListener('bm-cols-change', e => {
   const { oldCols, newCols } = e.detail
   bmCols = newCols
+  bmColPage = 0
 
   if (newCols < oldCols) {
     let chromeChanged = false
@@ -1665,6 +1722,7 @@ window.addEventListener('bm-cols-change', e => {
 
 // ---- Reset ----
 window.addEventListener('bm-reset', () => {
+  bmColPage = 0
   chromeBmColMap = {}
   chromeBmColOrder = {}
   chromeBmFolderOrder = {}
