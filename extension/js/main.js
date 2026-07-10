@@ -167,6 +167,10 @@ bmZoomSlider.addEventListener('input', () => {
   applyBmZoom(val)
   syncSet({ 'bm-zoom': val })
 })
+document.getElementById('bm-zoom-reset').addEventListener('click', () => {
+  applyBmZoom(100)
+  syncSet({ 'bm-zoom': 100 })
+})
 
 // Column settings
 const bmColsSlider = document.getElementById('bm-cols-slider')
@@ -180,6 +184,14 @@ bmColsSlider.addEventListener('input', () => {
   bmColsVal.textContent = newCols
   syncSet({ 'bm-cols': newCols })
   window.dispatchEvent(new CustomEvent('bm-cols-change', { detail: { oldCols, newCols } }))
+})
+document.getElementById('bm-cols-reset').addEventListener('click', () => {
+  const oldCols = currentBmCols
+  currentBmCols = 1
+  bmColsSlider.value = 1
+  bmColsVal.textContent = 1
+  syncSet({ 'bm-cols': 1 })
+  window.dispatchEvent(new CustomEvent('bm-cols-change', { detail: { oldCols, newCols: 1 } }))
 })
 
 document.getElementById('bm-reset-btn').addEventListener('click', () => {
@@ -238,6 +250,11 @@ bmFontSelect.addEventListener('change', () => {
   syncSet({ 'bm-font': family })
   document.getElementById('chrome-bookmarks-list').style.setProperty('--bm-font-family', BM_FONTS[family] || BM_FONTS.system)
 })
+document.getElementById('bm-font-family-reset').addEventListener('click', () => {
+  bmFontSelect.value = 'system'
+  syncSet({ 'bm-font': 'system' })
+  document.getElementById('chrome-bookmarks-list').style.setProperty('--bm-font-family', BM_FONTS.system)
+})
 
 bmFontSizeSlider.addEventListener('input', () => {
   const size = parseInt(bmFontSizeSlider.value)
@@ -245,11 +262,22 @@ bmFontSizeSlider.addEventListener('input', () => {
   syncSet({ 'bm-font-size': size })
   document.getElementById('chrome-bookmarks-list').style.setProperty('--bm-content-size', size + 'px')
 })
+document.getElementById('bm-font-size-reset').addEventListener('click', () => {
+  bmFontSizeSlider.value = 12
+  bmFontSizeVal.textContent = '12px'
+  syncSet({ 'bm-font-size': 12 })
+  document.getElementById('chrome-bookmarks-list').style.setProperty('--bm-content-size', '12px')
+})
 
 bmFontWeightSelect.addEventListener('change', () => {
   const weight = bmFontWeightSelect.value
   syncSet({ 'bm-font-weight': parseInt(weight) })
   document.getElementById('chrome-bookmarks-list').style.setProperty('--bm-font-weight', weight)
+})
+document.getElementById('bm-font-weight-reset').addEventListener('click', () => {
+  bmFontWeightSelect.value = '500'
+  syncSet({ 'bm-font-weight': 500 })
+  document.getElementById('chrome-bookmarks-list').style.setProperty('--bm-font-weight', '500')
 })
 
 bmFontItalicToggle.addEventListener('change', () => {

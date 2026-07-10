@@ -132,9 +132,9 @@
 
             <h3>Bookmark list</h3>
             <ul>
-              <li><strong>Columns</strong> — sets the number of columns displayed (1–14).</li>
+              <li><strong>Columns</strong> — sets the number of columns displayed (1–14). Click ↺ to reset to 1.</li>
               <li><strong>Item spacing</strong> — adjusts the vertical gap between bookmark items (0–24 px).</li>
-              <li><strong>Zoom</strong> — scales the entire bookmark area (70%–130%).</li>
+              <li><strong>Zoom</strong> — scales the entire bookmark area (70%–130%). Click ↺ to reset to 100%.</li>
               <li><strong>Auto-expand subfolders</strong> — when on, nested folders (level 2 and deeper) start expanded; when off they start collapsed.</li>
               <li><strong>Folder name color</strong> — pick a custom color for folder names. Click ↺ to reset to default.</li>
               <li><strong>Item name color</strong> — pick a custom color for bookmark titles. Click ↺ to reset to default.</li>
@@ -156,9 +156,9 @@
 
             <h3>Font</h3>
             <ul>
-              <li><strong>Family</strong> — choose the typeface for folder names and bookmark titles (System default, Arial, Verdana, Trebuchet MS, Georgia, Courier New).</li>
-              <li><strong>Size</strong> — text size from 10 px to 16 px.</li>
-              <li><strong>Weight</strong> — thickness from Thin (100) to Heavy (900).</li>
+              <li><strong>Family</strong> — choose the typeface for folder names and bookmark titles (System default, Arial, Verdana, Trebuchet MS, Georgia, Courier New). Click ↺ to reset to System default.</li>
+              <li><strong>Size</strong> — text size from 10 px to 16 px. Click ↺ to reset to 12 px.</li>
+              <li><strong>Weight</strong> — thickness from Thin (100) to Heavy (900). Click ↺ to reset to Medium (500).</li>
               <li><strong>Italic</strong> — toggle italic style on or off.</li>
             </ul>
 
@@ -498,6 +498,7 @@
         <div class="settings-slider-wrap">
           <input type="range" id="bm-cols-slider" min="1" max="14" step="1" value="1">
           <span id="bm-cols-val" class="settings-val">1</span>
+          <button id="bm-cols-reset" class="settings-color-reset" title="Reset to default">↺</button>
         </div>
       </div>
       <div class="settings-row">
@@ -512,6 +513,7 @@
         <div class="settings-slider-wrap">
           <input type="range" id="bm-zoom-slider" min="70" max="130" step="5" value="100">
           <span id="bm-zoom-val" class="settings-val">100%</span>
+          <button id="bm-zoom-reset" class="settings-color-reset" title="Reset to default">↺</button>
         </div>
       </div>
       <div class="settings-row">
@@ -568,32 +570,39 @@
       <div class="settings-group-title" style="margin-top:16px">Font</div>
       <div class="settings-row">
         <span class="settings-label">Family</span>
-        <select id="bm-font-select" class="settings-select">
-          <option value="system">System default</option>
-          <option value="arial">Arial</option>
-          <option value="verdana">Verdana</option>
-          <option value="trebuchet">Trebuchet MS</option>
-          <option value="georgia">Georgia</option>
-          <option value="courier">Courier New</option>
-        </select>
+        <div class="settings-color-wrap">
+          <select id="bm-font-select" class="settings-select">
+            <option value="system">System default</option>
+            <option value="arial">Arial</option>
+            <option value="verdana">Verdana</option>
+            <option value="trebuchet">Trebuchet MS</option>
+            <option value="georgia">Georgia</option>
+            <option value="courier">Courier New</option>
+          </select>
+          <button id="bm-font-family-reset" class="settings-color-reset" title="Reset to default">↺</button>
+        </div>
       </div>
       <div class="settings-row">
         <span class="settings-label">Size</span>
         <div class="settings-slider-wrap">
           <input type="range" id="bm-font-size-slider" min="10" max="16" step="1" value="12">
           <span id="bm-font-size-val" class="settings-val">12px</span>
+          <button id="bm-font-size-reset" class="settings-color-reset" title="Reset to default">↺</button>
         </div>
       </div>
       <div class="settings-row">
         <span class="settings-label">Weight</span>
-        <select id="bm-font-weight-select" class="settings-select">
-          <option value="100">Thin</option>
-          <option value="300">Light</option>
-          <option value="400">Normal</option>
-          <option value="500" selected>Medium</option>
-          <option value="700">Bold</option>
-          <option value="900">Heavy</option>
-        </select>
+        <div class="settings-color-wrap">
+          <select id="bm-font-weight-select" class="settings-select">
+            <option value="100">Thin</option>
+            <option value="300">Light</option>
+            <option value="400">Normal</option>
+            <option value="500" selected>Medium</option>
+            <option value="700">Bold</option>
+            <option value="900">Heavy</option>
+          </select>
+          <button id="bm-font-weight-reset" class="settings-color-reset" title="Reset to default">↺</button>
+        </div>
       </div>
       <div class="settings-row">
         <span class="settings-label">Italic</span>
