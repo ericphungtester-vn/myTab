@@ -76,6 +76,13 @@
               <li>Drag any folder or bookmark item and hover over another item in the same column or inside the same folder — a blue line appears above or below to show where it will land.</li>
               <li>Custom order is saved and restored on next open.</li>
             </ul>
+            <p><strong>Moving an item into a different folder</strong></p>
+            <ul>
+              <li>Drag a bookmark or folder and drop it directly on another folder's <strong>header</strong> (not the gaps between rows) — a dashed outline appears while hovering to show it will go inside. It's added at the end of that folder's contents; drag it again afterward to reorder within.</li>
+              <li>This only changes how it's <em>displayed</em> in myTab — its real Chrome bookmark is never moved (<code>chrome.bookmarks.move()</code> is never called). Items shown this way get a dashed blue left edge and a tooltip noting they aren't really moved in Chrome.</li>
+              <li>Drag it back out to a column's root to clear this and return it to its real position/column.</li>
+              <li>A folder can't be dropped into itself or into one of its own subfolders — rejected with a toast.</li>
+            </ul>
             <p><strong>Custom folders</strong></p>
             <ul>
               <li>Click the <strong>+</strong> button in the <strong>Your Bookmarks</strong> header to create a new custom folder. Custom folders have a <span style="color:#60A5FA;font-weight:600">blue</span> icon to distinguish them from Chrome bookmark folders (which use a <span style="color:#F59E0B;font-weight:600">yellow</span> icon).</li>

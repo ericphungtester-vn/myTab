@@ -978,8 +978,23 @@ body {
   box-shadow: 0 2px 0 var(--primary);
 }
 
+/* Hovering a folder's header while dragging — distinct from drop-before/after's thin line, since
+   this means "place inside this folder" rather than "reorder next to it" */
+.bm-folder-header.drop-into {
+  background: var(--hover-bg);
+  outline: 2px dashed var(--primary);
+  outline-offset: -2px;
+}
+
 .bm-folder-header[draggable="true"] { cursor: grab; }
 .bm-folder-header[draggable="true"]:active { cursor: grabbing; }
+
+/* Displayed nested here only in myTab (see chromeBmParentMap) — its real Chrome position is
+   untouched, so it gets a visibly different left edge instead of looking like a real move. */
+.bookmark-item.virtually-nested,
+.bm-folder-header.virtually-nested {
+  border-left: 2px dashed var(--primary);
+}
 
 .bookmark-item {
   display: flex;

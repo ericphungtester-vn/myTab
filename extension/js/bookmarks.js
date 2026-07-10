@@ -85,6 +85,10 @@ let colOrder = []
 function saveColOrder() { syncSet({ 'col-order': colOrder }) }
 let chromeBmFolderOrder = {}
 function saveChromeBmFolderOrder() { syncSet({ 'chrome-bm-folder-order': chromeBmFolderOrder }) }
+// nodeId -> folderId the node is *displayed* nested under in myTab, overriding its real Chrome
+// parent — purely a myTab display convention, never written back via chrome.bookmarks.move()
+let chromeBmParentMap = {}
+function saveChromeBmParentMap() { syncSet({ 'chrome-bm-parent-map': chromeBmParentMap }) }
 let autoExpandSubfolders = false
 let autoGroupTabs = true
 let openAllMode = 'all-one-group'
@@ -402,6 +406,37 @@ function updateChromeBmFolderOrder(nodeId, folderId, insertBeforeId, insertAfter
   saveChromeBmColOrder()
 }
 
+// Nodes anywhere in the real tree that are displayed nested under `parentId` instead of their
+// real Chrome parent (see chromeBmParentMap above).
+function findReparentedChildren(parentId) {
+  const result = []
+  function walk(nodes) {
+    for (const n of nodes) {
+      if (chromeBmParentMap[n.id] === parentId) result.push(n)
+      if (n.children) walk(n.children)
+    }
+  }
+  walk(chromeBookmarkTree)
+  return result
+}
+
+// Would displaying `nodeId` nested under `folderId` create a cycle? True if they're the same
+// node, or if `folderId` is already (really or virtually) nested inside `nodeId` — nesting a
+// folder into its own descendant would make it an ancestor of itself.
+function wouldNestCycle(nodeId, folderId) {
+  if (nodeId === folderId) return true
+  function isInsideNode(id) {
+    const real = findInTree(chromeBookmarkTree, id)?.children || []
+    const virtual = findReparentedChildren(id)
+    for (const child of [...real, ...virtual]) {
+      if (child.id === folderId) return true
+      if (isInsideNode(child.id)) return true
+    }
+    return false
+  }
+  return isInsideNode(nodeId)
+}
+
 // Collect which folder nodes appear as "roots" in each column.
 // A folder is a root in column C when:
 //   - it is a top-level chrome node (Bookmarks Bar, Other Bookmarks, …) assigned to C, OR
@@ -412,7 +447,10 @@ function collectColumnRoots() {
   function traverse(nodes, parentEffCol) {
     for (const node of nodes) {
       const nodeEffCol = effectiveColForNode(node.id, parentEffCol === -1 ? 0 : parentEffCol)
-      if (parentEffCol === -1 || nodeEffCol !== parentEffCol) {
+      // A node displayed nested under a different (virtual) parent is never a root itself — it's
+      // picked up via findReparentedChildren() when that virtual parent renders. Still recurse
+      // into its own real children so deeper column overrides further down keep working.
+      if (!chromeBmParentMap[node.id] && (parentEffCol === -1 || nodeEffCol !== parentEffCol)) {
         roots[nodeEffCol].push(node)
       }
       if (node.children) traverse(node.children, nodeEffCol)
@@ -426,17 +464,28 @@ function collectColumnRoots() {
 // Render a node's subtree for a given column context.
 // Sub-folders extracted to a different column are skipped (they appear as roots in their column).
 function renderNodeForCol(node, col) {
+  // Nested here only in myTab's display — chrome.bookmarks.move() is never called for this, so
+  // its real Chrome parent/position is untouched. Flagged with a tooltip and a dashed marker
+  // rather than silently looking identical to a real move.
+  const isVirtual = !!chromeBmParentMap[node.id]
+  const virtualNote = isVirtual ? ' (shown here in myTab only — not moved in Chrome)' : ''
+  const virtualClass = isVirtual ? ' virtually-nested' : ''
+
   if (node.url) {
     const label = escapeHtml(node.title || getDomain(node.url))
-    return `<div class="bookmark-item bookmark-item--clickable" tabindex="0" draggable="true" data-node-id="${node.id}" data-url="${escapeHtml(node.url)}" title="${label}">
+    return `<div class="bookmark-item bookmark-item--clickable${virtualClass}" tabindex="0" draggable="true" data-node-id="${node.id}" data-url="${escapeHtml(node.url)}" title="${label}${escapeHtml(virtualNote)}">
       ${faviconHTML(node.url, node.title)}
       <div class="bookmark-info"><div class="bookmark-title">${label}</div></div>
     </div>`
   }
 
-  // Include only children whose effective column matches this column (covers both folders and bookmarks)
+  // Real children (minus any virtually moved elsewhere) whose effective column matches this
+  // column, plus anything virtually nested into this folder (which always follows wherever this
+  // folder itself renders, regardless of its own column assignment).
+  const realChildren = (node.children || []).filter(child =>
+    !chromeBmParentMap[child.id] && effectiveColForNode(child.id, col) === col)
   const visibleChildren = sortChildrenForFolder(
-    (node.children || []).filter(child => effectiveColForNode(child.id, col) === col),
+    [...realChildren, ...findReparentedChildren(node.id)],
     node.id
   )
 
@@ -446,7 +495,7 @@ function renderNodeForCol(node, col) {
   const isCollapsed = collapsedFolderIds.has(node.id)
 
   return `<div class="bm-folder${isCollapsed ? ' collapsed' : ''}" data-node-id="${node.id}">
-    <div class="bm-folder-header" draggable="true">
+    <div class="bm-folder-header${virtualClass}" draggable="true" title="${escapeHtml((node.title || 'Bookmarks') + virtualNote)}">
       <span class="bm-folder-arrow">▾</span>
       <svg class="bm-folder-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
         <path d="M20 6h-8l-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2z"/>
@@ -529,6 +578,20 @@ function renderChromeBookmarks(filter) {
   })
 }
 
+// Drops any virtual-nesting entry whose node or target folder no longer exists (deleted, or
+// renamed away, in real Chrome) — otherwise it'd sit there forever pointing at nothing.
+function pruneStaleParentMapEntries() {
+  let changed = false
+  Object.keys(chromeBmParentMap).forEach(nodeId => {
+    const folderId = chromeBmParentMap[nodeId]
+    if (!findInTree(chromeBookmarkTree, nodeId) || !findInTree(chromeBookmarkTree, folderId)) {
+      delete chromeBmParentMap[nodeId]
+      changed = true
+    }
+  })
+  if (changed) saveChromeBmParentMap()
+}
+
 async function loadChromeBookmarks() {
   if (typeof chrome === 'undefined' || !chrome.bookmarks) {
     const container = document.getElementById('chrome-bookmarks-list')
@@ -539,6 +602,7 @@ async function loadChromeBookmarks() {
   chrome.bookmarks.getTree(tree => {
     chromeBookmarkTree = tree[0]?.children || []
     allChromeBookmarks = flattenBookmarks(chromeBookmarkTree)
+    pruneStaleParentMapEntries()
     if (!collapsedStateLoaded) initCollapsedState()
     renderChromeBookmarks('')
   })
@@ -1111,6 +1175,7 @@ async function openUrlsGrouped(urls, groupTitle) {
     chrome.bookmarks.getTree(tree => {
       chromeBookmarkTree = tree[0]?.children || []
       allChromeBookmarks = flattenBookmarks(chromeBookmarkTree)
+      pruneStaleParentMapEntries()
       renderChromeBookmarks(lastChromeFilter)
     })
   }
@@ -1375,6 +1440,7 @@ document.getElementById('chrome-bm-search').addEventListener('input', e => {
     container.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'))
     container.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'))
     container.querySelectorAll('.drop-before, .drop-after').forEach(el => el.classList.remove('drop-before', 'drop-after'))
+    container.querySelectorAll('.drop-into').forEach(el => el.classList.remove('drop-into'))
   }
 
   container.addEventListener('dragend', () => {
@@ -1400,6 +1466,14 @@ document.getElementById('chrome-bm-search').addEventListener('input', e => {
     return colRoot
   }
 
+  // Hovering directly over a folder's header (rather than the gaps between rows that
+  // findDropSibling handles) means "put it inside this folder" instead of reordering siblings.
+  function findDropIntoFolder(e) {
+    const folder = e.target.closest('.bm-folder-header')?.closest('.bm-folder[data-node-id]')
+    if (!folder || folder.dataset.nodeId === dragNodeId) return null
+    return folder
+  }
+
   container.addEventListener('dragover', e => {
     if (!dragNodeId) return
     e.preventDefault()
@@ -1407,6 +1481,13 @@ document.getElementById('chrome-bm-search').addEventListener('input', e => {
     clearDragIndicators()
     const col = e.target.closest('.bm-column')
     if (!col) return
+
+    const intoFolder = findDropIntoFolder(e)
+    if (intoFolder) {
+      intoFolder.querySelector('.bm-folder-header').classList.add('drop-into')
+      return
+    }
+
     const sibling = findDropSibling(e)
     if (sibling && sibling.dataset.nodeId !== dragNodeId) {
       const rect = sibling.getBoundingClientRect()
@@ -1424,6 +1505,26 @@ document.getElementById('chrome-bm-search').addEventListener('input', e => {
     e.preventDefault()
     const col = e.target.closest('.bm-column')
     if (!col || !dragNodeId) return
+
+    const intoFolder = findDropIntoFolder(e)
+    if (intoFolder) {
+      const folderId = intoFolder.dataset.nodeId
+      if (wouldNestCycle(dragNodeId, folderId)) {
+        showToast?.("Can't move a folder into its own subfolder", 'error')
+      } else {
+        chromeBmParentMap[dragNodeId] = folderId
+        saveChromeBmParentMap()
+        removeFromAllOrders(dragNodeId)
+        if (!chromeBmFolderOrder[folderId]) chromeBmFolderOrder[folderId] = []
+        chromeBmFolderOrder[folderId].push(dragNodeId)
+        saveChromeBmFolderOrder()
+        renderChromeBookmarks(lastChromeFilter)
+      }
+      dragNodeId = null
+      dragParentFolderId = null
+      return
+    }
+
     const toCol = parseInt(col.dataset.col)
     const sibling = findDropSibling(e)
     let insertBeforeId = null, insertAfterId = null
@@ -1434,6 +1535,12 @@ document.getElementById('chrome-bm-search').addEventListener('input', e => {
     }
     // Determine if the drop lands inside the same parent folder or at column root
     const inSameFolder = dragParentFolderId && sibling?.parentElement?.closest('.bm-folder[data-node-id]')?.dataset.nodeId === dragParentFolderId
+    // Landing somewhere other than its current (real or virtual) folder means it's no longer
+    // virtually nested there — clear the override so it falls back to its real position/column
+    if (!inSameFolder && chromeBmParentMap[dragNodeId]) {
+      delete chromeBmParentMap[dragNodeId]
+      saveChromeBmParentMap()
+    }
     chromeBmColMap[dragNodeId] = toCol
     saveChromeBmColMap()
     if (inSameFolder) {
@@ -1561,9 +1668,11 @@ window.addEventListener('bm-reset', () => {
   chromeBmColMap = {}
   chromeBmColOrder = {}
   chromeBmFolderOrder = {}
+  chromeBmParentMap = {}
   saveChromeBmColMap()
   saveChromeBmColOrder()
   saveChromeBmFolderOrder()
+  saveChromeBmParentMap()
   colOrder = Array.from({ length: bmCols }, (_, i) => i)
   saveColOrder()
   collapsedFolderIds = new Set()
@@ -1590,7 +1699,7 @@ document.getElementById('bm-open-all-mode-select').addEventListener('change', e 
 
 // ---- Init ----
 async function initBookmarkState() {
-  const data = await syncGet(['bm-cols', 'chrome-bm-col-map', 'chrome-bm-col-order', 'chrome-bm-folder-order', 'virtual-folders', 'col-order', 'bm-auto-expand', 'bm-auto-group', 'bm-open-all-mode', 'bm-collapsed', 'vf-expanded', 'your-bm-collapsed', 'bm-warn-skip-rename', 'bm-warn-skip-delete', 'bm-warn-skip-item-rename', 'bm-warn-skip-item-delete', 'bm-warn-skip-vf-delete', 'bm-warn-skip-quickbar-reset', 'bm-warn-lang', 'quick-bar-items', 'quick-bar-expanded'])
+  const data = await syncGet(['bm-cols', 'chrome-bm-col-map', 'chrome-bm-col-order', 'chrome-bm-folder-order', 'chrome-bm-parent-map', 'virtual-folders', 'col-order', 'bm-auto-expand', 'bm-auto-group', 'bm-open-all-mode', 'bm-collapsed', 'vf-expanded', 'your-bm-collapsed', 'bm-warn-skip-rename', 'bm-warn-skip-delete', 'bm-warn-skip-item-rename', 'bm-warn-skip-item-delete', 'bm-warn-skip-vf-delete', 'bm-warn-skip-quickbar-reset', 'bm-warn-lang', 'quick-bar-items', 'quick-bar-expanded'])
   bmLang = data['bm-warn-lang'] === 'vi' ? 'vi' : 'en'
   quickBarItems = Array.isArray(data['quick-bar-items']) ? data['quick-bar-items'] : []
   quickBarExpanded = data['quick-bar-expanded'] ?? false
@@ -1598,6 +1707,7 @@ async function initBookmarkState() {
   chromeBmColMap = data['chrome-bm-col-map'] ?? {}
   chromeBmColOrder = data['chrome-bm-col-order'] ?? {}
   chromeBmFolderOrder = data['chrome-bm-folder-order'] ?? {}
+  chromeBmParentMap = data['chrome-bm-parent-map'] ?? {}
   autoExpandSubfolders = data['bm-auto-expand'] ?? false
   document.getElementById('bm-auto-expand-toggle').checked = autoExpandSubfolders
   autoGroupTabs = data['bm-auto-group'] ?? true
