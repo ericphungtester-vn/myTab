@@ -316,7 +316,10 @@ function renderYourBookmarks() {
   const el = document.getElementById('your-bookmarks')
   if (!el) return
   const arrowStyle = yourBmCollapsed ? 'style="transform:rotate(-90deg)"' : ''
+  // Shares colOrder/bmCols with Chrome Bookmarks, so it pages in sync with the same ‹ › buttons.
+  const { pageStart, pageEnd } = getColPageWindow()
   const colsHtml = colOrder.map((dataCol, displayPos) => {
+    if (displayPos < pageStart || displayPos >= pageEnd) return ''
     const roots = virtualFolders.filter(vf => !vf.parentId && vf.col === dataCol)
     // Bar (drag handle + "New folder") is always shown, even on an empty column — otherwise an
     // empty column has no way to ever create its first folder.
@@ -567,12 +570,7 @@ function renderChromeBookmarks(filter) {
   // With many columns, squeezing them all into one equal-width row makes each one too narrow to
   // read comfortably — instead show as many as reasonably fit per "page" and paginate the rest,
   // keeping the underlying column assignments/order untouched (this is purely a viewing window).
-  const colsPerPage = getColsPerPage()
-  lastColsPerPage = colsPerPage
-  const totalPages = Math.max(1, Math.ceil(colOrder.length / colsPerPage))
-  bmColPage = Math.min(bmColPage, totalPages - 1)
-  const pageStart = bmColPage * colsPerPage
-  const pageEnd = pageStart + colsPerPage
+  const { pageStart, pageEnd, totalPages } = getColPageWindow()
 
   container.innerHTML = ''
   container.className = 'bm-columns'
@@ -601,6 +599,16 @@ function getColsPerPage() {
   const width = container?.clientWidth || container?.parentElement?.clientWidth || 800
   const gap = 8, minColWidth = 180
   return Math.max(1, Math.floor((width + gap) / (minColWidth + gap)))
+}
+// Shared by renderChromeBookmarks and renderYourBookmarks — both page through the same colOrder.
+function getColPageWindow() {
+  const colsPerPage = getColsPerPage()
+  lastColsPerPage = colsPerPage
+  const totalPages = Math.max(1, Math.ceil(colOrder.length / colsPerPage))
+  bmColPage = Math.min(bmColPage, totalPages - 1)
+  const pageStart = bmColPage * colsPerPage
+  const pageEnd = pageStart + colsPerPage
+  return { pageStart, pageEnd, totalPages }
 }
 function renderColPager(totalPages) {
   const prevBtn = document.getElementById('bm-col-prev')

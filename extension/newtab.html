@@ -55,8 +55,8 @@
         <div class="guide-section">
           <button class="guide-section-header">Column Layout <span class="guide-arrow">▾</span></button>
           <div class="guide-section-body">
-            <p>Use the <strong>Columns</strong> slider in Settings to set 1–7 columns.</p>
-            <p><strong>Paging</strong>: if the window isn't wide enough to show every column at once, <strong>‹</strong> / <strong>›</strong> buttons appear next to the "Chrome Bookmarks" heading to page through them, with a page counter between them. They're hidden whenever everything already fits, while searching, or when there are no bookmarks. Resizing the window recalculates how many columns fit and re-pages automatically.</p>
+            <p>Use the <strong>Columns</strong> slider in Settings to set 1–14 columns.</p>
+            <p><strong>Paging</strong>: if the window isn't wide enough to show every column at once, <strong>‹</strong> / <strong>›</strong> buttons appear next to the "Chrome Bookmarks" heading to page through them, with a page counter between them. Since "Your Bookmarks" shares the same column layout, it pages in sync with these same buttons. They're hidden whenever everything already fits, while searching, or when there are no bookmarks. Resizing the window recalculates how many columns fit and re-pages automatically.</p>
             <p><strong>Default order</strong> within each column and inside every folder: folders A–Z first, then bookmark items A–Z.</p>
             <p><strong>Auto-expand</strong>: if a column contains only one root folder, it expands automatically. If there are two or more root folders, all start collapsed — click a folder header to expand it. Expand/collapse state is saved and restored on next open.</p>
             <p><strong>Auto-expand subfolders</strong>: toggle in Settings to control whether nested folders (level 2 and deeper) start expanded or collapsed by default.</p>
@@ -132,7 +132,7 @@
 
             <h3>Bookmark list</h3>
             <ul>
-              <li><strong>Columns</strong> — sets the number of columns displayed (1–7).</li>
+              <li><strong>Columns</strong> — sets the number of columns displayed (1–14).</li>
               <li><strong>Item spacing</strong> — adjusts the vertical gap between bookmark items (0–24 px).</li>
               <li><strong>Zoom</strong> — scales the entire bookmark area (70%–130%).</li>
               <li><strong>Auto-expand subfolders</strong> — when on, nested folders (level 2 and deeper) start expanded; when off they start collapsed.</li>
@@ -496,7 +496,7 @@
       <div class="settings-row">
         <span class="settings-label">Columns</span>
         <div class="settings-slider-wrap">
-          <input type="range" id="bm-cols-slider" min="1" max="7" step="1" value="1">
+          <input type="range" id="bm-cols-slider" min="1" max="14" step="1" value="1">
           <span id="bm-cols-val" class="settings-val">1</span>
         </div>
       </div>

@@ -107,3 +107,43 @@ test('changing the column count in Settings resets back to page 1', async ({ con
   const label = await page.locator('#bm-col-page-label').textContent()
   if (label) expect(label).toMatch(/^1 \//)
 })
+
+test('the Columns slider goes up to 14, and Your Bookmarks pages in sync with Chrome Bookmarks', async ({ context }) => {
+  const page = await bookmarksPage(context)
+  await page.evaluate(async () => {
+    const bar = (await new Promise(r => chrome.bookmarks.getTree(r)))[0].children[0]
+    for (let i = 1; i <= 10; i++) {
+      await new Promise(r => chrome.bookmarks.create({ title: `Folder ${i}`, parentId: bar.id }, r))
+    }
+  })
+  await page.evaluate(async () => {
+    const bar = (await new Promise(r => chrome.bookmarks.getTree(r)))[0].children[0]
+    bar.children.forEach((child, i) => { chromeBmColMap[child.id] = i })
+    saveChromeBmColMap()
+    for (let i = 0; i < 14; i++) {
+      virtualFolders.push({ id: 'vf' + i, name: 'VF ' + i, col: i, parentId: null, items: [] })
+    }
+    saveVirtualFolders()
+  })
+  await page.click('#settings-btn')
+  await page.waitForTimeout(200)
+  expect(await page.getAttribute('#bm-cols-slider', 'max')).toBe('14')
+  await page.fill('#bm-cols-slider', '14')
+  await page.locator('#bm-cols-slider').dispatchEvent('input')
+  await page.locator('#bm-cols-slider').dispatchEvent('change')
+  await page.waitForTimeout(300)
+  await page.setViewportSize({ width: 900, height: 900 })
+  await page.reload()
+  await page.waitForTimeout(500)
+
+  const chromeCount1 = await page.locator('#chrome-bookmarks-list .bm-column').count()
+  const yourCount1 = await page.locator('#your-bookmarks .bm-column').count()
+  expect(yourCount1).toBe(chromeCount1) // in sync, not clipped by the missing pager it used to have
+  expect(chromeCount1).toBeLessThan(14)
+
+  await page.click('#bm-col-next')
+  await page.waitForTimeout(200)
+  const chromeCount2 = await page.locator('#chrome-bookmarks-list .bm-column').count()
+  const yourCount2 = await page.locator('#your-bookmarks .bm-column').count()
+  expect(yourCount2).toBe(chromeCount2)
+})
