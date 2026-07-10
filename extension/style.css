@@ -957,7 +957,7 @@ body {
 }
 
 .bm-column {
-  flex: 1;
+  flex: none; /* width is set inline per-column in JS, in sync with the scroll-based pager */
   display: flex;
   flex-direction: column;
   gap: var(--bm-gap, 8px);

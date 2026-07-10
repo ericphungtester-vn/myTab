@@ -316,15 +316,18 @@ function renderYourBookmarks() {
   const el = document.getElementById('your-bookmarks')
   if (!el) return
   const arrowStyle = yourBmCollapsed ? 'style="transform:rotate(-90deg)"' : ''
-  // Shares colOrder/bmCols with Chrome Bookmarks, so it pages in sync with the same ‹ › buttons.
-  const { pageStart, pageEnd } = getColPageWindow()
+  // Shares colOrder/bmCols with Chrome Bookmarks — every column is always mounted (never sliced
+  // by page) so a drag can scroll across pages; only the current page's width is visible via
+  // container scrollLeft, kept in sync with Chrome Bookmarks below.
+  const chromeContainer = document.getElementById('chrome-bookmarks-list')
+  const colsPerPage = lastColsPerPage || getColsPerPage()
+  const colWidth = getColWidthPx(chromeContainer, colsPerPage)
   const colsHtml = colOrder.map((dataCol, displayPos) => {
-    if (displayPos < pageStart || displayPos >= pageEnd) return ''
     const roots = virtualFolders.filter(vf => !vf.parentId && vf.col === dataCol)
     // Bar (drag handle + "New folder") is always shown, even on an empty column — otherwise an
     // empty column has no way to ever create its first folder.
     const barHtml = `<div class="bm-col-bar"><div class="bm-col-handle" draggable="true" title="Drag to reorder column">⠿</div><button class="bm-col-add-btn your-bm-col-add-btn" data-col="${dataCol}" title="New folder">+</button></div>`
-    return `<div class="bm-column" data-col="${dataCol}" data-display-pos="${displayPos}">
+    return `<div class="bm-column" data-col="${dataCol}" data-display-pos="${displayPos}" style="width:${colWidth}px">
       ${barHtml}
       ${roots.map(renderYourBookmarkNode).join('')}
     </div>`
@@ -339,6 +342,8 @@ function renderYourBookmarks() {
       ${colsHtml}
     </div>
   `
+  const yourContainer = el.querySelector('.your-bm-body')
+  if (yourContainer && chromeContainer) yourContainer.scrollLeft = bmColPage * chromeContainer.clientWidth
 }
 
 // Effective column for a node: explicit assignment or inherit from parentCol
@@ -535,6 +540,13 @@ function renderChromeBookmarks(filter) {
   lastChromeFilter = filter || ''
   const query = lastChromeFilter.toLowerCase()
 
+  // Clamp the shared page index up front so Your Bookmarks (rendered next) and Chrome Bookmarks
+  // (rendered below) always agree on which page to show, even right after colOrder changes length.
+  const colsPerPage = getColsPerPage()
+  lastColsPerPage = colsPerPage
+  const totalPages = Math.max(1, Math.ceil(colOrder.length / colsPerPage))
+  bmColPage = Math.min(bmColPage, totalPages - 1)
+
   renderYourBookmarks()
   renderQuickBar()
 
@@ -568,14 +580,15 @@ function renderChromeBookmarks(filter) {
   const columnRoots = collectColumnRoots()
 
   // With many columns, squeezing them all into one equal-width row makes each one too narrow to
-  // read comfortably — instead show as many as reasonably fit per "page" and paginate the rest,
-  // keeping the underlying column assignments/order untouched (this is purely a viewing window).
-  const { pageStart, pageEnd, totalPages } = getColPageWindow()
+  // read comfortably — instead every column is rendered at a fixed "page" width and the extra
+  // ones spill past the edge of the (overflow-hidden) container. Paging = scrolling that
+  // container by one page width; columns are never removed from the DOM, so a drag can carry a
+  // bookmark across a page boundary — see initColAutoScroll below.
+  const colWidth = getColWidthPx(container, colsPerPage)
 
   container.innerHTML = ''
   container.className = 'bm-columns'
   colOrder.forEach((dataCol, displayPos) => {
-    if (displayPos < pageStart || displayPos >= pageEnd) return
     const roots = columnRoots[dataCol]
     const collapseRoots = roots.filter(n => !n.url).length >= 2
     const chromeHtml = roots.map(node => renderNodeForCol(node, dataCol)).join('')
@@ -583,15 +596,19 @@ function renderChromeBookmarks(filter) {
     col.className = 'bm-column'
     col.dataset.col = dataCol
     col.dataset.displayPos = displayPos
+    col.style.width = colWidth + 'px'
     const colBar = chromeHtml ? `<div class="bm-col-bar"><div class="bm-col-handle" draggable="true" title="Drag to reorder column">⠿</div></div>` : ''
     col.innerHTML = `${colBar}${chromeHtml}`
     container.appendChild(col)
   })
 
+  container.scrollLeft = bmColPage * container.clientWidth
   renderColPager(totalPages)
 }
 
-// ---- Column pagination — a viewing window over colOrder, not a change to it ----
+// ---- Column pagination — a scroll position over always-mounted columns, not a change to
+// colOrder itself. bmColPage is the logical "page" the ‹ › buttons and drag auto-scroll agree on;
+// it's translated to/from container.scrollLeft at the edges (render, button click, drag).
 let bmColPage = 0
 let lastColsPerPage = null
 function getColsPerPage() {
@@ -600,15 +617,18 @@ function getColsPerPage() {
   const gap = 8, minColWidth = 180
   return Math.max(1, Math.floor((width + gap) / (minColWidth + gap)))
 }
-// Shared by renderChromeBookmarks and renderYourBookmarks — both page through the same colOrder.
-function getColPageWindow() {
-  const colsPerPage = getColsPerPage()
-  lastColsPerPage = colsPerPage
+function getColWidthPx(container, colsPerPage) {
+  const width = container?.clientWidth || container?.parentElement?.clientWidth || 800
+  const gap = 8
+  return Math.max(1, Math.floor((width - (colsPerPage - 1) * gap) / colsPerPage))
+}
+// Reconciles bmColPage with wherever scrollLeft actually is (drag auto-scroll moves it directly,
+// bypassing bmColPage) and refreshes the pager UI to match.
+function syncColPagerFromScroll(container) {
+  const colsPerPage = lastColsPerPage || getColsPerPage()
   const totalPages = Math.max(1, Math.ceil(colOrder.length / colsPerPage))
-  bmColPage = Math.min(bmColPage, totalPages - 1)
-  const pageStart = bmColPage * colsPerPage
-  const pageEnd = pageStart + colsPerPage
-  return { pageStart, pageEnd, totalPages }
+  bmColPage = Math.max(0, Math.min(Math.round(container.scrollLeft / (container.clientWidth || 1)), totalPages - 1))
+  renderColPager(totalPages)
 }
 function renderColPager(totalPages) {
   const prevBtn = document.getElementById('bm-col-prev')
@@ -623,15 +643,20 @@ function renderColPager(totalPages) {
   prevBtn.disabled = bmColPage === 0
   nextBtn.disabled = bmColPage === totalPages - 1
 }
-document.getElementById('bm-col-prev').addEventListener('click', () => {
-  if (bmColPage === 0) return
-  bmColPage--
-  renderChromeBookmarks(lastChromeFilter)
-})
-document.getElementById('bm-col-next').addEventListener('click', () => {
-  bmColPage++
-  renderChromeBookmarks(lastChromeFilter)
-})
+function scrollToColPage(targetPage) {
+  const chromeContainer = document.getElementById('chrome-bookmarks-list')
+  const yourContainer = document.querySelector('#your-bookmarks .your-bm-body')
+  if (!chromeContainer) return
+  const colsPerPage = lastColsPerPage || getColsPerPage()
+  const totalPages = Math.max(1, Math.ceil(colOrder.length / colsPerPage))
+  bmColPage = Math.max(0, Math.min(targetPage, totalPages - 1))
+  const left = bmColPage * chromeContainer.clientWidth
+  chromeContainer.scrollTo({ left, behavior: 'smooth' })
+  yourContainer?.scrollTo({ left, behavior: 'smooth' })
+  renderColPager(totalPages)
+}
+document.getElementById('bm-col-prev').addEventListener('click', () => scrollToColPage(bmColPage - 1))
+document.getElementById('bm-col-next').addEventListener('click', () => scrollToColPage(bmColPage + 1))
 // Re-render only when the number of columns that actually fit changes (not on every pixel of
 // resize), same throttle-and-diff approach used for the Quick Bar's overflow detection.
 let colResizeRaf = null
@@ -641,6 +666,47 @@ new ResizeObserver(() => {
     if (getColsPerPage() !== lastColsPerPage) renderChromeBookmarks(lastChromeFilter)
   })
 }).observe(document.getElementById('chrome-bookmarks-list'))
+
+// Auto-scroll the shared column viewport when a drag (a bookmark/folder, or a whole column via
+// its ⠿ handle) nears the left/right edge — otherwise a page's worth of columns is all a single
+// drag gesture could ever reach, since the rest scrolls out of view.
+;(function initColAutoScroll() {
+  const EDGE_ZONE = 60, SCROLL_SPEED = 14
+  let dir = 0
+  let raf = null
+
+  function tick() {
+    const chromeContainer = document.getElementById('chrome-bookmarks-list')
+    if (!dir || !chromeContainer) { dir = 0; raf = null; return }
+    chromeContainer.scrollLeft += dir * SCROLL_SPEED
+    const yourContainer = document.querySelector('#your-bookmarks .your-bm-body')
+    if (yourContainer) yourContainer.scrollLeft = chromeContainer.scrollLeft
+    syncColPagerFromScroll(chromeContainer)
+    raf = requestAnimationFrame(tick)
+  }
+  function setDir(next) {
+    if (next === dir) return
+    dir = next
+    if (dir && !raf) raf = requestAnimationFrame(tick)
+  }
+  function stop() {
+    setDir(0)
+    const chromeContainer = document.getElementById('chrome-bookmarks-list')
+    if (chromeContainer) syncColPagerFromScroll(chromeContainer)
+  }
+
+  document.addEventListener('dragover', e => {
+    const panel = document.getElementById('bm-panel-chrome')
+    const chromeContainer = document.getElementById('chrome-bookmarks-list')
+    if (!panel?.contains(e.target) || !chromeContainer) { setDir(0); return }
+    const rect = chromeContainer.getBoundingClientRect()
+    if (e.clientX - rect.left < EDGE_ZONE && chromeContainer.scrollLeft > 0) setDir(-1)
+    else if (rect.right - e.clientX < EDGE_ZONE && chromeContainer.scrollLeft < chromeContainer.scrollWidth - chromeContainer.clientWidth - 1) setDir(1)
+    else setDir(0)
+  })
+  document.addEventListener('drop', stop)
+  document.addEventListener('dragend', stop)
+})()
 
 // Drops any virtual-nesting entry whose node or target folder no longer exists (deleted, or
 // renamed away, in real Chrome) — otherwise it'd sit there forever pointing at nothing.
