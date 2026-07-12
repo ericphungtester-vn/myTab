@@ -761,9 +761,11 @@ new ResizeObserver(() => {
   }, { passive: false })
 })()
 
-// Drops any virtual-nesting entry whose node or target folder no longer exists (deleted, or
-// renamed away, in real Chrome) — otherwise it'd sit there forever pointing at nothing.
-function pruneStaleParentMapEntries() {
+// Drops entries referencing a Chrome bookmark node that no longer exists (deleted, or renamed
+// away — id changes on rename in some edge cases) — covers virtual nesting, column assignment,
+// column/folder ordering, and collapsed state; otherwise they'd sit there forever pointing at
+// nothing, growing unbounded across repeated delete/recreate cycles.
+function pruneStaleBookmarkState() {
   let changed = false
   Object.keys(chromeBmParentMap).forEach(nodeId => {
     const folderId = chromeBmParentMap[nodeId]
@@ -773,6 +775,43 @@ function pruneStaleParentMapEntries() {
     }
   })
   if (changed) saveChromeBmParentMap()
+
+  // Same idea as above, extended to every other piece of state keyed by a Chrome bookmark node
+  // id — deleting a bookmark/folder through the extension's own context menu never cleared these,
+  // so they'd otherwise grow unbounded across repeated delete/recreate cycles and risk silently
+  // hitting chrome.storage.sync's per-item quota (syncSet only console.warns on failure).
+  let colMapChanged = false
+  Object.keys(chromeBmColMap).forEach(nodeId => {
+    if (!findInTree(chromeBookmarkTree, nodeId)) { delete chromeBmColMap[nodeId]; colMapChanged = true }
+  })
+  if (colMapChanged) saveChromeBmColMap()
+
+  let colOrderChanged = false
+  Object.keys(chromeBmColOrder).forEach(col => {
+    const filtered = chromeBmColOrder[col].filter(id => findInTree(chromeBookmarkTree, id))
+    if (filtered.length !== chromeBmColOrder[col].length) {
+      chromeBmColOrder[col] = filtered
+      colOrderChanged = true
+    }
+  })
+  if (colOrderChanged) saveChromeBmColOrder()
+
+  let folderOrderChanged = false
+  Object.keys(chromeBmFolderOrder).forEach(folderId => {
+    if (!findInTree(chromeBookmarkTree, folderId)) { delete chromeBmFolderOrder[folderId]; folderOrderChanged = true; return }
+    const filtered = chromeBmFolderOrder[folderId].filter(id => findInTree(chromeBookmarkTree, id))
+    if (filtered.length !== chromeBmFolderOrder[folderId].length) {
+      chromeBmFolderOrder[folderId] = filtered
+      folderOrderChanged = true
+    }
+  })
+  if (folderOrderChanged) saveChromeBmFolderOrder()
+
+  let collapsedChanged = false
+  collapsedFolderIds.forEach(id => {
+    if (!findInTree(chromeBookmarkTree, id)) { collapsedFolderIds.delete(id); collapsedChanged = true }
+  })
+  if (collapsedChanged) saveCollapsedFolders()
 }
 
 async function loadChromeBookmarks() {
@@ -785,7 +824,7 @@ async function loadChromeBookmarks() {
   chrome.bookmarks.getTree(tree => {
     chromeBookmarkTree = tree[0]?.children || []
     allChromeBookmarks = flattenBookmarks(chromeBookmarkTree)
-    pruneStaleParentMapEntries()
+    pruneStaleBookmarkState()
     if (!collapsedStateLoaded) initCollapsedState()
     renderChromeBookmarks('')
   })
@@ -1358,7 +1397,7 @@ async function openUrlsGrouped(urls, groupTitle) {
     chrome.bookmarks.getTree(tree => {
       chromeBookmarkTree = tree[0]?.children || []
       allChromeBookmarks = flattenBookmarks(chromeBookmarkTree)
-      pruneStaleParentMapEntries()
+      pruneStaleBookmarkState()
       renderChromeBookmarks(lastChromeFilter)
     })
   }
