@@ -2337,7 +2337,7 @@ function autosaveSession() {
 
 setInterval(() => { if (hasContent) autosaveSession() }, 4000)
 
-localGet([AUTOSAVE_KEY]).then(data => {
+localGet([AUTOSAVE_KEY]).then(async data => {
   const snap = data[AUTOSAVE_KEY]
   if (snap && Array.isArray(snap.overlays) && snap.overlays.length) {
     autosaveRestoring = true
@@ -2345,6 +2345,12 @@ localGet([AUTOSAVE_KEY]).then(data => {
     hasContent = true
     hint.classList.add('hidden')
     autosaveRestoring = false
-    showToast('Restored your previous session')
+    // Runs on every newtab load regardless of which tab is active — only show the toast if
+    // FlashPaint is actually going to be visible, otherwise it's a confusing notification about
+    // content the user can't see (e.g. while looking at Bookmarks). Read the persisted
+    // 'active-tab' value directly rather than checking the DOM's .active class: main.js restores
+    // it asynchronously too, and checking the class here could easily run before that settles.
+    const { 'active-tab': activeTab } = await syncGet(['active-tab'])
+    if (activeTab === 'flashpaint') showToast('Restored your previous session')
   }
 })
