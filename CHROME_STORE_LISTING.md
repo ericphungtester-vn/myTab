@@ -21,8 +21,11 @@ Chrome Web Store asks for a justification per sensitive permission. Draft text f
 **`tabGroups`**
 > Used only for the optional "Open all in new tabs" action on a bookmark folder, which creates and names a Chrome tab group so the newly opened tabs stay organized together.
 
-**`storage` / `unlimitedStorage`**
-> Used to save the user's own settings (layout, colors, font, pinned Quick Bar items) via chrome.storage.sync, and larger content (FlashPaint autosave, custom bookmark folders) via chrome.storage.local. unlimitedStorage is needed because FlashPaint project autosaves and saved images can exceed the default storage quota. No data leaves the browser.
+**`storage`**
+> Used to save the user's own settings (column layout, colors, font, pinned Quick Bar items) via chrome.storage.sync so they carry over across the user's devices, and larger content (FlashPaint autosave, custom bookmark folders) via chrome.storage.local. No data leaves the browser.
+
+**`unlimitedStorage`**
+> FlashPaint's autosave and saved project files (canvas images, shapes, text) can exceed the default chrome.storage.local quota, especially with larger screenshots — unlimitedStorage prevents autosave from silently failing.
 
 **New Tab override (`chrome_url_overrides.newtab`)**
 > The extension's entire purpose is to replace the default New Tab page with this dashboard — this is the core, expected behavior a user installs the extension for, not an incidental side effect.
