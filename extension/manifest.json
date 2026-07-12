@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "myTab",
   "version": "1.0.0",
-  "description": "Personal new tab — bookmarks, flashpaint, design system",
+  "description": "Personal new tab with a customizable bookmark dashboard and FlashPaint, a built-in screenshot annotation tool",
   "chrome_url_overrides": {
     "newtab": "newtab.html"
   },
