@@ -995,6 +995,9 @@ body {
 }
 .bm-column::-webkit-scrollbar { display: none; }
 
+/* Invisible filler after the last column on a partial last page — see lastPageSpacerHtml() */
+.bm-column-spacer { flex: none; pointer-events: none; }
+
 .bm-column.drag-over {
   border-color: var(--hover-border);
   background: var(--hover-bg);

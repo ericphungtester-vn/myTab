@@ -31,6 +31,18 @@ function scrollLeftOf(page, selector) {
   return page.$eval(selector, el => el.scrollLeft)
 }
 
+// Columns whose bounding box actually overlaps the container's visible (scrolled) viewport —
+// unlike a plain .bm-column count, this reflects what's really on screen right now.
+function visibleColIds(page, selector) {
+  return page.$eval(selector, container => {
+    const crect = container.getBoundingClientRect()
+    return [...container.querySelectorAll('.bm-column')].filter(col => {
+      const r = col.getBoundingClientRect()
+      return r.left < crect.right - 2 && r.right > crect.left + 2
+    }).map(col => col.dataset.col)
+  })
+}
+
 test('fewer columns than fit on a page stretch to fill the width, instead of being sized for a full page', async ({ context }) => {
   const page = await bookmarksPage(context)
   await page.setViewportSize({ width: 1600, height: 900 })
@@ -59,17 +71,22 @@ test('a narrow window paginates by scrolling, without ever removing columns from
   await expect(page.locator('#bm-col-page-label')).toHaveText('1 / 2')
   await expect(page.locator('#bm-col-prev')).toBeDisabled()
   await expect(page.locator('#bm-col-next')).toBeEnabled()
+  const page1Cols = await visibleColIds(page, '#chrome-bookmarks-list')
+  expect(page1Cols.length).toBe(4)
 
   await page.click('#bm-col-next')
-  // 7 columns / 4 per page isn't evenly divisible, so the last page's target scroll (1 * clientWidth)
-  // exceeds the actual scrollable range — the browser clamps to the max, which flush-anchors the
-  // last 3 columns to the right edge instead of leaving dead space. That's the expected outcome.
-  const [clientWidth, scrollWidth] = await page.$eval('#chrome-bookmarks-list', el => [el.clientWidth, el.scrollWidth])
-  const expectedScrollLeft = Math.min(clientWidth, scrollWidth - clientWidth)
-  await expect.poll(() => scrollLeftOf(page, '#chrome-bookmarks-list'), { timeout: 2000 }).toBeCloseTo(expectedScrollLeft, -1)
+  // 7 columns / 4 per page isn't evenly divisible — a spacer after the last column pads
+  // scrollWidth out so this exact position is reachable without the browser clamping it short,
+  // which would otherwise re-show a column or two already seen on page 1.
+  const clientWidth = await page.$eval('#chrome-bookmarks-list', el => el.clientWidth)
+  await expect.poll(() => scrollLeftOf(page, '#chrome-bookmarks-list'), { timeout: 2000 }).toBeCloseTo(clientWidth, -1)
   expect(await page.locator('#chrome-bookmarks-list .bm-column').count()).toBe(7)
   await expect(page.locator('#bm-col-page-label')).toHaveText('2 / 2')
   await expect(page.locator('#bm-col-next')).toBeDisabled()
+
+  const page2Cols = await visibleColIds(page, '#chrome-bookmarks-list')
+  expect(page2Cols.length).toBe(3) // the 3 remaining columns, left empty rather than repeating any of page 1's 4
+  expect(page2Cols.some(c => page1Cols.includes(c))).toBe(false)
 
   await page.click('#bm-col-prev')
   await expect.poll(() => scrollLeftOf(page, '#chrome-bookmarks-list'), { timeout: 2000 }).toBe(0)
@@ -221,4 +238,80 @@ test('dragging a folder near the right edge auto-scrolls to reveal columns on th
   await page.waitForTimeout(300)
   const assignedCol = await page.evaluate((id) => chromeBmColMap[id], result.sourceNodeId)
   expect(assignedCol).toBe(result.targetColNum)
+})
+
+test('a horizontal wheel scroll pans across pages and is prevented (so Chrome does not read it as back/forward navigation)', async ({ context }) => {
+  const page = await bookmarksPage(context)
+  await seedColumns(page, 8)
+  await page.setViewportSize({ width: 1000, height: 900 })
+  await page.reload()
+  await page.waitForTimeout(500)
+
+  const result = await page.evaluate(() => {
+    const container = document.getElementById('chrome-bookmarks-list')
+    const rect = container.getBoundingClientRect()
+    const target = document.elementFromPoint(rect.left + 50, rect.top + 20)
+    const ev = new WheelEvent('wheel', { deltaX: 300, deltaY: 0, bubbles: true, cancelable: true })
+    const notPrevented = target.dispatchEvent(ev)
+    return { prevented: !notPrevented, scrollLeft: container.scrollLeft }
+  })
+
+  expect(result.prevented).toBe(true)
+  expect(result.scrollLeft).toBe(300)
+})
+
+test('a horizontal wheel scroll is left alone when nothing is paginated (only one page of columns)', async ({ context }) => {
+  const page = await bookmarksPage(context)
+  await page.setViewportSize({ width: 1600, height: 900 }) // wide enough that the default 1 column never paginates
+  await page.reload()
+  await page.waitForTimeout(500)
+
+  const prevented = await page.evaluate(() => {
+    const container = document.getElementById('chrome-bookmarks-list')
+    const rect = container.getBoundingClientRect()
+    const target = document.elementFromPoint(rect.left + 50, rect.top + 20)
+    const ev = new WheelEvent('wheel', { deltaX: 100, deltaY: 0, bubbles: true, cancelable: true })
+    return !target.dispatchEvent(ev)
+  })
+
+  expect(prevented).toBe(false)
+})
+
+test('a purely vertical wheel scroll over the columns is untouched (no horizontal movement, not prevented)', async ({ context }) => {
+  const page = await bookmarksPage(context)
+  await seedColumns(page, 8)
+  await page.setViewportSize({ width: 1000, height: 900 })
+  await page.reload()
+  await page.waitForTimeout(500)
+
+  const result = await page.evaluate(() => {
+    const container = document.getElementById('chrome-bookmarks-list')
+    const rect = container.getBoundingClientRect()
+    const target = document.elementFromPoint(rect.left + 50, rect.top + 20)
+    const before = container.scrollLeft
+    const ev = new WheelEvent('wheel', { deltaX: 0, deltaY: 100, bubbles: true, cancelable: true })
+    const notPrevented = target.dispatchEvent(ev)
+    return { prevented: !notPrevented, scrollLeftChanged: container.scrollLeft !== before }
+  })
+
+  expect(result.prevented).toBe(false)
+  expect(result.scrollLeftChanged).toBe(false)
+})
+
+test('4 columns at 3-per-page: page 2 shows only the 4th column, not a repeat of columns already seen on page 1', async ({ context }) => {
+  const page = await bookmarksPage(context)
+  await seedColumns(page, 4)
+  await page.setViewportSize({ width: 800, height: 900 }) // yields 3 columns per page at minColWidth=210
+  await page.reload()
+  await page.waitForTimeout(500)
+
+  expect(await page.evaluate(() => getColsPerPage())).toBe(3)
+  const page1Cols = await visibleColIds(page, '#chrome-bookmarks-list')
+  expect(page1Cols).toEqual(['0', '1', '2'])
+
+  await page.click('#bm-col-next')
+  await page.waitForTimeout(1000)
+  await expect(page.locator('#bm-col-page-label')).toHaveText('2 / 2')
+  const page2Cols = await visibleColIds(page, '#chrome-bookmarks-list')
+  expect(page2Cols).toEqual(['3'])
 })

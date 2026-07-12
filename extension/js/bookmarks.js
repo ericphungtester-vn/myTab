@@ -331,7 +331,7 @@ function renderYourBookmarks() {
       ${barHtml}
       ${roots.map(renderYourBookmarkNode).join('')}
     </div>`
-  }).join('')
+  }).join('') + lastPageSpacerHtml(chromeContainer, colsPerPage, colWidth)
   el.innerHTML = `
     <div class="your-bm-header">
       <span class="bm-folder-arrow" ${arrowStyle}>▾</span>
@@ -601,9 +601,24 @@ function renderChromeBookmarks(filter) {
     col.innerHTML = `${colBar}${chromeHtml}`
     container.appendChild(col)
   })
+  container.insertAdjacentHTML('beforeend', lastPageSpacerHtml(container, colsPerPage, colWidth))
 
   container.scrollLeft = bmColPage * container.clientWidth
   renderColPager(totalPages)
+}
+
+// When colOrder.length isn't a multiple of colsPerPage, the last page only has a few real columns
+// — without padding, container.scrollLeft can never actually reach that page's exact start
+// (browsers clamp scrollLeft to scrollWidth - clientWidth), so it lands short and re-shows some
+// columns from the previous page instead. An invisible spacer after the last column gives the
+// container enough scrollWidth to reach the true position, leaving empty space instead of a repeat.
+function lastPageSpacerHtml(container, colsPerPage, colWidth) {
+  if (colOrder.length <= colsPerPage) return '' // everything fits on one page — nothing to pad for
+  const remainder = colOrder.length % colsPerPage
+  if (remainder === 0) return ''
+  const gap = 8
+  const spacerWidth = Math.max(0, container.clientWidth - remainder * (colWidth + gap))
+  return `<div class="bm-column-spacer" style="width:${spacerWidth}px"></div>`
 }
 
 // ---- Column pagination — a scroll position over always-mounted columns, not a change to
@@ -710,6 +725,29 @@ new ResizeObserver(() => {
   })
   document.addEventListener('drop', stop)
   document.addEventListener('dragend', stop)
+})()
+
+// Lets a trackpad/mouse-wheel horizontal scroll pan across column pages directly, instead of
+// only via the ‹ › buttons. Also matters functionally, not just as a convenience: with nothing on
+// the page consuming a horizontal scroll gesture (columns use overflow:hidden, so plain wheel
+// scrolling wouldn't move them), Chrome falls back to treating it as a back/forward navigation
+// swipe — which could silently land on whatever page was next in this tab's history. Calling
+// preventDefault() here (as soon as there's real horizontal overflow to pan) avoids that.
+;(function initColWheelPan() {
+  document.getElementById('bm-panel-chrome')?.addEventListener('wheel', e => {
+    if (!e.deltaX) return
+    const columnsEl = e.target.closest('.bm-columns')
+    if (!columnsEl || columnsEl.scrollWidth <= columnsEl.clientWidth) return
+    e.preventDefault()
+    columnsEl.scrollLeft += e.deltaX
+    const chromeContainer = document.getElementById('chrome-bookmarks-list')
+    const yourContainer = document.querySelector('#your-bookmarks .your-bm-body')
+    if (chromeContainer && yourContainer) {
+      if (columnsEl === chromeContainer) yourContainer.scrollLeft = chromeContainer.scrollLeft
+      else chromeContainer.scrollLeft = yourContainer.scrollLeft
+    }
+    if (chromeContainer) syncColPagerFromScroll(chromeContainer)
+  }, { passive: false })
 })()
 
 // Drops any virtual-nesting entry whose node or target folder no longer exists (deleted, or
