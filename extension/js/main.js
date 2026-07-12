@@ -109,6 +109,15 @@ helpPanel.addEventListener('click', e => {
   if (header) header.closest('.guide-section').classList.toggle('open')
 })
 
+// Ctrl+Shift+D (Cmd+Shift+D on Mac) toggles the dev-only Guide sections (Sync/Load/Publish docs) —
+// not persisted, resets to hidden on every reload; see the DEV-ONLY comment in newtab.html
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'd') {
+    e.preventDefault()
+    document.querySelectorAll('.guide-section--dev-only').forEach(el => { el.hidden = !el.hidden })
+  }
+})
+
 // Settings Panel
 const settingsBtn = document.getElementById('settings-btn')
 const settingsPanel = document.getElementById('settings-panel')

@@ -293,6 +293,19 @@ body {
   flex-shrink: 0;
 }
 
+.guide-dev-badge {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--danger);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
+
 .guide-section.open .guide-arrow { transform: rotate(180deg); }
 
 .guide-section-body {

@@ -217,8 +217,12 @@
           </div>
         </div>
 
-        <div class="guide-section">
-          <button class="guide-section-header">Sync Across Devices <span class="guide-arrow">▾</span></button>
+        <!-- DEV-ONLY: these 3 sections are developer/build documentation (sync internals, how to
+             load unpacked, how to publish) — not relevant to someone just using the extension, so
+             hidden from the rendered Guide by default. Toggle with Ctrl+Shift+D (Cmd+Shift+D on
+             Mac) — see js/main.js. -->
+        <div class="guide-section guide-section--dev-only" hidden>
+          <button class="guide-section-header"><span>Sync Across Devices <span class="guide-dev-badge">DEV</span></span> <span class="guide-arrow">▾</span></button>
           <div class="guide-section-body">
             <p>All your data is saved to <strong>Chrome Sync</strong> and tied to your Google account.</p>
             <p>This includes:</p>
@@ -232,8 +236,8 @@
           </div>
         </div>
 
-        <div class="guide-section">
-          <button class="guide-section-header">Load Extension Locally <span class="guide-arrow">▾</span></button>
+        <div class="guide-section guide-section--dev-only" hidden>
+          <button class="guide-section-header"><span>Load Extension Locally <span class="guide-dev-badge">DEV</span></span> <span class="guide-arrow">▾</span></button>
           <div class="guide-section-body">
             <ol>
               <li>Open Chrome and go to <code>chrome://extensions/</code></li>
@@ -243,8 +247,8 @@
           </div>
         </div>
 
-        <div class="guide-section">
-          <button class="guide-section-header">Publish on Chrome Web Store <span class="guide-arrow">▾</span></button>
+        <div class="guide-section guide-section--dev-only" hidden>
+          <button class="guide-section-header"><span>Publish on Chrome Web Store <span class="guide-dev-badge">DEV</span></span> <span class="guide-arrow">▾</span></button>
           <div class="guide-section-body">
             <ol>
               <li>Create a Chrome Developer account at <code>developer.chrome.com</code> ($5 one-time)</li>
