@@ -544,6 +544,7 @@ function renderChromeBookmarks(filter) {
   // (rendered below) always agree on which page to show, even right after colOrder changes length.
   const colsPerPage = getColsPerPage()
   lastColsPerPage = colsPerPage
+  lastContainerWidth = container.clientWidth
   const totalPages = Math.max(1, Math.ceil(colOrder.length / colsPerPage))
   bmColPage = Math.min(bmColPage, totalPages - 1)
 
@@ -676,13 +677,23 @@ function scrollToColPage(targetPage) {
 }
 document.getElementById('bm-col-prev').addEventListener('click', () => scrollToColPage(bmColPage - 1))
 document.getElementById('bm-col-next').addEventListener('click', () => scrollToColPage(bmColPage + 1))
-// Re-render only when the number of columns that actually fit changes (not on every pixel of
-// resize), same throttle-and-diff approach used for the Quick Bar's overflow detection.
+// Re-render whenever the container's width actually changes — not just when colsPerPage crosses
+// a threshold. colWidth (baked into each column's inline width) is computed to exactly fill the
+// container at render time; a resize that leaves colsPerPage unchanged still leaves that width
+// stale relative to the new container size, and clicking ‹ › then computes bmColPage * clientWidth
+// against the NEW width while columns are still sized for the OLD one — landing the scroll
+// position mid-column instead of on a page boundary, and re-exposing a column already seen.
 let colResizeRaf = null
+let lastContainerWidth = null
 new ResizeObserver(() => {
   if (colResizeRaf) cancelAnimationFrame(colResizeRaf)
   colResizeRaf = requestAnimationFrame(() => {
-    if (getColsPerPage() !== lastColsPerPage) renderChromeBookmarks(lastChromeFilter)
+    const container = document.getElementById('chrome-bookmarks-list')
+    const width = container?.clientWidth
+    if (getColsPerPage() !== lastColsPerPage || width !== lastContainerWidth) {
+      lastContainerWidth = width
+      renderChromeBookmarks(lastChromeFilter)
+    }
   })
 }).observe(document.getElementById('chrome-bookmarks-list'))
 

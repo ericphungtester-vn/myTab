@@ -315,3 +315,33 @@ test('4 columns at 3-per-page: page 2 shows only the 4th column, not a repeat of
   const page2Cols = await visibleColIds(page, '#chrome-bookmarks-list')
   expect(page2Cols).toEqual(['3'])
 })
+
+test('a small live resize that keeps colsPerPage the same still keeps column width in sync, so paging does not re-expose a column already seen', async ({ context }) => {
+  const page = await bookmarksPage(context)
+  await seedColumns(page, 6)
+  await page.setViewportSize({ width: 1000, height: 800 })
+  await page.reload()
+  await page.waitForTimeout(500)
+
+  const before = await page.evaluate(() => ({
+    colsPerPage: getColsPerPage(),
+    colWidth: document.querySelector('#chrome-bookmarks-list .bm-column').style.width,
+  }))
+
+  // A modest resize — small enough that colsPerPage (an integer) doesn't cross a threshold, but
+  // the container's actual pixel width still changed, so colWidth must be recomputed to match.
+  await page.setViewportSize({ width: 960, height: 800 })
+  await page.waitForTimeout(500)
+  const after = await page.evaluate(() => ({
+    colsPerPage: getColsPerPage(),
+    colWidth: document.querySelector('#chrome-bookmarks-list .bm-column').style.width,
+  }))
+  expect(after.colsPerPage).toBe(before.colsPerPage) // same page-count regime as before...
+  expect(after.colWidth).not.toBe(before.colWidth)   // ...but width still tracked the resize
+
+  await page.click('#bm-col-next')
+  await page.waitForTimeout(1000)
+  const page1Cols = ['0', '1', '2', '3'].slice(0, before.colsPerPage)
+  const page2Cols = await visibleColIds(page, '#chrome-bookmarks-list')
+  expect(page2Cols.some(c => page1Cols.includes(c))).toBe(false)
+})
