@@ -2006,6 +2006,124 @@ document.getElementById('clear-btn').addEventListener('click', () => {
   localRemove([AUTOSAVE_KEY])
 })
 
+// ---- Custom save location (Settings > FlashPaint) ----
+// A FileSystemDirectoryHandle is structured-cloneable, so IndexedDB (not chrome.storage) is what
+// persists it across reloads/restarts. Falls back to the plain <a download> flow whenever the API
+// isn't supported, no folder has been chosen, or permission for the chosen folder no longer holds.
+const FP_DB_NAME = 'myTab-flashpaint'
+const FP_STORE_NAME = 'handles'
+const FP_HANDLE_KEY = 'save-dir'
+let fpSaveDirHandle = null
+
+function fpOpenDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(FP_DB_NAME, 1)
+    req.onupgradeneeded = () => req.result.createObjectStore(FP_STORE_NAME)
+    req.onsuccess = () => resolve(req.result)
+    req.onerror = () => reject(req.error)
+  })
+}
+async function fpGetSavedDirHandle() {
+  const db = await fpOpenDb()
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(FP_STORE_NAME, 'readonly').objectStore(FP_STORE_NAME).get(FP_HANDLE_KEY)
+    req.onsuccess = () => resolve(req.result || null)
+    req.onerror = () => reject(req.error)
+  })
+}
+async function fpSetSavedDirHandle(handle) {
+  const db = await fpOpenDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(FP_STORE_NAME, 'readwrite')
+    if (handle) tx.objectStore(FP_STORE_NAME).put(handle, FP_HANDLE_KEY)
+    else tx.objectStore(FP_STORE_NAME).delete(FP_HANDLE_KEY)
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error)
+  })
+}
+
+function fpUpdateSaveLocationUI() {
+  const label = document.getElementById('fp-save-location-label')
+  const resetBtn = document.getElementById('fp-save-location-reset')
+  if (!label || !resetBtn) return
+  label.textContent = fpSaveDirHandle ? fpSaveDirHandle.name : 'Default (Downloads)'
+  label.title = label.textContent
+  resetBtn.hidden = !fpSaveDirHandle
+}
+
+;(async function fpInitSaveLocation() {
+  if (!('showDirectoryPicker' in window)) return
+  try {
+    fpSaveDirHandle = await fpGetSavedDirHandle()
+  } catch {
+    fpSaveDirHandle = null
+  }
+  fpUpdateSaveLocationUI()
+})()
+
+document.getElementById('fp-save-location-change')?.addEventListener('click', async () => {
+  if (!('showDirectoryPicker' in window)) {
+    showToast('Your browser does not support choosing a folder', 'error')
+    return
+  }
+  let handle
+  try {
+    handle = await window.showDirectoryPicker({ mode: 'readwrite' })
+  } catch (err) {
+    if (err.name !== 'AbortError') showToast('Could not open the folder picker', 'error')
+    return
+  }
+  const granted = await handle.requestPermission({ mode: 'readwrite' })
+  if (granted !== 'granted') {
+    showToast('Permission denied — save location not changed', 'error')
+    return
+  }
+  // Take effect immediately regardless of whether persisting it below succeeds — a failure to
+  // remember it for next time shouldn't also fail using it for the rest of this session.
+  fpSaveDirHandle = handle
+  fpUpdateSaveLocationUI()
+  showToast(`Save location set to "${handle.name}"`, 'success')
+  try {
+    await fpSetSavedDirHandle(handle)
+  } catch {
+    showToast("Save location works for now, but couldn't be remembered for next time", 'error')
+  }
+})
+
+document.getElementById('fp-save-location-reset')?.addEventListener('click', async () => {
+  fpSaveDirHandle = null
+  await fpSetSavedDirHandle(null)
+  fpUpdateSaveLocationUI()
+  showToast('Save location reset to default', 'success')
+})
+
+// Writes to the chosen folder if one is set and still permitted; otherwise (or on any failure)
+// falls back to the browser's normal <a download> behavior, surfacing the failure via toast
+// rather than silently discarding the chosen folder.
+async function fpSaveBlob(blob, filename) {
+  if (fpSaveDirHandle) {
+    try {
+      let perm = await fpSaveDirHandle.queryPermission({ mode: 'readwrite' })
+      if (perm !== 'granted') perm = await fpSaveDirHandle.requestPermission({ mode: 'readwrite' })
+      if (perm === 'granted') {
+        const fileHandle = await fpSaveDirHandle.getFileHandle(filename, { create: true })
+        const writable = await fileHandle.createWritable()
+        await writable.write(blob)
+        await writable.close()
+        return { savedTo: fpSaveDirHandle.name }
+      }
+    } catch {
+      showToast(`Couldn't save to "${fpSaveDirHandle.name}" — used the default download instead`, 'error')
+    }
+  }
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(a.href)
+  return { savedTo: null }
+}
+
 // Builds "prefix-yymmdd-index.ext"; index resets daily and increments per download of that kind
 async function nextDatedFilename(prefix, ext, kind) {
   const now = new Date()
@@ -2021,11 +2139,11 @@ async function nextDatedFilename(prefix, ext, kind) {
 }
 
 document.getElementById('download-btn').addEventListener('click', async () => {
-  const a = document.createElement('a')
-  a.download = await nextDatedFilename('myTab', 'png', 'download')
+  const filename = await nextDatedFilename('myTab', 'png', 'download')
   const overlays = wrapper.querySelectorAll('.img-overlay')
+  let tmp
   if (overlays.length) {
-    const tmp = document.createElement('canvas')
+    tmp = document.createElement('canvas')
     tmp.width = canvas.width
     tmp.height = canvas.height
     const tctx = tmp.getContext('2d')
@@ -2104,12 +2222,11 @@ document.getElementById('download-btn').addEventListener('click', async () => {
       }
     })
     tctx.drawImage(canvas, 0, 0)
-    a.href = tmp.toDataURL()
-  } else {
-    a.href = canvas.toDataURL()
   }
-  a.click()
-  showToast(`Exported ${a.download}`, 'success')
+  const sourceCanvas = overlays.length ? tmp : canvas
+  const blob = await new Promise(resolve => sourceCanvas.toBlob(resolve, 'image/png'))
+  const { savedTo } = await fpSaveBlob(blob, filename)
+  showToast(savedTo ? `Exported ${filename} to "${savedTo}"` : `Exported ${filename}`, 'success')
 })
 
 // Save/Open project — keeps every image, shape, and text as a fully editable object
@@ -2117,13 +2234,9 @@ document.getElementById('download-btn').addEventListener('click', async () => {
 document.getElementById('save-project-btn').addEventListener('click', async () => {
   const snap = captureSnapshot()
   const blob = new Blob([JSON.stringify(snap)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = await nextDatedFilename('myTab-project', 'json', 'project')
-  a.click()
-  URL.revokeObjectURL(url)
-  showToast(`Saved ${a.download}`, 'success')
+  const filename = await nextDatedFilename('myTab-project', 'json', 'project')
+  const { savedTo } = await fpSaveBlob(blob, filename)
+  showToast(savedTo ? `Saved ${filename} to "${savedTo}"` : `Saved ${filename}`, 'success')
 })
 
 const openProjectInput = document.getElementById('open-project-input')

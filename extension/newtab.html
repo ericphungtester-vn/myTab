@@ -176,6 +176,11 @@
 
             <h3>Reset layout</h3>
             <p>Clears all column assignments, custom ordering, and folder order — restores the default layout. Font, background, and zoom settings are not affected.</p>
+
+            <h3>FlashPaint</h3>
+            <ul>
+              <li><strong>Save location</strong> — by default, Export PNG and Save Project use the browser's normal download behavior. Click <strong>Change</strong> to pick a folder instead — from then on, both write straight into it with no download prompt. The chosen folder is remembered across restarts; click <strong>↺</strong> to go back to the default download behavior. If writing to the chosen folder ever fails (folder moved, permission revoked), that save falls back to a normal download and a toast explains why.</li>
+            </ul>
           </div>
         </div>
 
@@ -207,7 +212,7 @@
             <div class="flashpaint-help-row"><span class="flashpaint-help-key">↺ ↻</span><span>Undo (Ctrl+Z) / Redo (Ctrl+Shift+Z or Ctrl+Y) — covers creating, moving, resizing, restyling, reordering, and deleting images/shapes/text, and Clear</span></div>
             <div class="flashpaint-help-row"><span class="flashpaint-help-key">⋮</span><span>File actions — click to open a menu with Export PNG, Save Project, and Open Project (described below)</span></div>
             <div class="flashpaint-help-row"><span class="flashpaint-help-key">Export PNG</span><span>Exports a PNG named <code>myTab-yymmdd-index.png</code> (index resets each day, +1 per download that day). Composites a white background with every image, shape, and text layer in their current stacking order, position, size, color, opacity, and blur — always at full logical resolution regardless of the current zoom level. This is a flat picture — objects are not selectable/editable once opened elsewhere.</span></div>
-            <div class="flashpaint-help-row"><span class="flashpaint-help-key">Save Project</span><span>Saves a <code>myTab-project-yymmdd-index.json</code> file that keeps every image, shape, and text as a separate, fully editable object (unlike the PNG export)</span></div>
+            <div class="flashpaint-help-row"><span class="flashpaint-help-key">Save Project</span><span>Saves a <code>myTab-project-yymmdd-index.json</code> file that keeps every image, shape, and text as a separate, fully editable object (unlike the PNG export). By default both this and Export PNG use the browser's normal download behavior — set a <strong>Save location</strong> in Settings to write straight into a chosen folder instead, no download prompt each time.</span></div>
             <div class="flashpaint-help-row"><span class="flashpaint-help-key">Open Project</span><span>Loads a previously saved project file back into the canvas, replacing the current content (undoable with Ctrl+Z) — everything is editable again exactly as it was when saved</span></div>
             <div class="flashpaint-help-row"><span class="flashpaint-help-key">− / +</span><span>Zoom the canvas (control in the toolbar), or Ctrl/Cmd + scroll wheel; the toolbar stays full size — only the canvas content zooms</span></div>
             <div class="flashpaint-help-row"><span class="flashpaint-help-key">Canvas Size</span><span>Set a custom canvas width/height (min 50px each). Once set, the canvas stays locked at that size — it no longer auto-resizes to fit the window. Shrinking it doesn't delete or hide anything, but a smaller canvas means Export PNG will crop out whatever falls outside its bounds (Save Project never crops, regardless of canvas size).</span></div>
@@ -692,6 +697,16 @@
       </div>
       <div class="settings-row" style="margin-top:32px;justify-content:flex-end;border-top:1px solid rgba(0,0,0,0.08);padding-top:16px">
         <button id="bm-reset-btn" class="settings-reset-btn">Reset layout</button>
+      </div>
+
+      <div class="settings-group-title" style="margin-top:16px">FlashPaint</div>
+      <div class="settings-row">
+        <span class="settings-label">Save location</span>
+        <div class="settings-color-wrap" style="flex:1;min-width:0">
+          <span id="fp-save-location-label" class="settings-save-location-label">Default (Downloads)</span>
+          <button id="fp-save-location-change" class="settings-inline-btn">Change</button>
+          <button id="fp-save-location-reset" class="settings-color-reset" title="Reset to default" hidden>↺</button>
+        </div>
       </div>
     </div>
   </div>
