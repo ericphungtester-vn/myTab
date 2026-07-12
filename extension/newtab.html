@@ -17,7 +17,6 @@
       <nav class="tab-nav">
         <button class="tab-btn active" data-tab="bookmarks">Bookmarks</button>
         <button class="tab-btn" data-tab="flashpaint">FlashPaint</button>
-        <button class="tab-btn" data-tab="about">About</button>
       </nav>
     </div>
     <div class="header-right">
@@ -31,9 +30,6 @@
         </svg>
       </button>
       <button id="help-btn" class="help-btn" aria-label="Help & Guide" title="Help & Guide">?</button>
-      <button id="inspector-btn" class="inspector-btn">
-        <span>#</span> Show inspector
-      </button>
     </div>
   </header>
 
@@ -115,7 +111,7 @@
         <div class="guide-section">
           <button class="guide-section-header">Quick Bar <span class="guide-arrow">▾</span></button>
           <div class="guide-section-body">
-            <p>A row of pinned bookmarks and folders just below the header — visible on every tab (Bookmarks, FlashPaint, About), not only while browsing Bookmarks.</p>
+            <p>A row of pinned bookmarks and folders just below the header — visible on every tab (Bookmarks, FlashPaint), not only while browsing Bookmarks.</p>
             <p><strong>Pinning</strong>: right-click any bookmark or folder in the main list and choose <strong>Pin to Quick Bar</strong>. Right-click an already-pinned item directly in the bar to get the same menu, now showing <strong>Unpin from Quick Bar</strong> — no need to go find the original bookmark again.</p>
             <p><strong>Opening items</strong>: click a pinned bookmark to open it in a new tab. Click a pinned folder (shown with a folder icon and a small <strong>▾</strong>) to open a dropdown of its contents — click a subfolder inside to drill into it (a <strong>‹ Back</strong> row appears at the top to go back up); click a bookmark inside to open it and close the dropdown.</p>
             <p><strong>When pinned items don't fit on one row</strong>: a <strong>▾</strong> button appears at the end of the bar — click it to expand the bar onto as many rows as needed so every pinned item is visible at once. Click the button again (now <strong>▴</strong>) to collapse back to a single scrollable row. This expanded/collapsed state is remembered across reloads, and re-adjusts automatically if you resize the window.</p>
@@ -485,9 +481,6 @@
       </div>
     </section>
 
-    <section id="tab-about" class="tab-content">
-      <div id="about-content" class="about-layout"></div>
-    </section>
   </main>
 
   <!-- Settings Panel -->
@@ -712,8 +705,6 @@
   </div>
   <div id="settings-overlay" class="help-overlay"></div>
 
-  <div id="inspector-overlay" class="inspector-overlay"></div>
-
   <div id="vf-context-menu" class="vf-context-menu">
     <button id="vf-ctx-open-all" class="vf-context-item">Open all in new tabs</button>
     <hr class="vf-context-sep">
@@ -768,7 +759,5 @@
   <script src="js/main.js"></script>
   <script src="js/bookmarks.js"></script>
   <script src="js/flashpaint.js"></script>
-  <script src="js/inspector.js"></script>
-  <script src="js/about.js"></script>
 </body>
 </html>

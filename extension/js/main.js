@@ -61,7 +61,6 @@ function activateTab(tab) {
   if (tab !== 'bookmarks') closeSettingsPanel()
 
   if (tab === 'flashpaint') window.resizeCanvas && window.resizeCanvas()
-  if (window.inspectorActive) window.computeInspector()
 }
 
 tabBtns.forEach(btn => {
