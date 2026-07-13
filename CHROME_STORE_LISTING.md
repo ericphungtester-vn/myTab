@@ -47,6 +47,9 @@ Chrome Web Store asks for a justification per sensitive permission. Draft text f
 ## Before submitting, remember to
 
 - [ ] Fill in your real contact email in `PRIVACY_POLICY.md`
-- [ ] Host `PRIVACY_POLICY.md` somewhere with a public URL (GitHub Pages, a Gist raw link, or any static host) and paste that URL into the listing's Privacy Policy field
+- [ ] Host `PRIVACY_POLICY.md`'s content somewhere with a **genuinely public** URL and paste that URL into the listing's Privacy Policy field. **If the myTab repo itself is private, linking into it (even the raw file URL) 404s for Chrome's crawler** even though it opens fine for you while logged into GitHub — put the content in its own **public** GitHub Gist instead (gist.github.com → paste the actual Markdown content, not a shell command — double check what you pasted — → "Create public gist", not secret)
 - [ ] Take at least one 1280×800 (or 640×400) screenshot of the actual UI
-- [ ] Decide Public vs. Unlisted distribution
+- [ ] Decide Public vs. Unlisted distribution — Unlisted is the better default for a personal tool
+- [ ] Set and verify a **publisher contact email**: Dashboard's account-level **☰ menu → Settings** (separate from the item's own Settings/Privacy tabs) — submission is blocked until the verification email is confirmed
+- [ ] Zip **the contents of** `extension/`, not the folder itself — `manifest.json` must end up at the zip's root: `cd extension && zip -r ../meTab.zip . -x '*.DS_Store'`
+- [ ] On the item's Privacy tab: "Are you using remote code?" → **No**. Data usage → only check **Website content**; check all 3 "I certify" boxes
