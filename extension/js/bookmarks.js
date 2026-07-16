@@ -30,18 +30,26 @@ function faviconHTML(url, title) {
     const letter = (title || domain)[0].toUpperCase()
     const color = FAVICON_COLORS[letter.charCodeAt(0) % FAVICON_COLORS.length]
     const src = `https://www.google.com/s2/favicons?sz=32&domain_url=${encodeURIComponent(url)}`
-    // letter is attacker-influenceable (first char of a bookmark title) and lands inside a JS
-    // string literal within an inline onerror= attribute — escape backslash/quote so it can't
-    // break out of that string.
-    const safeLetter = letter.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
     return `<div class="bookmark-favicon" style="background:#F3F4F6">
       <img src="${src}" width="16" height="16" style="width:16px;height:16px;object-fit:contain" draggable="false"
-           onerror="const p=this.closest('.bookmark-favicon');p.style.background='${color}';p.textContent='${safeLetter}'">
+           data-fallback-color="${color}" data-fallback-letter="${escapeHtml(letter)}">
     </div>`
   } catch {
     return `<div class="bookmark-favicon" style="background:#E5E7EB"></div>`
   }
 }
+
+// MV3's CSP always blocks inline onerror="..." attributes, so the favicon fallback has to be
+// wired up as real JS. img error events don't bubble, but the capture phase still traverses
+// down to them, so one delegated listener here covers every favicon <img>, present or future.
+document.addEventListener('error', e => {
+  const img = e.target
+  if (img.tagName !== 'IMG' || !img.dataset.fallbackColor) return
+  const p = img.closest('.bookmark-favicon')
+  if (!p) return
+  p.style.background = img.dataset.fallbackColor
+  p.textContent = img.dataset.fallbackLetter
+}, true)
 
 // Safe for both text content AND double-quoted HTML attributes — the textContent->innerHTML
 // trick alone only escapes &, <, > (quotes aren't special in a text-node context), but this
