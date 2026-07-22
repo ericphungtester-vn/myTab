@@ -1095,7 +1095,7 @@ function drawFreehandOnCtx(c, points, strokeColor, strokeWidth, opacity = 1, blu
 
 // Shared scaffolding for shape/freehand overlays — a small canvas drawn via drawFn, wrapped in a
 // movable/selectable/resizable .shape-overlay element
-function createRasterOverlay(left, top, width, height, shapeData, drawFn) {
+function createRasterOverlay(left, top, width, height, shapeData, drawFn, pad) {
   const overlay = document.createElement('div')
   overlay.className = 'img-overlay shape-overlay'
   overlay.style.left = left + 'px'
@@ -1115,7 +1115,15 @@ function createRasterOverlay(left, top, width, height, shapeData, drawFn) {
   overlay.shapeCanvas = shapeCanvas
   overlay.shapeData = shapeData
 
+  const frame = document.createElement('div')
+  frame.className = 'shape-select-frame'
+  overlay.appendChild(frame)
+  overlay.shapePad = pad
+  overlay.shapeNativeW = width
+  overlay.shapeNativeH = height
+
   addResizeHandles(overlay)
+  syncShapeSelectFrame(overlay)
 
   zoomLayer.insertBefore(overlay, canvas)
 
@@ -1126,9 +1134,38 @@ function createRasterOverlay(left, top, width, height, shapeData, drawFn) {
   return overlay
 }
 
+// Keeps the dashed selection frame and resize handles hugging the shape's true bounds instead of
+// the padded raster-canvas edge — recomputed whenever the overlay's displayed size changes, since
+// CSS-stretch resizing (see the resize mousemove handler) scales the baked-in padding along with it
+function syncShapeSelectFrame(overlay) {
+  if (!overlay || overlay.shapePad == null) return
+  const w = parseFloat(overlay.style.width) || overlay.offsetWidth
+  const h = parseFloat(overlay.style.height) || overlay.offsetHeight
+  const padX = overlay.shapePad * (w / overlay.shapeNativeW)
+  const padY = overlay.shapePad * (h / overlay.shapeNativeH)
+  const frame = overlay.querySelector('.shape-select-frame')
+  if (frame) {
+    frame.style.left = padX + 'px'
+    frame.style.top = padY + 'px'
+    frame.style.right = padX + 'px'
+    frame.style.bottom = padY + 'px'
+  }
+  const pos = {
+    nw: [padX, padY], n: ['50%', padY], ne: [w - padX, padY],
+    w: [padX, '50%'], e: [w - padX, '50%'],
+    sw: [padX, h - padY], s: ['50%', h - padY], se: [w - padX, h - padY]
+  }
+  overlay.querySelectorAll('.img-resize-handle').forEach(handle => {
+    const p = pos[handle.dataset.handle]
+    if (!p) return
+    handle.style.left = (typeof p[0] === 'number' ? p[0] + 'px' : p[0])
+    handle.style.top = (typeof p[1] === 'number' ? p[1] + 'px' : p[1])
+  })
+}
+
 // Extra margin so thick strokes/arrowheads and blur don't clip against the mini-canvas edge
 function shapePadding(strokeWidth, blur, shadow = 0) {
-  return Math.max(20, strokeWidth * 3, blur * 2 + 10, shadow * 1.4 + 10)
+  return Math.max(strokeWidth * 3, blur * 2 + 10, shadow * 1.4 + 10)
 }
 
 // Shape overlay — kept as a movable/selectable/resizable element so it can be reselected with the Select tool
@@ -1143,7 +1180,7 @@ function createShapeOverlay(shapeType, x1, y1, x2, y2, color, strokeWidth, opaci
   const top = minY - pad
   return createRasterOverlay(left, top, w + pad * 2, h + pad * 2,
     { shapeType, x1, y1, x2, y2, color, strokeWidth, opacity, blur, shadow },
-    sctx => drawShapeOnCtx(sctx, shapeType, color, strokeWidth, x1, y1, x2, y2, opacity, blur, shadow))
+    sctx => drawShapeOnCtx(sctx, shapeType, color, strokeWidth, x1, y1, x2, y2, opacity, blur, shadow), pad)
 }
 
 // Freehand overlay — same movable/selectable/resizable treatment as shapes
@@ -1160,7 +1197,7 @@ function createFreehandOverlay(points, color, strokeWidth, opacity = 1, blur = 0
   const top = minY - pad
   return createRasterOverlay(left, top, w + pad * 2, h + pad * 2,
     { shapeType: 'freehand', points, color, strokeWidth, opacity, blur, shadow },
-    sctx => drawFreehandOnCtx(sctx, points, color, strokeWidth, opacity, blur, shadow))
+    sctx => drawFreehandOnCtx(sctx, points, color, strokeWidth, opacity, blur, shadow), pad)
 }
 
 // Restyle a selected shape overlay (color, stroke width, opacity, blur, shadow) in place
@@ -1354,7 +1391,7 @@ function openTextEditor({ left, top, fontSize, lineHeight, color, initialText = 
   // Live-follow the toolbar's color/stroke-width/alignment/opacity/blur/shadow controls while editing
   function applyLiveStyle() {
     const c = getColor()
-    const fs = Math.max(14, getWidth() * 5)
+    const fs = getWidth() + 7
     const lh = fs * 1.2
     curOpacity = getOpacity()
     curBlur = getBlur()
@@ -1437,7 +1474,7 @@ function openTextEditor({ left, top, fontSize, lineHeight, color, initialText = 
 canvas.addEventListener('click', e => {
   if (tool !== 'text') return
   const layerRect = zoomLayer.getBoundingClientRect()
-  const fontSize = Math.max(14, getWidth() * 5)
+  const fontSize = getWidth() + 7
   const lineHeight = fontSize * 1.2
   const left = (e.clientX - layerRect.left) / zoom
   const top = (e.clientY - layerRect.top) / zoom - fontSize / 2
@@ -1758,6 +1795,7 @@ function restoreSnapshot(snap) {
         overlay.style.top = d.top + 'px'
         overlay.style.width = d.width + 'px'
         overlay.style.height = d.height + 'px'
+        syncShapeSelectFrame(overlay)
       }
     } else if (d.kind === 'text') {
       createTextOverlay(d.text, d.left, d.top, d.fontSize, d.lineHeight, d.color, d.width, d.align, d.opacity, d.blur, d.shadow)
@@ -1830,6 +1868,7 @@ document.addEventListener('mousemove', e => {
       activeOverlay.style.top = top + 'px'
       activeOverlay.style.height = h + 'px'
     }
+    if (activeOverlay.classList.contains('shape-overlay')) syncShapeSelectFrame(activeOverlay)
   }
 })
 

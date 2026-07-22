@@ -1698,6 +1698,32 @@ body {
   outline-offset: 2px;
 }
 
+/* Shape/freehand overlays bake in extra canvas margin (shapePadding) so thick strokes/blur/shadow
+   don't clip — the outer .img-overlay box is that padded rect, not the shape's true edges. This
+   inner frame tracks the actual shape bounds (scaling with it on resize) so the dashed selection
+   outline and resize handles hug the shape the same way they do for text, instead of sitting way
+   out at the raw canvas edge. */
+.img-overlay.shape-overlay {
+  outline: none;
+}
+
+.shape-select-frame {
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: none;
+  outline: 2px dashed transparent;
+  transition: outline-color 0.15s;
+}
+
+.img-overlay.shape-overlay.active .shape-select-frame {
+  outline-color: #2563EB;
+}
+
+.img-overlay.shape-overlay.multi-selected .shape-select-frame {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 .img-overlay img {
   display: block;
   width: 100%;
