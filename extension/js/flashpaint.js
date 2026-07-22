@@ -117,6 +117,18 @@ let imgStartMouse = { x: 0, y: 0 }
 let imgStartRect = { left: 0, top: 0, w: 0, h: 0 }
 let copiedOverlayData = null
 
+// Rotation drag state (see addRotateHandle) — center/startAngle are fixed for the whole drag since
+// rotating around the box's own center never moves that center on screen
+let rotateCenter = { x: 0, y: 0 }
+let rotateStartAngle = 0
+let rotateStartDeg = 0
+
+// Set for one tick after a move/resize/rotate drag ends, so the click-outside-deselect listener
+// (below) can ignore that drag's own release click — a rotate (and, at extreme angles, a resize)
+// often ends with the cursor well outside the object's box, which would otherwise read as "clicked
+// away" and deselect the very thing the user just finished dragging
+let justFinishedOverlayDrag = false
+
 function syncCanvasBg() {
   canvasBg.style.width = canvas.width + 'px'
   canvasBg.style.height = canvas.height + 'px'
@@ -426,9 +438,69 @@ function addResizeHandles(overlay, { textOnly = false } = {}) {
   })
 }
 
+// Fraction (of width/height) each handle sits at, used below to find the opposite anchor point
+const HANDLE_FRACTION = {
+  nw: [0, 0], n: [0.5, 0], ne: [1, 0],
+  w: [0, 0.5], e: [1, 0.5],
+  sw: [0, 1], s: [0.5, 1], se: [1, 1]
+}
+
+// Resizing a rotated box can't just add the raw screen-space mouse delta to width/height — the
+// delta has to be projected onto the box's own (unrotated) axes first, and the box's left/top then
+// solved for so the corner/edge opposite the dragged handle stays visually anchored in place
+// (otherwise the shape appears to swing around as its rotation-origin drifts). With rotationDeg=0
+// this reduces exactly to a plain axis-aligned resize.
+function computeResizedBox(startRect, direction, dx, dy, rotationDeg, minSize) {
+  const rad = (rotationDeg || 0) * Math.PI / 180
+  const cos = Math.cos(rad), sin = Math.sin(rad)
+  const localDx = dx * cos + dy * sin
+  const localDy = -dx * sin + dy * cos
+
+  let w = startRect.w, h = startRect.h
+  if (direction.includes('e')) w = Math.max(minSize, startRect.w + localDx)
+  if (direction.includes('w')) w = Math.max(minSize, startRect.w - localDx)
+  if (direction.includes('s')) h = Math.max(minSize, startRect.h + localDy)
+  if (direction.includes('n')) h = Math.max(minSize, startRect.h - localDy)
+
+  const hf = HANDLE_FRACTION[direction] || [1, 1]
+  const anchorFrac = [1 - hf[0], 1 - hf[1]]
+  const rotate = p => ({ x: p.x * cos - p.y * sin, y: p.x * sin + p.y * cos })
+
+  const c0 = { x: startRect.w / 2, y: startRect.h / 2 }
+  const anchorLocal0 = { x: anchorFrac[0] * startRect.w, y: anchorFrac[1] * startRect.h }
+  const worldCenter0 = { x: startRect.left + c0.x, y: startRect.top + c0.y }
+  const rel0 = rotate({ x: anchorLocal0.x - c0.x, y: anchorLocal0.y - c0.y })
+  const anchorWorld = { x: worldCenter0.x + rel0.x, y: worldCenter0.y + rel0.y }
+
+  const c1 = { x: w / 2, y: h / 2 }
+  const anchorLocal1 = { x: anchorFrac[0] * w, y: anchorFrac[1] * h }
+  const rel1 = rotate({ x: anchorLocal1.x - c1.x, y: anchorLocal1.y - c1.y })
+
+  return { left: anchorWorld.x - rel1.x - c1.x, top: anchorWorld.y - rel1.y - c1.y, w, h }
+}
+
+// Rotation — shape and text overlays only (see the mousedown/mousemove wiring below). Stored as a
+// data attribute rather than on shapeData/textEl so overlayToDescriptor/restoreSnapshot, copy/paste,
+// and PNG export can all read/write it the same way regardless of overlay type.
+function addRotateHandle(overlay) {
+  const handle = document.createElement('div')
+  handle.className = 'img-rotate-handle'
+  overlay.appendChild(handle)
+}
+
+function getOverlayRotation(overlay) {
+  return parseFloat(overlay.dataset.rotation) || 0
+}
+
+function setOverlayRotation(overlay, deg) {
+  overlay.dataset.rotation = deg
+  overlay.style.transform = deg ? `rotate(${deg}deg)` : ''
+}
+
 function wireOverlayDrag(overlay) {
   overlay.addEventListener('mousedown', e => {
-    if (e.shiftKey && tool === 'select' && !e.target.classList.contains('img-resize-handle')) {
+    const isRotateHandle = e.target.classList.contains('img-rotate-handle')
+    if (e.shiftKey && tool === 'select' && !e.target.classList.contains('img-resize-handle') && !isRotateHandle) {
       e.stopPropagation()
       toggleMultiSelect(overlay)
       return
@@ -441,7 +513,7 @@ function wireOverlayDrag(overlay) {
     }
     e.preventDefault()
     e.stopPropagation()
-    imgAction = e.target.classList.contains('img-resize-handle') ? 'resize' : 'move'
+    imgAction = isRotateHandle ? 'rotate' : e.target.classList.contains('img-resize-handle') ? 'resize' : 'move'
     resizeDirection = e.target.dataset.handle || 'se'
     pendingDragSnapshot = captureSnapshot()
     imgStartMouse = { x: e.clientX, y: e.clientY }
@@ -450,6 +522,12 @@ function wireOverlayDrag(overlay) {
       top: parseInt(overlay.style.top) || 0,
       w: parseInt(overlay.style.width) || overlay.offsetWidth,
       h: parseInt(overlay.style.height) || overlay.offsetHeight
+    }
+    if (isRotateHandle) {
+      const rect = overlay.getBoundingClientRect()
+      rotateCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+      rotateStartAngle = Math.atan2(e.clientY - rotateCenter.y, e.clientX - rotateCenter.x)
+      rotateStartDeg = getOverlayRotation(overlay)
     }
     // If this overlay is part of a multi-selection, record every member's starting position so
     // the whole group moves together (resize still only ever applies to this one overlay)
@@ -961,6 +1039,9 @@ function setPasteModeBtnEnabled(on) { pasteModeBtn.disabled = !on }
 // deselected the instant you touch the new control, making its action silently do nothing.
 const flashpaintToolbar = document.querySelector('.flashpaint-toolbar')
 document.addEventListener('click', e => {
+  // A move/resize/rotate drag's own release click can land anywhere (rotating in particular tends
+  // to leave the cursor well outside the object) — that click isn't "clicking away", so skip it
+  if (justFinishedOverlayDrag) { justFinishedOverlayDrag = false; return }
   // Uses composedPath() (a snapshot taken when the event was dispatched) rather than e.target +
   // .contains() — a listener earlier in the same bubble phase (e.g. the Layers panel row's own
   // click handler) can trigger a DOM rebuild that detaches e.target before this listener runs,
@@ -986,6 +1067,19 @@ function applyShadow(c, shadow) {
     c.shadowOffsetX = 0
     c.shadowOffsetY = 0
   }
+}
+
+// Runs drawFn with the canvas rotated around the box's center — mirrors the CSS `transform:
+// rotate()` applied on-screen (see setOverlayRotation) so PNG export matches what's shown in-app
+function withRotation(c, left, top, width, height, rotationDeg, drawFn) {
+  if (!rotationDeg) { drawFn(); return }
+  const cx = left + width / 2, cy = top + height / 2
+  c.save()
+  c.translate(cx, cy)
+  c.rotate(rotationDeg * Math.PI / 180)
+  c.translate(-cx, -cy)
+  drawFn()
+  c.restore()
 }
 
 function drawShapeOnCtx(c, shapeType, strokeColor, strokeWidth, x1, y1, x2, y2, opacity = 1, blur = 0, shadow = 0) {
@@ -1123,6 +1217,7 @@ function createRasterOverlay(left, top, width, height, shapeData, drawFn, pad) {
   overlay.shapeNativeH = height
 
   addResizeHandles(overlay)
+  addRotateHandle(overlay)
   syncShapeSelectFrame(overlay)
 
   zoomLayer.insertBefore(overlay, canvas)
@@ -1161,6 +1256,8 @@ function syncShapeSelectFrame(overlay) {
     handle.style.left = (typeof p[0] === 'number' ? p[0] + 'px' : p[0])
     handle.style.top = (typeof p[1] === 'number' ? p[1] + 'px' : p[1])
   })
+  const rotateHandle = overlay.querySelector('.img-rotate-handle')
+  if (rotateHandle) rotateHandle.style.top = (padY - 24) + 'px'
 }
 
 // Extra margin so thick strokes/arrowheads and blur don't clip against the mini-canvas edge
@@ -1688,6 +1785,7 @@ function createTextOverlay(text, left, top, fontSize, lineHeight, color, width =
   overlay.appendChild(textEl)
 
   addResizeHandles(overlay, { textOnly: true })
+  addRotateHandle(overlay)
 
   zoomLayer.insertBefore(overlay, canvas)
 
@@ -1736,12 +1834,13 @@ function overlayToDescriptor(o) {
     return { kind: 'image', left, top, width, height, dataUrl, ...readImageStyle(o) }
   }
   if (o.classList.contains('shape-overlay')) {
-    return { kind: 'shape', left, top, width, height, shapeData: JSON.parse(JSON.stringify(o.shapeData)) }
+    return { kind: 'shape', left, top, width, height, rotation: getOverlayRotation(o), shapeData: JSON.parse(JSON.stringify(o.shapeData)) }
   }
   const textEl = o.querySelector('.text-overlay-content')
   return {
     kind: 'text',
     left, top, width,
+    rotation: getOverlayRotation(o),
     text: textEl.textContent,
     fontSize: parseFloat(textEl.style.fontSize),
     lineHeight: parseFloat(textEl.style.lineHeight),
@@ -1796,9 +1895,11 @@ function restoreSnapshot(snap) {
         overlay.style.width = d.width + 'px'
         overlay.style.height = d.height + 'px'
         syncShapeSelectFrame(overlay)
+        setOverlayRotation(overlay, d.rotation || 0)
       }
     } else if (d.kind === 'text') {
-      createTextOverlay(d.text, d.left, d.top, d.fontSize, d.lineHeight, d.color, d.width, d.align, d.opacity, d.blur, d.shadow)
+      const overlay = createTextOverlay(d.text, d.left, d.top, d.fontSize, d.lineHeight, d.color, d.width, d.align, d.opacity, d.blur, d.shadow)
+      setOverlayRotation(overlay, d.rotation || 0)
     }
   })
   hasContent = snap.overlays.length > 0
@@ -1854,14 +1955,16 @@ document.addEventListener('mousemove', e => {
       activeOverlay.style.left = (imgStartRect.left + dx) + 'px'
       activeOverlay.style.top = (imgStartRect.top + dy) + 'px'
     }
+  } else if (imgAction === 'rotate') {
+    const angle = Math.atan2(e.clientY - rotateCenter.y, e.clientX - rotateCenter.x)
+    let deg = rotateStartDeg + (angle - rotateStartAngle) * 180 / Math.PI
+    if (e.shiftKey) deg = Math.round(deg / 15) * 15
+    setOverlayRotation(activeOverlay, deg)
   } else {
     const isText = activeOverlay.classList.contains('text-overlay')
     const minSize = isText ? 60 : 50
-    let { left, top, w, h } = imgStartRect
-    if (resizeDirection.includes('e')) w = Math.max(minSize, imgStartRect.w + dx)
-    if (resizeDirection.includes('w')) { w = Math.max(minSize, imgStartRect.w - dx); left = imgStartRect.left + (imgStartRect.w - w) }
-    if (resizeDirection.includes('s')) h = Math.max(minSize, imgStartRect.h + dy)
-    if (resizeDirection.includes('n')) { h = Math.max(minSize, imgStartRect.h - dy); top = imgStartRect.top + (imgStartRect.h - h) }
+    const rotationDeg = getOverlayRotation(activeOverlay)
+    const { left, top, w, h } = computeResizedBox(imgStartRect, resizeDirection, dx, dy, rotationDeg, minSize)
     activeOverlay.style.left = left + 'px'
     activeOverlay.style.width = w + 'px'
     if (!isText) {
@@ -1877,9 +1980,11 @@ document.addEventListener('mouseup', () => {
     const moved = (parseInt(activeOverlay.style.left) || 0) !== imgStartRect.left ||
       (parseInt(activeOverlay.style.top) || 0) !== imgStartRect.top ||
       (parseInt(activeOverlay.style.width) || activeOverlay.offsetWidth) !== imgStartRect.w ||
-      (parseInt(activeOverlay.style.height) || activeOverlay.offsetHeight) !== imgStartRect.h
+      (parseInt(activeOverlay.style.height) || activeOverlay.offsetHeight) !== imgStartRect.h ||
+      (imgAction === 'rotate' && getOverlayRotation(activeOverlay) !== rotateStartDeg)
     if (moved) commitHistoryEntry(pendingDragSnapshot)
   }
+  if (imgAction) justFinishedOverlayDrag = true
   pendingDragSnapshot = null
   imgAction = null
   groupStartRects = null
@@ -1908,14 +2013,17 @@ function pasteCopiedOverlay() {
   pushHistory()
   const d = copiedOverlayData
   if (d.type === 'text') {
-    createTextOverlay(d.text, d.left, d.top, d.fontSize, d.lineHeight, d.color, d.width, d.align, d.opacity, d.blur, d.shadow)
+    const overlay = createTextOverlay(d.text, d.left, d.top, d.fontSize, d.lineHeight, d.color, d.width, d.align, d.opacity, d.blur, d.shadow)
+    setOverlayRotation(overlay, d.rotation || 0)
     d.left += 20
     d.top += 20
   } else if (d.type === 'shape' && d.shapeType === 'freehand') {
-    createFreehandOverlay(d.points, d.color, d.strokeWidth, d.opacity, d.blur, d.shadow)
+    const overlay = createFreehandOverlay(d.points, d.color, d.strokeWidth, d.opacity, d.blur, d.shadow)
+    if (overlay) setOverlayRotation(overlay, d.rotation || 0)
     d.points = d.points.map(p => ({ x: p.x + 20, y: p.y + 20 }))
   } else if (d.type === 'shape') {
-    createShapeOverlay(d.shapeType, d.x1, d.y1, d.x2, d.y2, d.color, d.strokeWidth, d.opacity, d.blur, d.shadow)
+    const overlay = createShapeOverlay(d.shapeType, d.x1, d.y1, d.x2, d.y2, d.color, d.strokeWidth, d.opacity, d.blur, d.shadow)
+    if (overlay) setOverlayRotation(overlay, d.rotation || 0)
     d.x1 += 20; d.y1 += 20; d.x2 += 20; d.y2 += 20
   } else if (d.type === 'image') {
     createImageOverlayFromDescriptor(d)
@@ -1944,14 +2052,15 @@ function copyActiveOverlay() {
       blur: parseBlurPx(textEl.style.filter),
       shadow: parseTextShadowPx(textEl.style.textShadow),
       left: (parseInt(activeOverlay.style.left) || 0) + 20,
-      top: (parseInt(activeOverlay.style.top) || 0) + 20
+      top: (parseInt(activeOverlay.style.top) || 0) + 20,
+      rotation: getOverlayRotation(activeOverlay)
     }
   } else if (isShape && activeOverlay.shapeData.shapeType === 'freehand') {
     const { shapeType, points, color, strokeWidth, opacity, blur, shadow } = activeOverlay.shapeData
-    copiedOverlayData = { type: 'shape', shapeType, color, strokeWidth, opacity, blur, shadow, points: points.map(p => ({ x: p.x + 20, y: p.y + 20 })) }
+    copiedOverlayData = { type: 'shape', shapeType, color, strokeWidth, opacity, blur, shadow, rotation: getOverlayRotation(activeOverlay), points: points.map(p => ({ x: p.x + 20, y: p.y + 20 })) }
   } else if (isShape) {
     const { shapeType, x1, y1, x2, y2, color, strokeWidth, opacity, blur, shadow } = activeOverlay.shapeData
-    copiedOverlayData = { type: 'shape', shapeType, color, strokeWidth, opacity, blur, shadow, x1: x1 + 20, y1: y1 + 20, x2: x2 + 20, y2: y2 + 20 }
+    copiedOverlayData = { type: 'shape', shapeType, color, strokeWidth, opacity, blur, shadow, rotation: getOverlayRotation(activeOverlay), x1: x1 + 20, y1: y1 + 20, x2: x2 + 20, y2: y2 + 20 }
   } else {
     const d = overlayToDescriptor(activeOverlay)
     copiedOverlayData = { type: 'image', dataUrl: d.dataUrl, width: d.width, height: d.height, color: d.color, strokeWidth: d.strokeWidth, opacity: d.opacity, blur: d.blur, shadow: d.shadow, left: d.left + 20, top: d.top + 20 }
@@ -2212,12 +2321,13 @@ document.getElementById('download-btn').addEventListener('click', async () => {
       }
       const shapeCanvas = o.querySelector('canvas')
       if (shapeCanvas) {
-        tctx.drawImage(shapeCanvas,
-          parseInt(o.style.left) || 0,
-          parseInt(o.style.top) || 0,
-          parseInt(o.style.width) || o.offsetWidth,
-          parseInt(o.style.height) || o.offsetHeight
-        )
+        const left = parseInt(o.style.left) || 0
+        const top = parseInt(o.style.top) || 0
+        const width = parseInt(o.style.width) || o.offsetWidth
+        const height = parseInt(o.style.height) || o.offsetHeight
+        withRotation(tctx, left, top, width, height, getOverlayRotation(o), () => {
+          tctx.drawImage(shapeCanvas, left, top, width, height)
+        })
         return
       }
       const textEl = o.querySelector('.text-overlay-content')
@@ -2229,6 +2339,8 @@ document.getElementById('download-btn').addEventListener('click', async () => {
         const left = (parseInt(o.style.left) || 0) + padX
         const boxWidth = (parseInt(o.style.width) || o.offsetWidth) - padX * 2
         const top = parseInt(o.style.top) || 0
+        const overlayWidth = parseInt(o.style.width) || o.offsetWidth
+        const overlayHeight = parseInt(o.style.height) || o.offsetHeight
         const textBlur = parseBlurPx(textEl.style.filter)
         const textShadow = parseTextShadowPx(textEl.style.textShadow)
         tctx.font = `${fontSize}px system-ui, sans-serif`
@@ -2237,26 +2349,28 @@ document.getElementById('download-btn').addEventListener('click', async () => {
         tctx.globalAlpha = textEl.style.opacity ? parseFloat(textEl.style.opacity) : 1
         tctx.filter = textBlur > 0 ? `blur(${textBlur}px)` : 'none'
         applyShadow(tctx, textShadow)
-        const lines = textEl.textContent.split('\n')
-        lines.forEach((line, i) => {
-          const y = top + i * lineHeight
-          const words = line.split(' ').filter(w => w.length)
-          if (align === 'justify' && words.length > 1) {
-            const wordWidths = words.map(w => tctx.measureText(w).width)
-            const gap = (boxWidth - wordWidths.reduce((a, b) => a + b, 0)) / (words.length - 1)
-            tctx.textAlign = 'left'
-            let x = left
-            words.forEach((w, wi) => { tctx.fillText(w, x, y); x += wordWidths[wi] + gap })
-          } else if (align === 'center') {
-            tctx.textAlign = 'center'
-            tctx.fillText(line, left + boxWidth / 2, y)
-          } else if (align === 'right') {
-            tctx.textAlign = 'right'
-            tctx.fillText(line, left + boxWidth, y)
-          } else {
-            tctx.textAlign = 'left'
-            tctx.fillText(line, left, y)
-          }
+        withRotation(tctx, parseInt(o.style.left) || 0, top, overlayWidth, overlayHeight, getOverlayRotation(o), () => {
+          const lines = textEl.textContent.split('\n')
+          lines.forEach((line, i) => {
+            const y = top + i * lineHeight
+            const words = line.split(' ').filter(w => w.length)
+            if (align === 'justify' && words.length > 1) {
+              const wordWidths = words.map(w => tctx.measureText(w).width)
+              const gap = (boxWidth - wordWidths.reduce((a, b) => a + b, 0)) / (words.length - 1)
+              tctx.textAlign = 'left'
+              let x = left
+              words.forEach((w, wi) => { tctx.fillText(w, x, y); x += wordWidths[wi] + gap })
+            } else if (align === 'center') {
+              tctx.textAlign = 'center'
+              tctx.fillText(line, left + boxWidth / 2, y)
+            } else if (align === 'right') {
+              tctx.textAlign = 'right'
+              tctx.fillText(line, left + boxWidth, y)
+            } else {
+              tctx.textAlign = 'left'
+              tctx.fillText(line, left, y)
+            }
+          })
         })
       }
     })

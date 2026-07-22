@@ -1759,6 +1759,39 @@ body {
 .img-resize-handle[data-handle="s"]  { top: 100%; left: 50%; cursor: ns-resize; }
 .img-resize-handle[data-handle="se"] { top: 100%; left: 100%; cursor: nwse-resize; }
 
+/* Rotate handle — shape/text overlays only (see addRotateHandle). Floats above the selection
+   frame's top-center, connected by a thin stem; drag it to spin the overlay around its center. */
+.img-rotate-handle {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px;
+  background: #2563EB;
+  border: 1.5px solid white;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 2;
+  cursor: grab;
+}
+
+.img-rotate-handle::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 1px;
+  height: 14px;
+  background: #2563EB;
+  transform: translateX(-50%);
+}
+
+.img-overlay.active .img-rotate-handle {
+  opacity: 1;
+}
+
 #flashpaint-canvas {
   display: block;
   cursor: crosshair;
