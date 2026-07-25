@@ -9,6 +9,7 @@ const {
   genCodiceFiscale, genCPF, genRUT, genNIF_PT, genNIR_FR, genDNI_ES, genNIE_ES,
   genPersonnummer_SE, genFodselsnummer_NO, genPESEL_PL, genCNP_RO, genEGN_BG,
   genHETU_FI, genIDNr_ZA, genRIC_CN, genAadhaar_IN, genCCCD_VN, genSSN_US, genNINO_GB, genNRIC_SG,
+  genNIK_ID, genNRIC_MY,
   generateWithRetry, genPassportNumber, buildPassportMrz, PASSPORT_FORMATS,
   ID_COUNTRIES, NATIONAL_ID_TYPES
 } = lib
@@ -335,6 +336,32 @@ describe('Structure-only generators (no public checksum)', () => {
       assert.ok(!excluded.includes(prefix))
       assert.ok(!'DFIQUV'.includes(prefix[0]))
       assert.ok(!'DFIQUVO'.includes(prefix[1]))
+    }
+  })
+
+  test('NIK (Indonesia): 16 digits, valid region prefix, DDMMYY birth date (+40 day for female)', () => {
+    const validPrefixes = ['3171', '3172', '3173', '3174', '3175', '3101', '3201']
+    for (let i = 0; i < 50; i++) {
+      const value = genNIK_ID()
+      assert.match(value, /^\d{16}$/)
+      assert.ok(validPrefixes.includes(value.slice(0, 4)))
+      const day = Number(value.slice(6, 8)) % 40
+      const month = Number(value.slice(8, 10))
+      assert.ok(day >= 1 && day <= 28)
+      assert.ok(month >= 1 && month <= 12)
+    }
+  })
+
+  test('NRIC (Malaysia): YYMMDD-PB-SSSS, valid birthplace code, plausible date', () => {
+    for (let i = 0; i < 50; i++) {
+      const value = genNRIC_MY()
+      assert.match(value, /^\d{6}-\d{2}-\d{4}$/)
+      const month = Number(value.slice(2, 4))
+      const day = Number(value.slice(4, 6))
+      const birthplace = Number(value.slice(7, 9))
+      assert.ok(month >= 1 && month <= 12)
+      assert.ok(day >= 1 && day <= 28)
+      assert.ok(birthplace >= 1 && birthplace <= 16)
     }
   })
 })

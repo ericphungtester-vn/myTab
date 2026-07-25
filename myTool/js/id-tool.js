@@ -114,7 +114,9 @@ const ID_COUNTRIES = [
   { code: 'fi', name: 'Finland', alpha3: 'FIN' },
   { code: 'fr', name: 'France', alpha3: 'FRA' },
   { code: 'in', name: 'India', alpha3: 'IND' },
+  { code: 'id', name: 'Indonesia', alpha3: 'IDN' },
   { code: 'it', name: 'Italy', alpha3: 'ITA' },
+  { code: 'my', name: 'Malaysia', alpha3: 'MYS' },
   { code: 'no', name: 'Norway', alpha3: 'NOR' },
   { code: 'pl', name: 'Poland', alpha3: 'POL' },
   { code: 'pt', name: 'Portugal', alpha3: 'PRT' },
@@ -344,6 +346,31 @@ function genCCCD_VN() { // Vietnam — structure only, no public checksum
   return `${province}${genderCentury}${year2}${serial}`
 }
 
+// A handful of real, confirmed-valid province+regency prefixes (per python-stdnum's own reference
+// data) — the district sub-code after them isn't independently validated, so any 2 digits work.
+const ID_REGION_PREFIXES = ['3171', '3172', '3173', '3174', '3175', '3101', '3201']
+
+function genNIK_ID() { // Indonesia (NIK) — structure only, no public checksum
+  const region = ID_REGION_PREFIXES[randInt(0, ID_REGION_PREFIXES.length - 1)] + pad(randInt(0, 99), 2)
+  const isFemale = Math.random() < 0.5
+  const day = pad(randInt(1, 28) + (isFemale ? 40 : 0), 2)
+  const month = pad(randInt(1, 12), 2)
+  const year = pad(randInt(0, 99), 2)
+  const serial = pad(randInt(0, 9999), 4)
+  return `${region}${day}${month}${year}${serial}`
+}
+
+// Codes 01-16 are Malaysia's 13 states + 3 federal territories — real, confirmed-valid birthplace
+// codes (per python-stdnum's own reference data); higher codes exist too but aren't needed here.
+function genNRIC_MY() { // Malaysia — structure only, no public checksum
+  const year = pad(randInt(0, 99), 2)
+  const month = pad(randInt(1, 12), 2)
+  const day = pad(randInt(1, 28), 2)
+  const birthplace = pad(randInt(1, 16), 2)
+  const serial = pad(randInt(0, 9999), 4)
+  return `${year}${month}${day}-${birthplace}-${serial}`
+}
+
 function genSSN_US() { // United States — structure only, no public checksum
   let area = randInt(1, 899)
   if (area === 666) area = 667
@@ -414,7 +441,9 @@ const NATIONAL_ID_TYPES = [
   { key: 'us', country: 'us', label: 'SSN (structure only)', generate: genSSN_US },
   { key: 'gb', country: 'gb', label: 'NINO (structure only)', generate: genNINO_GB },
   { key: 'sg_nric', country: 'sg', label: 'NRIC (citizens/PR)', generate: () => genNRIC_SG(['S', 'T']) },
-  { key: 'sg_fin', country: 'sg', label: 'FIN (foreigners)', generate: () => genNRIC_SG(['F', 'G', 'M']) }
+  { key: 'sg_fin', country: 'sg', label: 'FIN (foreigners)', generate: () => genNRIC_SG(['F', 'G', 'M']) },
+  { key: 'id', country: 'id', label: 'NIK (structure only)', generate: genNIK_ID },
+  { key: 'my', country: 'my', label: 'NRIC (structure only)', generate: genNRIC_MY }
 ]
 
 // ---- Passport numbers ----
@@ -428,7 +457,8 @@ const PASSPORT_FORMATS = {
   ro: { letters: 2, digits: 6 }, bg: { letters: 1, digits: 8 }, fi: { letters: 1, digits: 7 },
   za: { letters: 1, digits: 8 }, cn: { letters: 1, digits: 8, letterPool: 'EG' },
   in: { letters: 1, digits: 7 }, vn: { letters: 1, digits: 7, letterPool: 'BCN' },
-  us: { letters: 0, digits: 9 }, gb: { letters: 0, digits: 9 }, sg: { letters: 1, digits: 8, letterPool: 'K' }
+  us: { letters: 0, digits: 9 }, gb: { letters: 0, digits: 9 }, sg: { letters: 1, digits: 8, letterPool: 'K' },
+  id: { letters: 1, digits: 7, letterPool: 'C' }, my: { letters: 1, digits: 8, letterPool: 'A' }
 }
 
 function genPassportNumber(countryCode) {
