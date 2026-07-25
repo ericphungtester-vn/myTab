@@ -58,6 +58,24 @@ function luhnCheckDigit(bodyStr) {
   return String(mod(10 - ck, 10))
 }
 
+// Generalized Luhn over an arbitrary alphabet (e.g. India's GSTIN uses base 36: 0-9A-Z) — same
+// doubling rule, generalized from "subtract 9 if over 9" to "add quotient+remainder of base n".
+function luhnChecksumGeneric(str, alphabet) {
+  const n = alphabet.length
+  const values = str.split('').reverse().map(ch => alphabet.indexOf(ch))
+  let sum = 0
+  for (let i = 0; i < values.length; i++) {
+    if (i % 2 === 0) sum += values[i]
+    else { const doubled = values[i] * 2; sum += Math.floor(doubled / n) + (doubled % n) }
+  }
+  return sum % n
+}
+
+function luhnCheckDigitGeneric(bodyStr, alphabet) {
+  const ck = luhnChecksumGeneric(bodyStr + alphabet[0], alphabet)
+  return alphabet[mod(-ck, alphabet.length)]
+}
+
 const VERHOEFF_D = [
   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
   [1, 2, 3, 4, 0, 6, 7, 8, 9, 5],
@@ -850,6 +868,295 @@ function generateProfile(countryCode) {
   }
 }
 
+// ---- Company data: company name, tax code, business registration number, per country ----
+// Every checksummed generator below was verified against python-stdnum's actual source (see git
+// history / research notes) with a real test vector. Several countries use ONE unified number for
+// both roles (noted per-country below) — that's not a simplification, it reflects how e.g. Brazil's
+// CNPJ or the USA's EIN really work. A few (UK, USA, Malaysia) have no real checksum for one or
+// both fields — noted inline, matching the same "structure only" honesty used elsewhere.
+
+const COMPANY_SUFFIXES = {
+  br: ['Ltda.', 'S.A.'], bg: ['EOOD', 'OOD'], cl: ['Ltda.', 'SpA'], cn: ['有限公司'],
+  fi: ['Oy'], fr: ['SARL', 'SAS'], in: ['Pvt. Ltd.'], id: ['PT'], it: ['S.r.l.', 'S.p.A.'],
+  my: ['Sdn Bhd'], no: ['AS'], pl: ['Sp. z o.o.'], pt: ['Lda.', 'S.A.'], ro: ['SRL'],
+  za: ['(Pty) Ltd'], es: ['S.L.', 'S.A.'], se: ['AB'], gb: ['Ltd'], us: ['LLC', 'Inc.'],
+  vn: ['Công ty TNHH', 'Công ty Cổ phần'], sg: ['Pte Ltd']
+}
+
+function genCompanyName(countryCode, names) {
+  const suffix = pick(COMPANY_SUFFIXES[countryCode] || ['Ltd'])
+  const base = pick(names.lastNames)
+  if (countryCode === 'cn') return `${base}${suffix}` // no space, matches Chinese convention
+  if (countryCode === 'id' || countryCode === 'vn') return `${suffix} ${base}` // entity type precedes the name
+  return `${base} ${suffix}`
+}
+
+function genCNPJ_BR() { // Brazil — checksum verified; unified tax code + registration number
+  const digits = randDigits(12).split('').map(Number)
+  const w1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+  let s1 = 0
+  for (let i = 0; i < 12; i++) s1 += w1[i] * digits[i]
+  const d1 = collapse11to10(s1)
+  const w2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+  const withD1 = [...digits, d1]
+  let s2 = 0
+  for (let i = 0; i < 13; i++) s2 += w2[i] * withD1[i]
+  const d2 = collapse11to10(s2)
+  return `${digits.join('')}${d1}${d2}`
+}
+
+function genVAT_BG_company() { // Bulgaria — checksum verified (9-digit legal-entity form)
+  const digits = randDigits(8).split('').map(Number)
+  let sum = 0
+  for (let i = 0; i < 8; i++) sum += (i + 1) * digits[i]
+  let check = mod(sum, 11)
+  if (check === 10) {
+    let sum2 = 0
+    for (let i = 0; i < 8; i++) sum2 += (i + 3) * digits[i]
+    check = mod(sum2, 11)
+  }
+  return `${digits.join('')}${check % 10}`
+}
+
+const USCC_ALPHABET = '0123456789ABCDEFGHJKLMNPQRTUWXY'
+
+function genUSCC_CN() { // China — checksum verified (Unified Social Credit Code)
+  const weights = [1, 3, 9, 27, 19, 26, 16, 17, 20, 29, 25, 13, 8, 24, 10, 30, 28]
+  const orgCode = Array.from({ length: 9 }, () => USCC_ALPHABET[randInt(0, USCC_ALPHABET.length - 1)]).join('')
+  const body = `9${pick(['1', '2', '3'])}${randDigits(6)}${orgCode}`
+  let total = 0
+  for (let i = 0; i < 17; i++) total += USCC_ALPHABET.indexOf(body[i]) * weights[i]
+  return `${body}${USCC_ALPHABET[mod(31 - total, 31)]}`
+}
+
+function genYTunnus_FI() { // Finland — checksum verified; unified (VAT = "FI" + this number)
+  const weights7 = [7, 9, 10, 5, 8, 4, 2]
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const digits = randDigits(7).split('').map(Number)
+    let sum7 = 0
+    for (let i = 0; i < 7; i++) sum7 += weights7[i] * digits[i]
+    const check = mod(-sum7, 11)
+    if (check === 10) continue // that residue has no valid single check digit
+    return `${digits.join('')}${check}`
+  }
+  return null
+}
+
+function genSIREN_FR() { // France — checksum verified (standard Luhn)
+  const body = randDigits(8)
+  return body + luhnCheckDigit(body)
+}
+
+function genTVA_FR(siren) { // France VAT is derived FROM the SIREN, not independently assigned
+  const check = Number(siren + '12') % 97
+  return `FR${pad(check, 2)}${siren}`
+}
+
+function genPAN_IN(holderType) { // India — final check letter is unchecked (stdnum's own docstring
+  // flags PAN's real algorithm as undocumented) — any letter passes real-world validation here.
+  const first3 = Array.from({ length: 3 }, () => randLetter()).join('')
+  return `${first3}${holderType}${randLetter()}${pad(randInt(1, 9999), 4)}${randLetter()}`
+}
+
+const GSTIN_ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+const IN_STATE_CODES = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '19', '20',
+  '21', '22', '23', '24', '27', '29', '32', '33', '36', '37']
+
+function genGSTIN_IN() { // India — checksum verified (Luhn-mod-36); embeds a PAN
+  const body14 = `${pick(IN_STATE_CODES)}${genPAN_IN('C')}${randInt(1, 9)}Z`
+  return `${body14}${luhnCheckDigitGeneric(body14, GSTIN_ALPHABET)}`
+}
+
+function genNPWP_ID_company() { // Indonesia — checksum verified; business NPWP always starts with 0
+  const entityType = pad(randInt(0, 99), 2)
+  const taxpayerId = randDigits(6)
+  const body9 = `0${entityType}${taxpayerId}`
+  const check = luhnCheckDigit(body9)
+  return `${body9}${check}${randDigits(3)}${randDigits(3)}`
+}
+
+const IT_PROVINCE_CODES = ['001', '002', '003', '010', '015', '050', '100']
+
+function genIVA_IT() { // Italy — checksum verified (standard Luhn)
+  const companyId = pad(randInt(1, 9999999), 7)
+  const body10 = `${companyId}${pick(IT_PROVINCE_CODES)}`
+  return body10 + luhnCheckDigit(body10)
+}
+
+function genOrgnr_NO() { // Norway — checksum verified
+  const weights = [3, 2, 7, 6, 5, 4, 3, 2]
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const digits = randDigits(8).split('').map(Number)
+    let sum = 0
+    for (let i = 0; i < 8; i++) sum += weights[i] * digits[i]
+    const check = mod(-sum, 11)
+    if (check === 10) continue
+    return `${digits.join('')}${check}`
+  }
+  return null
+}
+
+function genNIP_PL() { // Poland Tax Code — checksum verified
+  const weights = [6, 5, 7, 2, 3, 4, 5, 6, 7]
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const digits = randDigits(9).split('').map(Number)
+    let sum = 0
+    for (let i = 0; i < 9; i++) sum += weights[i] * digits[i]
+    const check = mod(sum, 11)
+    if (check === 10) continue
+    return `${digits.join('')}${check}`
+  }
+  return null
+}
+
+function genREGON_PL() { // Poland Business Registration Number — checksum verified (9-digit form)
+  const weights = [8, 9, 2, 3, 4, 5, 6, 7]
+  const digits = randDigits(8).split('').map(Number)
+  let sum = 0
+  for (let i = 0; i < 8; i++) sum += weights[i] * digits[i]
+  return `${digits.join('')}${mod(sum, 11) % 10}`
+}
+
+function genNIF_PT_company() { // Portugal — checksum verified; leading digit 5 is real-world
+  // convention for companies, not something stdnum's validator itself enforces
+  const digits = (`5${randDigits(7)}`).split('').map(Number)
+  let s = 0
+  for (let i = 0; i < 8; i++) s += (9 - i) * digits[i]
+  return `${digits.join('')}${collapse11to10(s)}`
+}
+
+function genCUI_RO() { // Romania Tax Code — checksum verified
+  const bodyLen = randInt(6, 8)
+  const body = String(randInt(Math.pow(10, bodyLen - 1), Math.pow(10, bodyLen) - 1))
+  const padded = body.padStart(9, '0').split('').map(Number)
+  const weights = [7, 5, 3, 2, 1, 7, 5, 3, 2]
+  let sum = 0
+  for (let i = 0; i < 9; i++) sum += weights[i] * padded[i]
+  const check = mod(10 * sum, 11) % 10
+  return `${body}${check}`
+}
+
+function genONRC_RO() { // Romania Business Registration Number — checksum verified (new,
+  // post-2024 format: letter + year + serial + county + check digit)
+  const letter = pick(['J', 'F', 'C'])
+  const year = String(randInt(2024, 2026))
+  const serial = pad(randInt(0, 999999), 6)
+  const county = '00'
+  const transformed = String(letter.charCodeAt(0) % 10) + year + serial + county
+  const check = transformed.split('').reduce((s, c) => s + Number(c), 0) % 10
+  return `${letter}${year}${serial}${county}${check}`
+}
+
+function genTIN_ZA_company() { // South Africa — checksum verified (standard Luhn)
+  const body = `${pick(['0', '1', '2', '3', '9'])}${randDigits(8)}`
+  return body + luhnCheckDigit(body)
+}
+
+const ES_CIF_LETTERS = 'ABCDEFGHJNPQRSUVW'
+
+function genCIF_ES() { // Spain — checksum verified (Luhn over the middle 7 digits)
+  const middle7 = randDigits(7)
+  return `${pick(ES_CIF_LETTERS.split(''))}${middle7}${luhnCheckDigit(middle7)}`
+}
+
+function genOrgnr_SE() { // Sweden — checksum verified (standard Luhn); VAT = "SE" + this + "01"
+  const body = randDigits(9)
+  return body + luhnCheckDigit(body)
+}
+
+function genVAT_GB_company() { // UK VAT — checksum verified (weighted mod 97)
+  const weights = [8, 7, 6, 5, 4, 3, 2]
+  const base = randDigits(7).split('').map(Number)
+  let sumBase = 0
+  for (let i = 0; i < 7; i++) sumBase += weights[i] * base[i]
+  const suffix = mod(-sumBase, 97) // always 0-96, always fits 2 digits
+  return `${base.join('')}${pad(suffix, 2)}`
+}
+
+function genUTR_GB() { // UK UTR — checksum verified (check digit is the FIRST character)
+  const weights = [6, 7, 8, 9, 10, 5, 4, 3, 2]
+  const body = randDigits(9).split('').map(Number)
+  let sum = 0
+  for (let i = 0; i < 9; i++) sum += weights[i] * body[i]
+  return `${'21987654321'[sum % 11]}${body.join('')}`
+}
+
+function genCompanyNumber_GB() { // UK Companies House number — structure only, no checksum
+  return pad(randInt(0, 99999999), 8)
+}
+
+function genEIN_US() { // USA — structure only; real validity depends on an IRS campus-prefix
+  // lookup table this tool doesn't have (per stdnum's own source, no digit-weighted checksum exists)
+  return `${pad(randInt(10, 99), 2)}-${randDigits(7)}`
+}
+
+function genMST_VN() { // Vietnam — checksum verified
+  const weights = [31, 29, 23, 19, 17, 13, 7, 5, 3]
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const digits = randDigits(9).split('').map(Number)
+    let total = 0
+    for (let i = 0; i < 9; i++) total += weights[i] * digits[i]
+    const r = total % 11
+    if (r === 0) continue // formula gives '10' here, not a valid single digit
+    return `${digits.join('')}${10 - r}`
+  }
+  return null
+}
+
+const UEN_ROC_LETTERS = 'ZKCMDNERGWH'
+
+function genUEN_SG() { // Singapore — checksum verified (Local Company / ROC format)
+  const weights = [10, 8, 6, 4, 9, 7, 5, 3, 1]
+  const year = randInt(1968, 2026)
+  const digits = `${year}${pad(randInt(0, 99999), 5)}`.split('').map(Number)
+  let sum = 0
+  for (let i = 0; i < 9; i++) sum += weights[i] * digits[i]
+  return `${digits.join('')}${UEN_ROC_LETTERS[sum % 11]}`
+}
+
+function genTIN_MY_company() { // Malaysia Tax Code — structure only (verified format, no checksum)
+  return `C${randDigits(10)}`
+}
+
+function genSSM_MY() { // Malaysia Business Registration Number — structure only (verified format,
+  // no checksum): year + 2-digit entity type + 6-digit sequence, per the 2019 SSM format change
+  return `${randInt(2000, 2026)}${pad(randInt(0, 99), 2)}${pad(randInt(0, 999999), 6)}`
+}
+
+// The single entry point the UI uses for the Company section. Each generator that can return null
+// (a rare reroll-exhausted path) is retried via generateWithRetry.
+function generateCompany(countryCode, names) {
+  const companyName = genCompanyName(countryCode, names)
+  let taxCode, businessRegNumber
+
+  switch (countryCode) {
+    case 'br': taxCode = businessRegNumber = genCNPJ_BR(); break
+    case 'bg': taxCode = businessRegNumber = genVAT_BG_company(); break
+    case 'cl': taxCode = businessRegNumber = genRUT(); break // Chile: RUT covers both individuals and companies
+    case 'cn': taxCode = businessRegNumber = genUSCC_CN(); break
+    case 'fi': { const v = generateWithRetry(genYTunnus_FI); taxCode = `FI${v}`; businessRegNumber = v; break }
+    case 'fr': { const siren = generateWithRetry(genSIREN_FR); businessRegNumber = siren; taxCode = genTVA_FR(siren); break }
+    case 'in': taxCode = genPAN_IN('C'); businessRegNumber = genGSTIN_IN(); break
+    case 'id': taxCode = businessRegNumber = genNPWP_ID_company(); break
+    case 'it': taxCode = businessRegNumber = genIVA_IT(); break
+    case 'no': taxCode = businessRegNumber = generateWithRetry(genOrgnr_NO); break
+    case 'pl': taxCode = generateWithRetry(genNIP_PL); businessRegNumber = genREGON_PL(); break
+    case 'pt': taxCode = businessRegNumber = genNIF_PT_company(); break
+    case 'ro': taxCode = genCUI_RO(); businessRegNumber = genONRC_RO(); break
+    case 'za': taxCode = businessRegNumber = genTIN_ZA_company(); break
+    case 'es': taxCode = businessRegNumber = genCIF_ES(); break
+    case 'se': { const v = genOrgnr_SE(); taxCode = `SE${v}01`; businessRegNumber = v; break }
+    case 'gb': taxCode = genUTR_GB(); businessRegNumber = genCompanyNumber_GB(); break
+    case 'us': taxCode = businessRegNumber = genEIN_US(); break
+    case 'vn': taxCode = businessRegNumber = generateWithRetry(genMST_VN); break
+    case 'sg': taxCode = businessRegNumber = genUEN_SG(); break
+    case 'my': taxCode = genTIN_MY_company(); businessRegNumber = genSSM_MY(); break
+    default: taxCode = businessRegNumber = randDigits(9)
+  }
+
+  return { companyName, taxCode, businessRegNumber }
+}
+
 // ---- Wiring ----
 ;(function initProfileTool() {
   const countryTrigger = document.getElementById('pf-country-trigger')
@@ -934,8 +1241,13 @@ function generateProfile(countryCode) {
     </div>`
   }
 
-  function renderProfile(profile) {
+  function sectionHeader(title) {
+    return `<h3 class="pf-section-header">${title}</h3>`
+  }
+
+  function renderProfile(profile, company) {
     const rows = [
+      sectionHeader('Personal'),
       fieldRow('First Name', profile.firstName),
       fieldRow('Middle Name', profile.middleName),
       fieldRow('Last Name', profile.lastName),
@@ -945,7 +1257,11 @@ function generateProfile(countryCode) {
       fieldRow('Phone Number', profile.phoneNumber),
       ...profile.nationalIds.map(id => fieldRow(id.label, id.value)),
       fieldRow('Passport Number', profile.passportNumber),
-      mrzRow(`${profile.mrz.line1}\n${profile.mrz.line2}`)
+      mrzRow(`${profile.mrz.line1}\n${profile.mrz.line2}`),
+      sectionHeader('Company'),
+      fieldRow('Company Name', company.companyName),
+      fieldRow('Tax Code', company.taxCode),
+      fieldRow('Business Registration Number', company.businessRegNumber)
     ]
     fieldsEl.innerHTML = rows.join('')
   }
@@ -966,7 +1282,8 @@ function generateProfile(countryCode) {
   function generate() {
     errorEl.hidden = true
     try {
-      renderProfile(generateProfile(currentCountry))
+      const names = PROFILE_NAMES[currentCountry] || GENERIC_NAMES
+      renderProfile(generateProfile(currentCountry), generateCompany(currentCountry, names))
     } catch (err) {
       errorEl.textContent = err.message
       errorEl.hidden = false

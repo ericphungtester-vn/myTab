@@ -4,7 +4,7 @@ const { loadToolScript } = require('./helpers/loadScript')
 
 const lib = loadToolScript('js/profile-tool.js')
 const {
-  mod, luhnChecksum, luhnCheckDigit, verhoeffChecksum, verhoeffCheckDigit,
+  mod, luhnChecksum, luhnCheckDigit, luhnCheckDigitGeneric, verhoeffChecksum, verhoeffCheckDigit,
   iso7064Mod112Checksum, iso7064Mod112CheckChar, collapse11to10, mrzCheckDigit,
   genCodiceFiscale, genCPF, genRUT, genNIF_PT, genNIR_FR, genDNI_ES, genNIE_ES,
   genPersonnummer_SE, genFodselsnummer_NO, genPESEL_PL, genCNP_RO, genEGN_BG,
@@ -13,7 +13,12 @@ const {
   generateWithRetry, genPassportNumber, buildPassportMrz, PASSPORT_FORMATS,
   ID_COUNTRIES, NATIONAL_ID_TYPES,
   generateProfile, transliterateForMrz, genPhoneNumber, genPostalCode, genAddressLine,
-  PROFILE_NAMES, PHONE_SPECS
+  PROFILE_NAMES, PHONE_SPECS,
+  generateCompany, genCNPJ_BR, genVAT_BG_company, genUSCC_CN, genYTunnus_FI, genSIREN_FR, genTVA_FR,
+  genPAN_IN, genGSTIN_IN, genNPWP_ID_company, genIVA_IT, genOrgnr_NO, genNIP_PL, genREGON_PL,
+  genNIF_PT_company, genCUI_RO, genONRC_RO, genTIN_ZA_company, genCIF_ES, genOrgnr_SE,
+  genVAT_GB_company, genUTR_GB, genCompanyNumber_GB, genEIN_US, genMST_VN, genUEN_SG,
+  genTIN_MY_company, genSSM_MY
 } = lib
 
 // ---- Shared low-level checksum algorithms, verified against python-stdnum's own doctests ----
@@ -532,5 +537,397 @@ describe('generateProfile', () => {
     assert.ok(vnProfile.fullName.startsWith(vnProfile.lastName), vnProfile.fullName)
     const cnProfile = generateProfile('cn')
     assert.equal(cnProfile.fullName, `${cnProfile.lastName}${cnProfile.firstName}`)
+  })
+})
+
+// Company generators: each checked against a real vector from python-stdnum's own doctests
+// (independent of our generator), then across many random samples by recomputing the checksum
+// from scratch — same discipline as the National ID tests above.
+describe('Company generators: real test vectors', () => {
+  test('Brazil CNPJ: 16727230000197 is a real valid vector', () => {
+    const digits = '167272300001'.split('').map(Number)
+    const w1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+    let s1 = 0
+    for (let i = 0; i < 12; i++) s1 += w1[i] * digits[i]
+    const d1 = collapse11to10(s1)
+    const w2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+    const withD1 = [...digits, d1]
+    let s2 = 0
+    for (let i = 0; i < 13; i++) s2 += w2[i] * withD1[i]
+    assert.equal(`${d1}${collapse11to10(s2)}`, '97')
+  })
+
+  test('China USCC: 91110000600037341L is a real valid vector', () => {
+    const ALPHABET = '0123456789ABCDEFGHJKLMNPQRTUWXY'
+    const weights = [1, 3, 9, 27, 19, 26, 16, 17, 20, 29, 25, 13, 8, 24, 10, 30, 28]
+    const body = '91110000600037341'
+    let total = 0
+    for (let i = 0; i < 17; i++) total += ALPHABET.indexOf(body[i]) * weights[i]
+    assert.equal(ALPHABET[mod(31 - total, 31)], 'L')
+  })
+
+  test('Finland Y-tunnus: 20774740 is a real valid vector', () => {
+    const digits = '2077474'.split('').map(Number)
+    const w = [7, 9, 10, 5, 8, 4, 2]
+    let s = 0
+    for (let i = 0; i < 7; i++) s += w[i] * digits[i]
+    assert.equal(mod(-s, 11), 0)
+  })
+
+  test('France SIREN 404833048 and TVA derivation for 443121975 are real valid vectors', () => {
+    assert.equal(luhnChecksum('404833048'), 0)
+    assert.equal(Number('443121975' + '12') % 97, 46)
+  })
+
+  test('India GSTIN check for 27AAPFU0939F1Z is a real valid vector', () => {
+    assert.equal(luhnCheckDigitGeneric('27AAPFU0939F1Z', '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 'V')
+  })
+
+  test('Italy Partita IVA 00743110157 is a real valid vector', () => {
+    assert.equal(luhnChecksum('00743110157'), 0)
+  })
+
+  test('Norway Orgnr 988077917 is a real valid vector', () => {
+    const digits = '98807791'.split('').map(Number)
+    const w = [3, 2, 7, 6, 5, 4, 3, 2]
+    let s = 0
+    for (let i = 0; i < 8; i++) s += w[i] * digits[i]
+    assert.equal(mod(-s, 11), 7)
+  })
+
+  test('Poland NIP 8567346215 and REGON 192598184 are real valid vectors', () => {
+    const nipDigits = '856734621'.split('').map(Number)
+    const nipW = [6, 5, 7, 2, 3, 4, 5, 6, 7]
+    let s1 = 0
+    for (let i = 0; i < 9; i++) s1 += nipW[i] * nipDigits[i]
+    assert.equal(mod(s1, 11), 5)
+
+    const regonDigits = '19259818'.split('').map(Number)
+    const regonW = [8, 9, 2, 3, 4, 5, 6, 7]
+    let s2 = 0
+    for (let i = 0; i < 8; i++) s2 += regonW[i] * regonDigits[i]
+    assert.equal(mod(s2, 11) % 10, 4)
+  })
+
+  test('Portugal company NIF 501964843 is a real valid vector', () => {
+    const digits = '50196484'.split('').map(Number)
+    let s = 0
+    for (let i = 0; i < 8; i++) s += (9 - i) * digits[i]
+    assert.equal(collapse11to10(s), 3)
+  })
+
+  test('Romania CUI 18547290 and ONRC J2012000750528 are real valid vectors', () => {
+    const padded = '1854729'.padStart(9, '0').split('').map(Number)
+    const w = [7, 5, 3, 2, 1, 7, 5, 3, 2]
+    let s = 0
+    for (let i = 0; i < 9; i++) s += w[i] * padded[i]
+    assert.equal(mod(10 * s, 11) % 10, 0)
+
+    const transformed = String('J'.charCodeAt(0) % 10) + '2012' + '000750' + '52'
+    assert.equal(transformed.split('').reduce((a, c) => a + Number(c), 0) % 10, 8)
+  })
+
+  test('South Africa TIN 0001339050 is a real valid vector', () => {
+    assert.equal(luhnChecksum('0001339050'), 0)
+  })
+
+  test('Spain CIF J99216582 is a real valid vector', () => {
+    assert.equal(luhnCheckDigit('9921658'), '2')
+  })
+
+  test('Sweden Orgnr 1234567897 is a real valid vector', () => {
+    assert.equal(luhnChecksum('1234567897'), 0)
+  })
+
+  test('UK VAT 980780684 and UTR 1955839661 are real valid vectors', () => {
+    const vatDigits = '9807806'.split('').map(Number)
+    const vatW = [8, 7, 6, 5, 4, 3, 2]
+    let s1 = 0
+    for (let i = 0; i < 7; i++) s1 += vatW[i] * vatDigits[i]
+    assert.equal(mod(-s1, 97), 84)
+
+    const utrBody = '955839661'.split('').map(Number)
+    const utrW = [6, 7, 8, 9, 10, 5, 4, 3, 2]
+    let s2 = 0
+    for (let i = 0; i < 9; i++) s2 += utrW[i] * utrBody[i]
+    assert.equal('21987654321'[s2 % 11], '1')
+  })
+
+  test('Vietnam MST 0100233488 is a real valid vector', () => {
+    const digits = '010023348'.split('').map(Number)
+    const w = [31, 29, 23, 19, 17, 13, 7, 5, 3]
+    let total = 0
+    for (let i = 0; i < 9; i++) total += w[i] * digits[i]
+    assert.equal(10 - (total % 11), 8)
+  })
+
+  test('Singapore UEN (ROC) 197401143C is a real valid vector', () => {
+    const digits = '197401143'.split('').map(Number)
+    const w = [10, 8, 6, 4, 9, 7, 5, 3, 1]
+    let s = 0
+    for (let i = 0; i < 9; i++) s += w[i] * digits[i]
+    assert.equal('ZKCMDNERGWH'[s % 11], 'C')
+  })
+
+  test('Bulgaria VAT 175074752 is a real valid vector', () => {
+    const digits = '17507475'.split('').map(Number)
+    let s = 0
+    for (let i = 0; i < 8; i++) s += (i + 1) * digits[i]
+    assert.equal(mod(s, 11) % 10, 2)
+  })
+})
+
+describe('Company generators: exact-formula round trip (many random samples)', () => {
+  test('CNPJ (Brazil)', () => {
+    for (let i = 0; i < 30; i++) {
+      const value = genCNPJ_BR()
+      assert.equal(value.length, 14)
+      const digits = value.slice(0, 12).split('').map(Number)
+      const w1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+      let s1 = 0
+      for (let j = 0; j < 12; j++) s1 += w1[j] * digits[j]
+      const d1 = collapse11to10(s1)
+      const w2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+      const withD1 = [...digits, d1]
+      let s2 = 0
+      for (let j = 0; j < 13; j++) s2 += w2[j] * withD1[j]
+      assert.equal(value.slice(12), `${d1}${collapse11to10(s2)}`)
+    }
+  })
+
+  test('USCC (China)', () => {
+    const ALPHABET = '0123456789ABCDEFGHJKLMNPQRTUWXY'
+    const weights = [1, 3, 9, 27, 19, 26, 16, 17, 20, 29, 25, 13, 8, 24, 10, 30, 28]
+    for (let i = 0; i < 30; i++) {
+      const value = genUSCC_CN()
+      assert.equal(value.length, 18)
+      let total = 0
+      for (let j = 0; j < 17; j++) total += ALPHABET.indexOf(value[j]) * weights[j]
+      assert.equal(ALPHABET[mod(31 - total, 31)], value[17])
+    }
+  })
+
+  test('Y-tunnus (Finland)', () => {
+    const weights7 = [7, 9, 10, 5, 8, 4, 2]
+    for (let i = 0; i < 30; i++) {
+      const value = generateWithRetry(genYTunnus_FI)
+      assert.equal(value.length, 8)
+      const digits = value.slice(0, 7).split('').map(Number)
+      let sum7 = 0
+      for (let j = 0; j < 7; j++) sum7 += weights7[j] * digits[j]
+      assert.equal(String(mod(-sum7, 11)), value[7])
+    }
+  })
+
+  test('SIREN + TVA (France)', () => {
+    for (let i = 0; i < 30; i++) {
+      const siren = generateWithRetry(genSIREN_FR)
+      assert.equal(siren.length, 9)
+      assert.equal(luhnChecksum(siren), 0)
+      const tva = genTVA_FR(siren)
+      assert.match(tva, /^FR\d{11}$/)
+      assert.equal(Number(siren + '12') % 97, Number(tva.slice(2, 4)))
+    }
+  })
+
+  test('GSTIN (India)', () => {
+    const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    for (let i = 0; i < 30; i++) {
+      const value = genGSTIN_IN()
+      assert.equal(value.length, 15)
+      assert.equal(value[13], 'Z')
+      assert.equal(luhnCheckDigitGeneric(value.slice(0, 14), alphabet), value[14])
+    }
+  })
+
+  test('NPWP business (Indonesia): starts with 0, Luhn-valid 9-digit body', () => {
+    for (let i = 0; i < 30; i++) {
+      const value = genNPWP_ID_company()
+      assert.equal(value.length, 16)
+      assert.equal(value[0], '0')
+      assert.equal(luhnChecksum(value.slice(0, 10)), 0)
+    }
+  })
+
+  test('Partita IVA (Italy)', () => {
+    for (let i = 0; i < 30; i++) {
+      const value = genIVA_IT()
+      assert.equal(value.length, 11)
+      assert.equal(luhnChecksum(value), 0)
+    }
+  })
+
+  test('Orgnr (Norway)', () => {
+    const weights = [3, 2, 7, 6, 5, 4, 3, 2]
+    for (let i = 0; i < 30; i++) {
+      const value = generateWithRetry(genOrgnr_NO)
+      assert.equal(value.length, 9)
+      const digits = value.slice(0, 8).split('').map(Number)
+      let sum = 0
+      for (let j = 0; j < 8; j++) sum += weights[j] * digits[j]
+      assert.equal(String(mod(-sum, 11)), value[8])
+    }
+  })
+
+  test('NIP + REGON (Poland)', () => {
+    const nipW = [6, 5, 7, 2, 3, 4, 5, 6, 7]
+    const regonW = [8, 9, 2, 3, 4, 5, 6, 7]
+    for (let i = 0; i < 30; i++) {
+      const nip = generateWithRetry(genNIP_PL)
+      assert.equal(nip.length, 10)
+      const nipDigits = nip.split('').map(Number)
+      let s1 = 0
+      for (let j = 0; j < 9; j++) s1 += nipW[j] * nipDigits[j]
+      assert.equal(String(mod(s1, 11)), nip[9])
+
+      const regon = genREGON_PL()
+      assert.equal(regon.length, 9)
+      const regonDigits = regon.slice(0, 8).split('').map(Number)
+      let s2 = 0
+      for (let j = 0; j < 8; j++) s2 += regonW[j] * regonDigits[j]
+      assert.equal(String(mod(s2, 11) % 10), regon[8])
+    }
+  })
+
+  test('Company NIF (Portugal): always leading digit 5', () => {
+    for (let i = 0; i < 30; i++) {
+      const value = genNIF_PT_company()
+      assert.equal(value.length, 9)
+      assert.equal(value[0], '5')
+      const digits = value.slice(0, 8).split('').map(Number)
+      let s = 0
+      for (let j = 0; j < 8; j++) s += (9 - j) * digits[j]
+      assert.equal(collapse11to10(s), Number(value[8]))
+    }
+  })
+
+  test('CUI + ONRC (Romania)', () => {
+    const cuiW = [7, 5, 3, 2, 1, 7, 5, 3, 2]
+    for (let i = 0; i < 30; i++) {
+      const cui = genCUI_RO()
+      const body = cui.slice(0, -1)
+      const check = cui.slice(-1)
+      const padded = body.padStart(9, '0').split('').map(Number)
+      let s = 0
+      for (let j = 0; j < 9; j++) s += cuiW[j] * padded[j]
+      assert.equal(String(mod(10 * s, 11) % 10), check)
+
+      const onrc = genONRC_RO()
+      assert.equal(onrc.length, 14)
+      const transformed = String(onrc.charCodeAt(0) % 10) + onrc.slice(1, -1)
+      assert.equal(String(transformed.split('').reduce((a, c) => a + Number(c), 0) % 10), onrc.slice(-1))
+    }
+  })
+
+  test('TIN (South Africa)', () => {
+    for (let i = 0; i < 30; i++) {
+      const value = genTIN_ZA_company()
+      assert.equal(value.length, 10)
+      assert.ok(['0', '1', '2', '3', '9'].includes(value[0]))
+      assert.equal(luhnChecksum(value), 0)
+    }
+  })
+
+  test('CIF (Spain)', () => {
+    for (let i = 0; i < 30; i++) {
+      const value = genCIF_ES()
+      assert.equal(value.length, 9)
+      assert.ok('ABCDEFGHJNPQRSUVW'.includes(value[0]))
+      assert.equal(luhnCheckDigit(value.slice(1, 8)), value[8])
+    }
+  })
+
+  test('Orgnr (Sweden)', () => {
+    for (let i = 0; i < 30; i++) {
+      const value = genOrgnr_SE()
+      assert.equal(value.length, 10)
+      assert.equal(luhnChecksum(value), 0)
+    }
+  })
+
+  test('VAT + UTR (UK)', () => {
+    const vatW = [8, 7, 6, 5, 4, 3, 2, 10, 1]
+    const utrW = [6, 7, 8, 9, 10, 5, 4, 3, 2]
+    for (let i = 0; i < 30; i++) {
+      const vat = genVAT_GB_company()
+      assert.equal(vat.length, 9)
+      const digits = vat.split('').map(Number)
+      let s1 = 0
+      for (let j = 0; j < 9; j++) s1 += vatW[j] * digits[j]
+      assert.equal(mod(s1, 97), 0)
+
+      const utr = genUTR_GB()
+      assert.equal(utr.length, 10)
+      const body = utr.slice(1).split('').map(Number)
+      let s2 = 0
+      for (let j = 0; j < 9; j++) s2 += utrW[j] * body[j]
+      assert.equal('21987654321'[s2 % 11], utr[0])
+
+      assert.match(genCompanyNumber_GB(), /^\d{8}$/)
+    }
+  })
+
+  test('EIN (USA): format only', () => {
+    for (let i = 0; i < 30; i++) assert.match(genEIN_US(), /^\d{2}-\d{7}$/)
+  })
+
+  test('MST (Vietnam)', () => {
+    const weights = [31, 29, 23, 19, 17, 13, 7, 5, 3]
+    for (let i = 0; i < 30; i++) {
+      const value = generateWithRetry(genMST_VN)
+      assert.equal(value.length, 10)
+      const digits = value.slice(0, 9).split('').map(Number)
+      let total = 0
+      for (let j = 0; j < 9; j++) total += weights[j] * digits[j]
+      assert.equal(String(10 - (total % 11)), value[9])
+      assert.notEqual(total % 11, 0)
+    }
+  })
+
+  test('UEN (Singapore, ROC format)', () => {
+    const weights = [10, 8, 6, 4, 9, 7, 5, 3, 1]
+    for (let i = 0; i < 30; i++) {
+      const value = genUEN_SG()
+      assert.equal(value.length, 10)
+      const digits = value.slice(0, 9).split('').map(Number)
+      let s = 0
+      for (let j = 0; j < 9; j++) s += weights[j] * digits[j]
+      assert.equal('ZKCMDNERGWH'[s % 11], value[9])
+    }
+  })
+
+  test('Malaysia: TIN and SSM registration formats', () => {
+    for (let i = 0; i < 30; i++) {
+      assert.match(genTIN_MY_company(), /^C\d{10}$/)
+      assert.match(genSSM_MY(), /^\d{12}$/)
+    }
+  })
+})
+
+describe('generateCompany', () => {
+  test('every country produces a company name, tax code, and business registration number with no crashes', () => {
+    for (const c of ID_COUNTRIES) {
+      const names = PROFILE_NAMES[c.code] || { firstNames: ['X'], lastNames: ['Y'] }
+      for (let i = 0; i < 5; i++) {
+        const company = generateCompany(c.code, names)
+        assert.ok(company.companyName && company.companyName.trim().length > 0, c.code)
+        assert.ok(company.taxCode && company.taxCode.length > 0, c.code)
+        assert.ok(company.businessRegNumber && company.businessRegNumber.length > 0, c.code)
+      }
+    }
+  })
+
+  test('unified-number countries use the exact same value for both fields', () => {
+    for (const code of ['br', 'bg', 'cl', 'cn', 'id', 'it', 'za', 'es', 'us']) {
+      const company = generateCompany(code, PROFILE_NAMES[code] || { firstNames: ['X'], lastNames: ['Y'] })
+      assert.equal(company.taxCode, company.businessRegNumber, code)
+    }
+  })
+
+  test('two-distinct-number countries (France, India, Poland, Romania, UK) produce different values', () => {
+    for (const code of ['fr', 'in', 'pl', 'ro', 'gb']) {
+      const company = generateCompany(code, PROFILE_NAMES[code] || { firstNames: ['X'], lastNames: ['Y'] })
+      assert.notEqual(company.taxCode, company.businessRegNumber, code)
+    }
   })
 })
