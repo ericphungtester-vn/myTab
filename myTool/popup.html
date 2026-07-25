@@ -61,14 +61,14 @@
           </div>
         </div>
         <div class="guide-section">
-          <button class="guide-section-header">ID <span class="guide-arrow">▾</span></button>
+          <button class="guide-section-header">Profile <span class="guide-arrow">▾</span></button>
           <div class="guide-section-body">
-            <p><strong>Synthetic test data only.</strong> Every value is randomly generated on the spot — it is never derived from or matched against a real person, and the Passport MRZ's name fields are always the fixed placeholder "TESTPERSON / SAMPLE", never a realistic-looking name. This tool exists to test form/validation logic (does your form accept a correctly-formatted ID, does it correctly compute/verify a check digit), not to produce anything resembling a real document.</p>
-            <p><strong>Country</strong>: 21 countries. <strong>ID Type</strong> changes based on the selected country: each country's National ID (for Spain, both DNI and NIE are offered, and for Singapore, both NRIC and FIN, since these are distinct document types), plus every country also offers <strong>Passport Number</strong> and <strong>Passport MRZ (2-line)</strong>.</p>
+            <p><strong>Synthetic test data only.</strong> Every value is randomly generated on the spot and recombined from real name/address data — nothing is ever derived from or matched to an actual person, and nothing here is ever rendered as a visual ID/passport mockup, only plain text fields. This tool exists to test form/validation logic (does your form accept correctly-formatted names, addresses, phone numbers, IDs — does it correctly compute/verify a check digit), not to produce anything resembling a real document or a real person's data.</p>
+            <p>Pick a <strong>Country</strong> (21 available) and click <strong>Generate</strong> — one click fills in a complete, self-consistent profile: First/Middle/Last/Full Name, Address Line, Postal Code, Phone Number, every National ID variant that country has (e.g. Spain gets both DNI and NIE, Singapore gets both NRIC and FIN), a Passport Number, and a Passport MRZ. Click any field's copy icon to copy just that value, or Generate again for an entirely new profile.</p>
+            <p><strong>Names/Address/Postal Code/Phone</strong> use real per-country name lists and phone/postal formats (verified against Faker.js's own locale data, a well-established reference for this kind of test data), randomly recombined — realistic-looking, but not tied to anyone real. Two countries have no dedicated source data: Chile falls back to Spain's Spanish-language names as a reasonable approximation; Bulgaria, Malaysia, and Singapore (no single good-fit source given their scripts/multi-ethnic makeup) use a generic name/street pool instead of fabricating country-specific names. "Middle Name" is synthesized everywhere as a second given name from the same pool, since most of these naming systems don't have a Western-style middle name to begin with. Vietnamese and Chinese names correctly use family-name-first order in Full Name.</p>
             <p><strong>National ID</strong> — for Italy, Brazil, Chile, Portugal, France, Spain (DNI/NIE), Sweden, Norway, Poland, Bulgaria, Finland, South Africa, China, India, and Singapore (NRIC/FIN), the check digit(s) are computed with that country's real, published checksum algorithm (verified against independent reference implementations) — so the generated number will pass a real checksum validator, even though the person/date/place it encodes is made up. Romania's CNP checksum is included for structural completeness, but the source it was verified against itself flags that algorithm as unconfirmed by an official spec. Vietnam (CCCD), USA (SSN), UK (NINO), Indonesia (NIK), and Malaysia (NRIC) have no published public checksum, so only the field structure/length is real.</p>
             <p><strong>Passport Number</strong> is a simplified per-country letter/digit pattern (e.g. 2 letters + 7 digits) for testing format validation — passport numbering isn't checksum-verifiable the way national IDs are, and real series vary by document batch, so treat this as "plausible shape," not an authoritative reproduction of any country's actual issuing scheme.</p>
-            <p><strong>Passport MRZ (2-line)</strong> builds the standard ICAO 9303 TD3 machine-readable zone (the 2 lines of 44 characters at the bottom of every passport's photo page), with correctly computed check digits (document number, birth date, expiry date, and the final composite check) using the universal algorithm every country's passports share — only the issuing/nationality country code and document number format differ per country.</p>
-            <p>Click <strong>Generate</strong> again for a new random value at any time; click the copy icon to copy the ID (or passport number) to the clipboard.</p>
+            <p><strong>Passport MRZ</strong> builds the standard ICAO 9303 TD3 machine-readable zone (the 2 lines of 44 characters at the bottom of every passport's photo page), with correctly computed check digits (document number, birth date, expiry date, and the final composite check) using the universal algorithm every country's passports share, and reuses the same generated name as the rest of the profile — transliterated down to plain A-Z the way real MRZs are (diacritics stripped, spaces become "&lt;"). China's name is in Chinese characters, which can't be mechanically transliterated to the Pinyin a real Chinese passport would use, so its MRZ uses a generic Latin placeholder name instead.</p>
           </div>
         </div>
       </div>
@@ -87,7 +87,7 @@
         <button id="ft-reset-btn" class="tool-reset-btn" aria-label="Reset File settings" title="Reset File settings">⟲</button>
       </div>
       <div class="tool-nav-item">
-        <button class="tab-btn" data-tab="id">ID</button>
+        <button class="tab-btn" data-tab="profile">Profile</button>
       </div>
     </nav>
     <main id="app-main">
@@ -263,43 +263,22 @@
         <p class="ft-result" id="ft-result" hidden></p>
       </section>
 
-      <section id="tab-id" class="tab-content">
-        <p class="id-disclaimer">Synthetic test data only — not real documents, not tied to any real person. For form/validation testing.</p>
+      <section id="tab-profile" class="tab-content">
+        <p class="pf-disclaimer">Synthetic test data only — not real people, not real documents. For form/validation testing.</p>
         <div class="tt-row">
           <label>Country</label>
           <div class="ft-select">
-            <button type="button" class="ft-select-trigger" id="id-country-trigger" aria-haspopup="listbox">
-              <span id="id-country-trigger-label">Italy</span>
+            <button type="button" class="ft-select-trigger" id="pf-country-trigger" aria-haspopup="listbox">
+              <span id="pf-country-trigger-label">Brazil</span>
               <span class="ft-select-arrow">▾</span>
             </button>
-            <div class="ft-select-panel" id="id-country-panel" hidden role="listbox"></div>
+            <div class="ft-select-panel" id="pf-country-panel" hidden role="listbox"></div>
           </div>
         </div>
-        <div class="tt-row">
-          <label>ID Type</label>
-          <div class="ft-select">
-            <button type="button" class="ft-select-trigger" id="id-type-trigger" aria-haspopup="listbox">
-              <span id="id-type-trigger-label">Codice Fiscale</span>
-              <span class="ft-select-arrow">▾</span>
-            </button>
-            <div class="ft-select-panel" id="id-type-panel" hidden role="listbox"></div>
-          </div>
-        </div>
-        <p class="tt-error" id="id-error" hidden></p>
-        <button id="id-generate" class="tt-generate-btn">Generate</button>
+        <p class="tt-error" id="pf-error" hidden></p>
+        <button id="pf-generate" class="tt-generate-btn">Generate</button>
 
-        <div class="tt-output-wrap">
-          <div class="tt-output-textwrap">
-            <input type="text" id="id-output" readonly placeholder="Generated ID appears here">
-            <button id="id-copy" class="tt-copy-icon-btn" aria-label="Copy to clipboard" title="Copy to clipboard">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            </button>
-          </div>
-        </div>
-        <div class="tt-row tt-row--top" id="id-mrz-wrap" hidden>
-          <label>MRZ</label>
-          <pre class="id-mrz-box" id="id-mrz-output"></pre>
-        </div>
+        <div id="pf-fields"></div>
       </section>
     </main>
   </div>
@@ -307,6 +286,6 @@
   <script src="js/main.js"></script>
   <script src="js/text-tool.js"></script>
   <script src="js/file-tool.js"></script>
-  <script src="js/id-tool.js"></script>
+  <script src="js/profile-tool.js"></script>
 </body>
 </html>

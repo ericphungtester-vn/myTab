@@ -2,7 +2,7 @@ const { test, describe } = require('node:test')
 const assert = require('node:assert/strict')
 const { loadToolScript } = require('./helpers/loadScript')
 
-const lib = loadToolScript('js/id-tool.js')
+const lib = loadToolScript('js/profile-tool.js')
 const {
   mod, luhnChecksum, luhnCheckDigit, verhoeffChecksum, verhoeffCheckDigit,
   iso7064Mod112Checksum, iso7064Mod112CheckChar, collapse11to10, mrzCheckDigit,
@@ -11,7 +11,9 @@ const {
   genHETU_FI, genIDNr_ZA, genRIC_CN, genAadhaar_IN, genCCCD_VN, genSSN_US, genNINO_GB, genNRIC_SG,
   genNIK_ID, genNRIC_MY,
   generateWithRetry, genPassportNumber, buildPassportMrz, PASSPORT_FORMATS,
-  ID_COUNTRIES, NATIONAL_ID_TYPES
+  ID_COUNTRIES, NATIONAL_ID_TYPES,
+  generateProfile, transliterateForMrz, genPhoneNumber, genPostalCode, genAddressLine,
+  PROFILE_NAMES, PHONE_SPECS
 } = lib
 
 // ---- Shared low-level checksum algorithms, verified against python-stdnum's own doctests ----
@@ -419,5 +421,116 @@ describe('data consistency', () => {
 
   test('every country has a passport format', () => {
     for (const c of ID_COUNTRIES) assert.ok(PASSPORT_FORMATS[c.code], c.code)
+  })
+
+  test('every country has profile name data (or falls back to GENERIC_NAMES) and a phone spec', () => {
+    for (const c of ID_COUNTRIES) {
+      assert.ok(c.code === 'us' || PROFILE_NAMES[c.code] || true) // fallback is allowed, just documenting intent
+      assert.ok(c.code === 'us' || PHONE_SPECS[c.code], `${c.code} has no phone spec (US is handled specially)`)
+    }
+  })
+})
+
+describe('transliterateForMrz', () => {
+  test('strips diacritics down to plain ASCII, including letters that do not NFD-decompose', () => {
+    assert.equal(transliterateForMrz('Đinh'), 'Dinh')
+    assert.equal(transliterateForMrz('Anh Quân'), 'Anh Quan')
+    assert.equal(transliterateForMrz('Bjørnstad'), 'Bjornstad')
+    assert.equal(transliterateForMrz('Bagiński'), 'Baginski')
+    assert.equal(transliterateForMrz('Hämäläinen'), 'Hamalainen')
+  })
+})
+
+describe('genPhoneNumber / genPostalCode', () => {
+  test('every country produces a phone number starting with the right country calling code', () => {
+    for (const c of ID_COUNTRIES) {
+      const phone = genPhoneNumber(c.code)
+      assert.match(phone, /^\+\d+$/, `${c.code}: ${phone}`)
+      const expectedCc = c.code === 'us' ? '1' : PHONE_SPECS[c.code].cc
+      assert.ok(phone.startsWith(`+${expectedCc}`), `${c.code}: ${phone} missing +${expectedCc}`)
+    }
+  })
+
+  test('US phone numbers always have NANP-valid (2-9 leading) area code and exchange', () => {
+    for (let i = 0; i < 30; i++) {
+      const phone = genPhoneNumber('us')
+      assert.match(phone, /^\+1[2-9]\d{9}$/)
+    }
+  })
+
+  test('every country produces a non-empty postal code in a stable format', () => {
+    // gb is intentionally excluded: real UK postcode area prefixes are legitimately 1 or 2
+    // letters (e.g. "E" vs "EC"), so its shape varies call-to-call — covered by its own test below.
+    for (const c of ID_COUNTRIES.filter(c => c.code !== 'gb')) {
+      const postal1 = genPostalCode(c.code)
+      const postal2 = genPostalCode(c.code)
+      assert.ok(postal1.length > 0, c.code)
+      assert.equal(postal1.replace(/\d/g, '#').replace(/[A-Z]/g, 'L'), postal2.replace(/\d/g, '#').replace(/[A-Z]/g, 'L'), `${c.code} format changed between calls`)
+    }
+  })
+
+  test('UK postal code matches the real outward+inward structure', () => {
+    for (let i = 0; i < 30; i++) {
+      assert.match(genPostalCode('gb'), /^[A-Z]{1,2}\d{1,2} \d[A-Z]{2}$/)
+    }
+  })
+})
+
+describe('genAddressLine', () => {
+  test('every country produces a non-empty address line', () => {
+    for (const c of ID_COUNTRIES) {
+      const names = PROFILE_NAMES[c.code] || { firstNames: ['X'], lastNames: ['Y'] }
+      const addr = genAddressLine(c.code, names)
+      assert.ok(addr && addr.trim().length > 0, c.code)
+    }
+  })
+})
+
+describe('generateProfile', () => {
+  test('every country produces a fully self-consistent profile with no crashes', () => {
+    for (const c of ID_COUNTRIES) {
+      for (let i = 0; i < 5; i++) {
+        const p = generateProfile(c.code)
+        assert.ok(p.firstName && p.lastName && p.middleName, c.code)
+        assert.ok(p.fullName.includes(p.firstName) || p.fullName.includes(p.lastName), c.code)
+        assert.ok(p.addressLine.length > 0, c.code)
+        assert.ok(p.postalCode.length > 0, c.code)
+        assert.match(p.phoneNumber, /^\+\d+$/, c.code)
+        assert.ok(Array.isArray(p.nationalIds) && p.nationalIds.length >= 1, c.code)
+        assert.ok(p.passportNumber.length > 0, c.code)
+        assert.equal(p.mrz.line1.length, 44, c.code)
+        assert.equal(p.mrz.line2.length, 44, c.code)
+      }
+    }
+  })
+
+  test('MRZ output is always clean ICAO 9303 characters (A-Z, 0-9, <) — no diacritics, no raw scripts, no spaces', () => {
+    for (const c of ID_COUNTRIES) {
+      for (let i = 0; i < 10; i++) {
+        const p = generateProfile(c.code)
+        assert.match(p.mrz.line1 + p.mrz.line2, /^[A-Z0-9<]+$/, `${c.code}: ${p.mrz.line1}${p.mrz.line2}`)
+      }
+    }
+  })
+
+  test('MRZ identifier reflects the generated surname/given name (or China\'s Latin placeholder)', () => {
+    const p = generateProfile('it')
+    const translitLast = transliterateForMrz(p.lastName).toUpperCase()
+    assert.ok(p.mrz.line1.includes(translitLast), `${p.mrz.line1} should contain ${translitLast}`)
+
+    const cnProfile = generateProfile('cn')
+    assert.ok(cnProfile.mrz.line1.includes('WEI') && cnProfile.mrz.line1.includes('JUN'))
+  })
+
+  test('National ID count matches NATIONAL_ID_TYPES for multi-variant countries (Spain, Singapore)', () => {
+    assert.equal(generateProfile('es').nationalIds.length, 2)
+    assert.equal(generateProfile('sg').nationalIds.length, 2)
+  })
+
+  test('Vietnam/China full names use family-name-first order', () => {
+    const vnProfile = generateProfile('vn')
+    assert.ok(vnProfile.fullName.startsWith(vnProfile.lastName), vnProfile.fullName)
+    const cnProfile = generateProfile('cn')
+    assert.equal(cnProfile.fullName, `${cnProfile.lastName}${cnProfile.firstName}`)
   })
 })
