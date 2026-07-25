@@ -270,6 +270,11 @@ function generateRandomString(amount, classes, charEnabled) {
   const output = document.getElementById('tt-output')
   const charCountEl = document.getElementById('tt-char-count')
   const wordCountEl = document.getElementById('tt-word-count')
+  const sentenceCountEl = document.getElementById('tt-sentence-count')
+  const paragraphCountEl = document.getElementById('tt-paragraph-count')
+  const lineCountEl = document.getElementById('tt-line-count')
+  const spaceCountEl = document.getElementById('tt-space-count')
+  const countSpacesCheckbox = document.getElementById('tt-count-spaces')
   const copyBtn = document.getElementById('tt-copy')
   const resetBtn = document.getElementById('tt-reset-btn')
   const errorEl = document.getElementById('tt-error')
@@ -277,7 +282,7 @@ function generateRandomString(amount, classes, charEnabled) {
   const UNIT_DEFAULT_AMOUNT = { chars: 1, words: 1, sentences: 1, paragraphs: 2, strings: 16 }
   const DEFAULT_SETTINGS = {
     lang: 'en', unit: 'chars', amount: UNIT_DEFAULT_AMOUNT.chars, paraLength: 25, lineBreak: '2',
-    charClasses: ['upper', 'lower', 'digits', 'symbols']
+    charClasses: ['upper', 'lower', 'digits', 'symbols'], countSpaces: true
   }
 
   function setLang(value) {
@@ -327,6 +332,7 @@ function generateRandomString(amount, classes, charEnabled) {
     Object.keys(CHAR_CLASS_CHECKBOXES).forEach(key => {
       CHAR_CLASS_CHECKBOXES[key].checked = settings.charClasses.includes(key)
     })
+    countSpacesCheckbox.checked = settings.countSpaces
     // Cloned per class (never aliased to FULL_CHAR_CLASSES or a saved settings object) so toggling
     // a character in the popover can never mutate a shared/default array out from under a reset.
     const saved = settings.charEnabled || {}
@@ -347,7 +353,8 @@ function generateRandomString(amount, classes, charEnabled) {
       paraLength: paraLengthInput.value,
       lineBreak: document.querySelector('input[name="tt-linebreak"]:checked').value,
       charClasses: Object.keys(CHAR_CLASS_CHECKBOXES).filter(key => CHAR_CLASS_CHECKBOXES[key].checked),
-      charEnabled
+      charEnabled,
+      countSpaces: countSpacesCheckbox.checked
     }
   }
 
@@ -365,11 +372,40 @@ function generateRandomString(amount, classes, charEnabled) {
     langRow.hidden = isStrings
   }
 
+  // Sentence-ending marks include the ones our own generator uses (full-width 。！？ for zh/ja,
+  // Hindi's ।) alongside the standard Latin ones, so counts stay meaningful for every language.
+  function countSentences(text) {
+    if (!text.trim()) return 0
+    return text.split(/[.!?。！？।]+/).map(s => s.trim()).filter(Boolean).length
+  }
+
+  // Paragraphs are blocks separated by a blank line — matches the "Line break with blank line"
+  // option; under "no blank line" every paragraph runs together and counts as one, same as a
+  // reader skimming the raw text would see it.
+  function countParagraphs(text) {
+    if (!text.trim()) return 0
+    const blankLineBlocks = text.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean)
+    if (blankLineBlocks.length > 1) return blankLineBlocks.length
+    // No blank-line separators found — e.g. the "no blank line" Paragraphs option puts each
+    // paragraph on its own line instead — so fall back to counting non-empty lines.
+    return text.split('\n').map(s => s.trim()).filter(Boolean).length || 1
+  }
+
+  function countLines(text) {
+    if (!text) return 0
+    const newlines = (text.match(/\n/g) || []).length
+    return text.endsWith('\n') ? newlines : newlines + 1
+  }
+
   function updateCounts() {
     const text = output.value
-    charCountEl.textContent = text.length
+    charCountEl.textContent = countSpacesCheckbox.checked ? text.length : text.replace(/\s/g, '').length
     const words = text.trim().split(/\s+/).filter(Boolean)
     wordCountEl.textContent = text.trim() ? words.length : 0
+    sentenceCountEl.textContent = countSentences(text)
+    paragraphCountEl.textContent = countParagraphs(text)
+    lineCountEl.textContent = countLines(text)
+    spaceCountEl.textContent = (text.match(/\s/g) || []).length
   }
 
   function generate() {
@@ -468,15 +504,24 @@ function generateRandomString(amount, classes, charEnabled) {
 
   generateBtn.addEventListener('click', generate)
   output.addEventListener('input', updateCounts)
+  countSpacesCheckbox.addEventListener('change', () => {
+    updateCounts()
+    saveSettings()
+  })
+
+  const COPY_ICON = copyBtn.innerHTML
+  const CHECK_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
 
   copyBtn.addEventListener('click', () => {
     if (!output.value) return
     navigator.clipboard.writeText(output.value).then(() => {
-      copyBtn.textContent = 'Copied!'
+      copyBtn.innerHTML = CHECK_ICON
       copyBtn.classList.add('copied')
+      copyBtn.title = 'Copied!'
       setTimeout(() => {
-        copyBtn.textContent = 'Copy'
+        copyBtn.innerHTML = COPY_ICON
         copyBtn.classList.remove('copied')
+        copyBtn.title = 'Copy to clipboard'
       }, 1400)
     })
   })

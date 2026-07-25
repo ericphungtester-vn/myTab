@@ -41,7 +41,7 @@
             </ul>
             <p><strong>Strings</strong> is unrelated to Language and its word banks — it generates a random string of exactly "Amount" characters from the checked classes: <strong>ABC</strong> uppercase, <strong>abc</strong> lowercase, <strong>123</strong> digits, <strong>#$&amp;</strong> symbols (all 32 standard keyboard symbols), and <strong>Space</strong> — like a password/random-string generator. Space defaults off; the other 4 default on with every character enabled (95 characters total). Click a class's <strong>text label</strong> (not its checkbox) to open a picker and enable/disable individual characters within that class — Space has only one character, so it has no picker.</p>
             <p>Every checked class is guaranteed at least one character in the result (the rest fill in randomly across all checked classes) — like a real password generator, not a flat character soup. This means <strong>Amount must be at least as large as the number of checked classes</strong> (e.g. 5 classes checked needs Amount ≥ 5); Generate shows an inline error instead of running if that's not met, or if every class/character is unchecked.</p>
-            <p><strong>Output box</strong>: click Generate to fill it, or paste your own text in — the character/word counter below always reflects whatever is currently in the box, whether generated or pasted. Click Copy to copy it to the clipboard.</p>
+            <p><strong>Output box</strong>: click Generate to fill it, or paste your own text in — the counters below (characters, words, sentences, paragraphs, lines, spaces) always reflect whatever is currently in the box, whether generated or pasted. Sentences are split on . ! ? (and 。！？। for CJK/Hindi text); paragraphs are blocks separated by a blank line, or if there's no blank line anywhere, each non-empty line counts as one paragraph; spaces counts all whitespace (spaces, tabs, line breaks). Uncheck <strong>Count spaces</strong> to exclude whitespace from the character count. Click the copy icon in the corner of the box to copy it to the clipboard.</p>
             <p><strong>⟲ Reset</strong> (next to "Text" in the left sidebar): restores every setting on this tool back to its default (English, Characters, Amount 1, etc.) and regenerates immediately.</p>
             <p>Your last-used settings — including which individual characters are enabled per class — are remembered via Chrome Sync.</p>
           </div>
@@ -157,11 +157,11 @@
           <div class="tt-radio-group">
             <label class="tt-radio-opt">
               <input type="radio" name="tt-linebreak" value="1">
-              <span>Line break, no blank line</span>
+              <span>Line break, no blank line (1 newline character)</span>
             </label>
             <label class="tt-radio-opt">
               <input type="radio" name="tt-linebreak" value="2" checked>
-              <span>Line break with blank line</span>
+              <span>Line break with blank line (2 newline characters)</span>
             </label>
           </div>
         </div>
@@ -169,10 +169,17 @@
         <button id="tt-generate" class="tt-generate-btn">Generate</button>
 
         <div class="tt-output-wrap">
-          <textarea id="tt-output" rows="8" dir="auto" placeholder="Generated text appears here — or paste your own text in to count it"></textarea>
           <div class="tt-output-footer">
-            <span class="tt-counter"><span id="tt-char-count">0</span> characters · <span id="tt-word-count">0</span> words</span>
-            <button id="tt-copy" class="tt-copy-btn">Copy</button>
+            <span class="tt-counter"><span id="tt-char-count">0</span> chars · <span id="tt-word-count">0</span> words · <span id="tt-sentence-count">0</span> sent. · <span id="tt-paragraph-count">0</span> para. · <span id="tt-line-count">0</span> lines · <span id="tt-space-count">0</span> spaces</span>
+            <label class="tt-counter-toggle" title="Include whitespace (spaces, tabs, line breaks) in the character count">
+              <input type="checkbox" id="tt-count-spaces" checked> Count spaces
+            </label>
+          </div>
+          <div class="tt-output-textwrap">
+            <textarea id="tt-output" rows="8" dir="auto" placeholder="Generated text appears here — or paste your own text in to count it"></textarea>
+            <button id="tt-copy" class="tt-copy-icon-btn" aria-label="Copy to clipboard" title="Copy to clipboard">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
           </div>
         </div>
       </section>
