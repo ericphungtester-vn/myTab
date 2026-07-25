@@ -244,7 +244,10 @@ function generateRandomString(amount, classes, charEnabled) {
 // ---- Wiring ----
 ;(function initTextTool() {
   const langRow = document.getElementById('tt-lang-row')
-  const langSelect = document.getElementById('tt-lang')
+  const langTrigger = document.getElementById('tt-lang-trigger')
+  const langTriggerLabel = document.getElementById('tt-lang-trigger-label')
+  const langPanel = document.getElementById('tt-lang-panel')
+  let currentLang = 'en'
   const unitSeg = document.querySelector('.segmented[data-group="unit"]')
   const amountInput = document.getElementById('tt-amount')
   const paraLengthRow = document.getElementById('tt-para-length-row')
@@ -277,8 +280,46 @@ function generateRandomString(amount, classes, charEnabled) {
     charClasses: ['upper', 'lower', 'digits', 'symbols']
   }
 
+  function setLang(value) {
+    const opt = langPanel.querySelector(`.ft-select-option[data-value="${value}"]`)
+    if (!opt) return
+    currentLang = value
+    langTriggerLabel.textContent = opt.textContent
+    langPanel.querySelectorAll('.ft-select-option').forEach(o => o.classList.toggle('active', o === opt))
+  }
+
+  function openLangPanel() {
+    langPanel.hidden = false
+    const rect = langTrigger.getBoundingClientRect()
+    langPanel.style.left = rect.left + 'px'
+    langPanel.style.width = rect.width + 'px'
+    langPanel.style.top = (rect.bottom + 4) + 'px'
+    langPanel.style.maxHeight = Math.max(120, window.innerHeight - rect.bottom - 12) + 'px'
+  }
+
+  function closeLangPanel() {
+    langPanel.hidden = true
+  }
+
+  langTrigger.addEventListener('click', () => {
+    if (langPanel.hidden) openLangPanel()
+    else closeLangPanel()
+  })
+
+  langPanel.addEventListener('click', e => {
+    const opt = e.target.closest('.ft-select-option')
+    if (!opt) return
+    setLang(opt.dataset.value)
+    closeLangPanel()
+    saveSettings()
+  })
+
+  document.addEventListener('click', e => {
+    if (!langPanel.hidden && !langPanel.contains(e.target) && !langTrigger.contains(e.target)) closeLangPanel()
+  })
+
   function applySettings(settings) {
-    langSelect.value = settings.lang
+    setLang(settings.lang)
     setSegmented(unitSeg, settings.unit)
     amountInput.value = settings.amount
     paraLengthInput.value = settings.paraLength
@@ -300,7 +341,7 @@ function generateRandomString(amount, classes, charEnabled) {
 
   function currentSettings() {
     return {
-      lang: langSelect.value,
+      lang: currentLang,
       unit: unitSeg.querySelector('.seg-btn.active').dataset.value,
       amount: amountInput.value,
       paraLength: paraLengthInput.value,
@@ -422,7 +463,6 @@ function generateRandomString(amount, classes, charEnabled) {
     }
   })
 
-  langSelect.addEventListener('change', saveSettings)
   amountInput.addEventListener('change', saveSettings)
   paraLengthInput.addEventListener('change', saveSettings)
 

@@ -46,6 +46,20 @@
             <p>Your last-used settings — including which individual characters are enabled per class — are remembered via Chrome Sync.</p>
           </div>
         </div>
+        <div class="guide-section">
+          <button class="guide-section-header">File <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>Generates a real, valid file of the format and size you specify, then downloads it immediately — useful for testing upload limits, storage quotas, or just needing a file of a certain size.</p>
+            <p><strong>Type</strong>: Plain Text, CSV, JSON, HTML, XML, Markdown, and Random Binary have no minimum size. Every other type is a genuine file of that format (a real image/archive/document, not just renamed bytes) — each has a small minimum size, since a valid file of that format can't be smaller than its own header/structure. Generate shows an inline error instead of running if you go below it.</p>
+            <p><strong>Excel / Word / PowerPoint / EPUB</strong> (.xlsx/.docx/.pptx/.epub) are Office Open XML / EPUB files — really just a ZIP of small XML parts — that open correctly in their respective apps (and EPUB readers). The extra size beyond the minimal structure is filler text placed in cell A1 (Excel), the first paragraph (Word), the first slide's text box (PowerPoint), or the first chapter (EPUB) — it's the only thing that changes as you increase the size.</p>
+            <p><strong>PNG / BMP / GIF / JPEG / TIFF / ICO</strong> render a real gradient/pattern image (not a solid color), with pixel dimensions that scale up with the requested size — up to a cap of 256x256, so the image stays clearly visible without needing to zoom (ICO wraps a real PNG, so it scales the same way). <strong>SVG</strong> draws a real gradient rectangle plus visible filler text, scaling by text length rather than pixel count. Sizes beyond what the image needs are simply extra bytes appended past the image data, which viewers ignore.</p>
+            <p>Every format shows or plays back something real when opened, not a blank/silent shell: HTML and XML put the filler text where it's actually rendered (not in a comment), PDF draws it as real text on the page, and WAV is an audible 440 Hz tone rather than silence.</p>
+            <p><strong>Size</strong>: enter an amount and pick B / KB / MB. Capped at 50 MB to avoid freezing the popup.</p>
+            <p><strong>KB/MB means</strong>: macOS Finder and Windows Explorer disagree on what "KB"/"MB" means — Finder divides by 1000 (the actual SI definition), Explorer divides by 1024 despite using the same labels. No single file size reads as a clean round number on both, so pick whichever OS you'll be viewing the file's size on; the "actual size" shown after Generate is computed the same way.</p>
+            <p><strong>Filename</strong>: name for the downloaded file — the correct extension is added automatically based on Type.</p>
+            <p>After Generate &amp; Download, the actual byte size produced is shown below the button — it matches your requested size exactly for every format (once above its minimum).</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -57,30 +71,40 @@
         <button class="tab-btn active" data-tab="text">Text</button>
         <button id="tt-reset-btn" class="tool-reset-btn" aria-label="Reset Text settings" title="Reset Text settings">⟲</button>
       </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="file">File</button>
+        <button id="ft-reset-btn" class="tool-reset-btn" aria-label="Reset File settings" title="Reset File settings">⟲</button>
+      </div>
     </nav>
     <main id="app-main">
       <section id="tab-text" class="tab-content active">
         <div class="tt-row" id="tt-lang-row">
-          <label for="tt-lang">Language</label>
-          <select id="tt-lang">
-            <option value="en" selected>English</option>
-            <option value="vi">Tiếng Việt</option>
-            <option value="es">Español</option>
-            <option value="fr">Français</option>
-            <option value="de">Deutsch</option>
-            <option value="it">Italiano</option>
-            <option value="pt">Português</option>
-            <option value="zh">中文 (Chinese)</option>
-            <option value="ja">日本語 (Japanese)</option>
-            <option value="ko">한국어 (Korean)</option>
-            <option value="ru">Русский (Russian)</option>
-            <option value="ar">العربية (Arabic)</option>
-            <option value="el">Ελληνικά (Greek)</option>
-            <option value="he">עברית (Hebrew)</option>
-            <option value="hi">हिन्दी (Hindi)</option>
-            <option value="th">ไทย (Thai)</option>
-            <option value="latin">Lorem Ipsum (Latin)</option>
-          </select>
+          <label>Language</label>
+          <div class="ft-select">
+            <button type="button" class="ft-select-trigger" id="tt-lang-trigger" aria-haspopup="listbox">
+              <span id="tt-lang-trigger-label">English</span>
+              <span class="ft-select-arrow">▾</span>
+            </button>
+            <div class="ft-select-panel" id="tt-lang-panel" hidden role="listbox">
+              <button type="button" class="ft-select-option active" data-value="en">English</button>
+              <button type="button" class="ft-select-option" data-value="vi">Tiếng Việt</button>
+              <button type="button" class="ft-select-option" data-value="es">Español</button>
+              <button type="button" class="ft-select-option" data-value="fr">Français</button>
+              <button type="button" class="ft-select-option" data-value="de">Deutsch</button>
+              <button type="button" class="ft-select-option" data-value="it">Italiano</button>
+              <button type="button" class="ft-select-option" data-value="pt">Português</button>
+              <button type="button" class="ft-select-option" data-value="zh">中文 (Chinese)</button>
+              <button type="button" class="ft-select-option" data-value="ja">日本語 (Japanese)</button>
+              <button type="button" class="ft-select-option" data-value="ko">한국어 (Korean)</button>
+              <button type="button" class="ft-select-option" data-value="ru">Русский (Russian)</button>
+              <button type="button" class="ft-select-option" data-value="ar">العربية (Arabic)</button>
+              <button type="button" class="ft-select-option" data-value="el">Ελληνικά (Greek)</button>
+              <button type="button" class="ft-select-option" data-value="he">עברית (Hebrew)</button>
+              <button type="button" class="ft-select-option" data-value="hi">हिन्दी (Hindi)</button>
+              <button type="button" class="ft-select-option" data-value="th">ไทย (Thai)</button>
+              <button type="button" class="ft-select-option" data-value="latin">Lorem Ipsum (Latin)</button>
+            </div>
+          </div>
         </div>
         <div class="tt-row">
           <label>Unit</label>
@@ -152,10 +176,76 @@
           </div>
         </div>
       </section>
+
+      <section id="tab-file" class="tab-content">
+        <div class="tt-row">
+          <label>Type</label>
+          <div class="ft-select">
+            <button type="button" class="ft-select-trigger" id="ft-type-trigger" aria-haspopup="listbox">
+              <span id="ft-type-trigger-label">Plain Text (.txt)</span>
+              <span class="ft-select-arrow">▾</span>
+            </button>
+            <div class="ft-select-panel" id="ft-type-panel" hidden role="listbox">
+              <div class="ft-select-group-label">Text</div>
+              <button type="button" class="ft-select-option active" data-value="txt">Plain Text (.txt)</button>
+              <button type="button" class="ft-select-option" data-value="csv">CSV (.csv)</button>
+              <button type="button" class="ft-select-option" data-value="json">JSON (.json)</button>
+              <button type="button" class="ft-select-option" data-value="html">HTML (.html)</button>
+              <button type="button" class="ft-select-option" data-value="xml">XML (.xml)</button>
+              <button type="button" class="ft-select-option" data-value="md">Markdown (.md)</button>
+              <div class="ft-select-group-label">Binary</div>
+              <button type="button" class="ft-select-option" data-value="bin">Random Binary (.bin)</button>
+              <button type="button" class="ft-select-option" data-value="zip">ZIP Archive (.zip)</button>
+              <div class="ft-select-group-label">Image</div>
+              <button type="button" class="ft-select-option" data-value="png">PNG Image (.png)</button>
+              <button type="button" class="ft-select-option" data-value="bmp">BMP Image (.bmp)</button>
+              <button type="button" class="ft-select-option" data-value="gif">GIF Image (.gif)</button>
+              <button type="button" class="ft-select-option" data-value="jpg">JPEG Image (.jpg)</button>
+              <button type="button" class="ft-select-option" data-value="tiff">TIFF Image (.tiff)</button>
+              <button type="button" class="ft-select-option" data-value="svg">SVG Image (.svg)</button>
+              <button type="button" class="ft-select-option" data-value="ico">Icon (.ico)</button>
+              <div class="ft-select-group-label">Document</div>
+              <button type="button" class="ft-select-option" data-value="pdf">PDF (.pdf)</button>
+              <button type="button" class="ft-select-option" data-value="rtf">Rich Text (.rtf)</button>
+              <button type="button" class="ft-select-option" data-value="epub">EPUB eBook (.epub)</button>
+              <div class="ft-select-group-label">Office</div>
+              <button type="button" class="ft-select-option" data-value="xlsx">Excel Workbook (.xlsx)</button>
+              <button type="button" class="ft-select-option" data-value="docx">Word Document (.docx)</button>
+              <button type="button" class="ft-select-option" data-value="pptx">PowerPoint Presentation (.pptx)</button>
+              <div class="ft-select-group-label">Audio</div>
+              <button type="button" class="ft-select-option" data-value="wav">WAV Audio (.wav)</button>
+            </div>
+          </div>
+        </div>
+        <div class="tt-row">
+          <label for="ft-size">Size</label>
+          <input type="number" id="ft-size" class="ft-size-input" min="1" value="10">
+          <div class="segmented" data-group="ft-unit">
+            <button class="seg-btn" data-value="B">B</button>
+            <button class="seg-btn active" data-value="KB">KB</button>
+            <button class="seg-btn" data-value="MB">MB</button>
+          </div>
+        </div>
+        <div class="tt-row">
+          <label>KB/MB means</label>
+          <div class="segmented" data-group="ft-unit-style">
+            <button class="seg-btn active" data-value="mac" title="1 KB = 1000 bytes — matches macOS Finder">macOS</button>
+            <button class="seg-btn" data-value="win" title="1 KB = 1024 bytes — matches Windows Explorer">Windows</button>
+          </div>
+        </div>
+        <div class="tt-row">
+          <label for="ft-filename">Filename</label>
+          <input type="text" id="ft-filename" value="generated-file" placeholder="generated-file">
+        </div>
+        <p class="tt-error" id="ft-error" hidden></p>
+        <button id="ft-generate" class="tt-generate-btn">Generate &amp; Download</button>
+        <p class="ft-result" id="ft-result" hidden></p>
+      </section>
     </main>
   </div>
 
   <script src="js/main.js"></script>
   <script src="js/text-tool.js"></script>
+  <script src="js/file-tool.js"></script>
 </body>
 </html>
