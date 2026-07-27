@@ -11,7 +11,14 @@ const zoomLayer = document.getElementById('canvas-zoom-layer')
 const canvasBg = document.getElementById('canvas-bg')
 const alignBtns = document.querySelectorAll('.align-opt')
 const alignBtn = document.getElementById('align-btn')
+const fontSizeBtn = document.getElementById('font-size-btn')
+const fontSizePicker = document.getElementById('font-size-picker')
 const zoomLevelLabel = document.getElementById('zoom-level')
+
+// Text font size — Word-like list, decoupled from the stroke-width control (which only affects
+// shapes/image borders). `textFontSize` is the size applied to newly placed text and to text while
+// it's being edited, mirroring how `textAlign` works.
+const FONT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32]
 
 // Live value readouts next to the style sliders
 function bindSliderValue(input, valueId, suffix) {
@@ -80,6 +87,7 @@ function keepPickerOnScreen(picker) {
 let tool = 'select'
 let activeShape = 'rect'
 let textAlign = 'left'
+let textFontSize = 10
 let editingText = false
 let drawing = false
 let startX = 0, startY = 0
@@ -155,7 +163,7 @@ function getPos(e) {
 
 const layerOrderBtn = document.getElementById('layer-order-btn')
 function setLayerBtnsEnabled(on) { layerOrderBtn.disabled = !on }
-function setAlignBtnsEnabled(on) { alignBtn.disabled = !on }
+function setTextCtrlsEnabled(on) { alignBtn.disabled = !on; fontSizeBtn.disabled = !on }
 const selectionBtn = document.getElementById('selection-btn')
 function setSelectionBtnEnabled(on) { selectionBtn.disabled = !on }
 const cropBtn = document.getElementById('crop-btn')
@@ -650,7 +658,7 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
     document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'))
     btn.classList.add('active')
     tool = btn.dataset.tool
-    setAlignBtnsEnabled(tool === 'text' || editingText)
+    setTextCtrlsEnabled(tool === 'text' || editingText)
     if (tool === 'select') {
       canvas.style.pointerEvents = 'none'
       canvas.style.cursor = 'default'
@@ -675,7 +683,7 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
     document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'))
     selectionBtn.classList.add('active')
     tool = 'selection'
-    setAlignBtnsEnabled(false)
+    setTextCtrlsEnabled(false)
     canvas.style.pointerEvents = 'auto'
     canvas.style.cursor = 'crosshair'
   })
@@ -704,7 +712,7 @@ cropBtn.addEventListener('click', () => {
   selectionBtn.classList.remove('active')
   cropBtn.classList.add('active')
   tool = 'crop'
-  setAlignBtnsEnabled(false)
+  setTextCtrlsEnabled(false)
   canvas.style.pointerEvents = 'auto'
   canvas.style.cursor = 'crosshair'
 })
@@ -720,7 +728,7 @@ function cancelSelectionTool() {
   tool = 'select'
   canvas.style.pointerEvents = 'none'
   canvas.style.cursor = 'default'
-  setAlignBtnsEnabled(false)
+  setTextCtrlsEnabled(false)
 }
 
 // Once the initial drag finishes, lets the user fine-tune the marquee — drag its body to move it,
@@ -1025,6 +1033,40 @@ function setPasteModeBtnEnabled(on) { pasteModeBtn.disabled = !on }
       btn.classList.add('active')
       textAlign = btn.dataset.align
       alignBtn.innerHTML = btn.querySelector('svg').outerHTML
+      showPicker(false)
+    })
+  })
+})()
+
+// Text font size — single trigger button showing the current size; click opens a Word-style value
+// list (8–32). Applies to newly placed text and to text while it's being edited.
+;(function () {
+  const valueEl = document.getElementById('font-size-value')
+  const showPicker = v => { fontSizePicker.style.display = v ? 'flex' : 'none'; if (v) keepPickerOnScreen(fontSizePicker) }
+
+  FONT_SIZES.forEach(sz => {
+    const opt = document.createElement('button')
+    opt.className = 'shape-opt font-size-opt'
+    opt.dataset.size = sz
+    opt.textContent = sz
+    if (sz === textFontSize) opt.classList.add('active')
+    fontSizePicker.appendChild(opt)
+  })
+  const opts = fontSizePicker.querySelectorAll('.font-size-opt')
+  valueEl.textContent = textFontSize
+
+  fontSizeBtn.addEventListener('click', () => { showPicker(fontSizePicker.style.display === 'none') })
+
+  document.addEventListener('click', e => {
+    if (fontSizePicker.style.display !== 'none' && !fontSizePicker.contains(e.target) && !fontSizeBtn.contains(e.target)) showPicker(false)
+  })
+
+  opts.forEach(opt => {
+    opt.addEventListener('click', () => {
+      opts.forEach(o => o.classList.remove('active'))
+      opt.classList.add('active')
+      textFontSize = parseInt(opt.dataset.size)
+      valueEl.textContent = textFontSize
       showPicker(false)
     })
   })
@@ -1474,7 +1516,7 @@ function openTextEditor({ left, top, fontSize, lineHeight, color, initialText = 
   input.focus()
   if (initialText) input.select()
   editingText = true
-  setAlignBtnsEnabled(true)
+  setTextCtrlsEnabled(true)
   let curOpacity = opacity
   let curBlur = blur
   let curShadow = shadow
@@ -1485,10 +1527,11 @@ function openTextEditor({ left, top, fontSize, lineHeight, color, initialText = 
   autoResize()
   input.addEventListener('input', autoResize)
 
-  // Live-follow the toolbar's color/stroke-width/alignment/opacity/blur/shadow controls while editing
+  // Live-follow the toolbar's color/font-size/alignment/opacity/blur/shadow controls while editing
+  const fontSizeOpts = fontSizePicker.querySelectorAll('.font-size-opt')
   function applyLiveStyle() {
     const c = getColor()
-    const fs = getWidth() + 7
+    const fs = textFontSize
     const lh = fs * 1.2
     curOpacity = getOpacity()
     curBlur = getBlur()
@@ -1509,13 +1552,13 @@ function openTextEditor({ left, top, fontSize, lineHeight, color, initialText = 
     input.focus()
   }
   colorPicker.addEventListener('input', applyLiveStyle)
-  strokeWidthInput.addEventListener('input', applyLiveStyle)
   opacityInput.addEventListener('input', applyLiveStyle)
   blurInput.addEventListener('input', applyLiveStyle)
   shadowInput.addEventListener('input', applyLiveStyle)
   alignBtns.forEach(btn => btn.addEventListener('click', applyLiveStyle))
+  fontSizeOpts.forEach(opt => opt.addEventListener('click', applyLiveStyle))
 
-  function isStyleControl(el) { return el === colorPicker || el === strokeWidthInput || el === opacityInput || el === blurInput || el === shadowInput || alignBtn.contains(el) || document.getElementById('align-picker').contains(el) }
+  function isStyleControl(el) { return el === colorPicker || el === strokeWidthInput || el === opacityInput || el === blurInput || el === shadowInput || alignBtn.contains(el) || document.getElementById('align-picker').contains(el) || fontSizeBtn.contains(el) || fontSizePicker.contains(el) }
   function onDocMousedown(e) {
     if (e.target === input || isStyleControl(e.target)) return
     commit()
@@ -1526,13 +1569,13 @@ function openTextEditor({ left, top, fontSize, lineHeight, color, initialText = 
   function cleanup() {
     document.removeEventListener('mousedown', onDocMousedown)
     colorPicker.removeEventListener('input', applyLiveStyle)
-    strokeWidthInput.removeEventListener('input', applyLiveStyle)
     opacityInput.removeEventListener('input', applyLiveStyle)
     blurInput.removeEventListener('input', applyLiveStyle)
     shadowInput.removeEventListener('input', applyLiveStyle)
     alignBtns.forEach(btn => btn.removeEventListener('click', applyLiveStyle))
+    fontSizeOpts.forEach(opt => opt.removeEventListener('click', applyLiveStyle))
     editingText = false
-    setAlignBtnsEnabled(tool === 'text')
+    setTextCtrlsEnabled(tool === 'text')
   }
   function commit() {
     if (done) return
@@ -1571,7 +1614,7 @@ function openTextEditor({ left, top, fontSize, lineHeight, color, initialText = 
 canvas.addEventListener('click', e => {
   if (tool !== 'text') return
   const layerRect = zoomLayer.getBoundingClientRect()
-  const fontSize = getWidth() + 7
+  const fontSize = textFontSize
   const lineHeight = fontSize * 1.2
   const left = (e.clientX - layerRect.left) / zoom
   const top = (e.clientY - layerRect.top) / zoom - fontSize / 2

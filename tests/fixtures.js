@@ -15,8 +15,9 @@ const test = base.extend({
     const context = await chromium.launchPersistentContext(userDataDir, {
       headless: false, // Chrome extensions do not load reliably in headless mode
       // Wide enough that the whole FlashPaint toolbar fits without collapsing into the "»"
-      // overflow menu — several tests click buttons directly by id and need them on-screen
-      viewport: { width: 1600, height: 900 },
+      // overflow menu — several tests click buttons directly by id and need them on-screen.
+      // Bumped from 1600 when the Text font-size control was added (~60px wider toolbar).
+      viewport: { width: 1680, height: 900 },
       args: [
         `--disable-extensions-except=${EXTENSION_PATH}`,
         `--load-extension=${EXTENSION_PATH}`,

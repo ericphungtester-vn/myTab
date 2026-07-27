@@ -1302,6 +1302,10 @@ body {
 .align-picker { width: 160px; }
 .align-opt { width: 32px; height: 32px; border: none; }
 
+.font-size-wrap { position: relative; }
+.font-size-picker { width: 176px; }
+.font-size-opt { width: 34px; height: 30px; font-size: 12px; font-weight: 500; }
+
 .layer-order-wrap { position: relative; }
 .layer-order-picker { width: 160px; }
 
