@@ -195,32 +195,8 @@
   <div id="app-body">
     <nav class="tab-nav" id="tool-sidebar">
       <div class="tool-nav-item">
-        <button class="tab-btn active" data-tab="text">Text</button>
-        <button id="tt-reset-btn" class="tool-reset-btn" aria-label="Reset Text settings" title="Reset Text settings">⟲</button>
-      </div>
-      <div class="tool-nav-item">
-        <button class="tab-btn" data-tab="file">File</button>
-        <button id="ft-reset-btn" class="tool-reset-btn" aria-label="Reset File settings" title="Reset File settings">⟲</button>
-      </div>
-      <div class="tool-nav-item">
-        <button class="tab-btn" data-tab="profile">Profile</button>
-        <button id="pf-reset-btn" class="tool-reset-btn" aria-label="Reset Profile settings" title="Reset Profile settings">⟲</button>
-      </div>
-      <div class="tool-nav-item">
-        <button class="tab-btn" data-tab="resize">Resize</button>
-        <button id="rs-reset-btn" class="tool-reset-btn" aria-label="Reset Resize settings" title="Reset Resize settings">⟲</button>
-      </div>
-      <div class="tool-nav-item">
-        <button class="tab-btn" data-tab="compare">Compare</button>
-        <button id="cp-reset-btn" class="tool-reset-btn" aria-label="Reset Compare settings" title="Reset Compare settings">⟲</button>
-      </div>
-      <div class="tool-nav-item">
-        <button class="tab-btn" data-tab="iban">IBAN</button>
-        <button id="ib-reset-btn" class="tool-reset-btn" aria-label="Reset IBAN settings" title="Reset IBAN settings">⟲</button>
-      </div>
-      <div class="tool-nav-item">
-        <button class="tab-btn" data-tab="noniban">Non-IBAN</button>
-        <button id="nb-reset-btn" class="tool-reset-btn" aria-label="Reset Non-IBAN settings" title="Reset Non-IBAN settings">⟲</button>
+        <button class="tab-btn" data-tab="base">Base</button>
+        <button id="bn-reset-btn" class="tool-reset-btn" aria-label="Reset Base" title="Reset Base">⟲</button>
       </div>
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="bban">BBAN</button>
@@ -231,36 +207,60 @@
         <button id="cc-reset-btn" class="tool-reset-btn" aria-label="Reset Card settings" title="Reset Card settings">⟲</button>
       </div>
       <div class="tool-nav-item">
-        <button class="tab-btn" data-tab="uuid">UUID</button>
-        <button id="uu-reset-btn" class="tool-reset-btn" aria-label="Reset UUID settings" title="Reset UUID settings">⟲</button>
+        <button class="tab-btn" data-tab="color">Color</button>
+        <button id="cl-reset-btn" class="tool-reset-btn" aria-label="Reset Color" title="Reset Color">⟲</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="compare">Compare</button>
+        <button id="cp-reset-btn" class="tool-reset-btn" aria-label="Reset Compare settings" title="Reset Compare settings">⟲</button>
       </div>
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="encode">Encode</button>
         <button id="eh-reset-btn" class="tool-reset-btn" aria-label="Reset Encode settings" title="Reset Encode settings">⟲</button>
       </div>
       <div class="tool-nav-item">
-        <button class="tab-btn" data-tab="jwt">JWT</button>
-        <button id="jw-reset-btn" class="tool-reset-btn" aria-label="Reset JWT" title="Reset JWT">⟲</button>
+        <button class="tab-btn" data-tab="file">File</button>
+        <button id="ft-reset-btn" class="tool-reset-btn" aria-label="Reset File settings" title="Reset File settings">⟲</button>
       </div>
       <div class="tool-nav-item">
-        <button class="tab-btn" data-tab="timestamp">Timestamp</button>
-        <button id="ts-reset-btn" class="tool-reset-btn" aria-label="Reset Timestamp" title="Reset Timestamp">⟲</button>
+        <button class="tab-btn" data-tab="iban">IBAN</button>
+        <button id="ib-reset-btn" class="tool-reset-btn" aria-label="Reset IBAN settings" title="Reset IBAN settings">⟲</button>
       </div>
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="json">JSON</button>
         <button id="jf-reset-btn" class="tool-reset-btn" aria-label="Reset JSON" title="Reset JSON">⟲</button>
       </div>
       <div class="tool-nav-item">
-        <button class="tab-btn" data-tab="base">Base</button>
-        <button id="bn-reset-btn" class="tool-reset-btn" aria-label="Reset Base" title="Reset Base">⟲</button>
+        <button class="tab-btn" data-tab="jwt">JWT</button>
+        <button id="jw-reset-btn" class="tool-reset-btn" aria-label="Reset JWT" title="Reset JWT">⟲</button>
       </div>
       <div class="tool-nav-item">
-        <button class="tab-btn" data-tab="color">Color</button>
-        <button id="cl-reset-btn" class="tool-reset-btn" aria-label="Reset Color" title="Reset Color">⟲</button>
+        <button class="tab-btn" data-tab="noniban">Non-IBAN</button>
+        <button id="nb-reset-btn" class="tool-reset-btn" aria-label="Reset Non-IBAN settings" title="Reset Non-IBAN settings">⟲</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="profile">Profile</button>
+        <button id="pf-reset-btn" class="tool-reset-btn" aria-label="Reset Profile settings" title="Reset Profile settings">⟲</button>
       </div>
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="regex">Regex</button>
         <button id="rx-reset-btn" class="tool-reset-btn" aria-label="Reset Regex" title="Reset Regex">⟲</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="resize">Resize</button>
+        <button id="rs-reset-btn" class="tool-reset-btn" aria-label="Reset Resize settings" title="Reset Resize settings">⟲</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn active" data-tab="text">Text</button>
+        <button id="tt-reset-btn" class="tool-reset-btn" aria-label="Reset Text settings" title="Reset Text settings">⟲</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="timestamp">Timestamp</button>
+        <button id="ts-reset-btn" class="tool-reset-btn" aria-label="Reset Timestamp" title="Reset Timestamp">⟲</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="uuid">UUID</button>
+        <button id="uu-reset-btn" class="tool-reset-btn" aria-label="Reset UUID settings" title="Reset UUID settings">⟲</button>
       </div>
     </nav>
     <main id="app-main">
