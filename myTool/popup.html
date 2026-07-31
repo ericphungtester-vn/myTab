@@ -704,13 +704,20 @@
         <div id="bn-fields"></div>
       </section>
       <section id="tab-color" class="tab-content">
-        <div class="tt-row">
-          <label for="cl-input">Color</label>
-          <input type="text" id="cl-input" class="tool-input" placeholder="#hex, rgb(…), hsl(…)" spellcheck="false">
-          <input type="color" id="cl-picker" class="tool-color-picker" value="#2563eb">
+        <div class="pf-field">
+          <div class="pf-field-label">Color</div>
+          <div class="pf-field-value-wrap">
+            <input type="text" id="cl-input" class="pf-field-value" placeholder="#hex, rgb(…), hsl(…)" spellcheck="false">
+          </div>
         </div>
         <p class="tt-error" id="cl-error" hidden></p>
         <div id="cl-fields"></div>
+        <div class="pf-field">
+          <div class="pf-field-label">Pick</div>
+          <div class="pf-field-value-wrap">
+            <input type="color" id="cl-picker" class="cl-picker-bar" value="#2563eb" title="Pick a color">
+          </div>
+        </div>
       </section>
       <section id="tab-regex" class="tab-content">
         <div class="tt-row">

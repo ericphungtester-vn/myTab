@@ -705,16 +705,7 @@ tr.cp-mod td:nth-of-type(4) { background: rgba(47, 158, 68, 0.10); }
 .tool-btn-row .tt-generate-btn { flex: 1; }
 .tt-generate-btn--alt { background: var(--surface); color: var(--primary); border: 1px solid var(--border); }
 .tt-generate-btn--alt:hover { background: var(--hover-bg); }
-.tool-color-picker {
-  flex: 0 0 auto;
-  width: 34px;
-  height: 32px;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: none;
-  cursor: pointer;
-}
+.cl-picker-bar { width: 32px; height: 32px; padding: 0; border: 1px solid var(--border); border-radius: var(--radius); background: none; cursor: pointer; }
 .rx-output {
   margin: 0;
   padding: 8px 10px;

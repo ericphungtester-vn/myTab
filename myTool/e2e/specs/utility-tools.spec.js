@@ -45,6 +45,14 @@ test('Color: hex converts to rgb/hsl and syncs the picker', async ({ page }) => 
   expect(await page.locator('#cl-picker').inputValue()).toBe('#ff0000')
 })
 
+test('Color: picking from the color input updates every format', async ({ page }) => {
+  await page.goto('/popup.html')
+  await page.click('.tab-btn[data-tab="color"]')
+  await page.locator('#cl-picker').evaluate(el => { el.value = '#00ff00'; el.dispatchEvent(new Event('input', { bubbles: true })) })
+  expect(await page.locator('#cl-input').inputValue()).toBe('#00FF00')
+  expect(await fieldValue(page, '#cl-fields', 'RGB')).toBe('rgb(0, 255, 0)')
+})
+
 test('Regex: matches are counted and highlighted', async ({ page }) => {
   await page.goto('/popup.html')
   await page.click('.tab-btn[data-tab="regex"]')
