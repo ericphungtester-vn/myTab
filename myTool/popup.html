@@ -73,12 +73,20 @@
           </div>
         </div>
         <div class="guide-section">
-          <button class="guide-section-header">Bank <span class="guide-arrow">▾</span></button>
+          <button class="guide-section-header">IBAN <span class="guide-arrow">▾</span></button>
           <div class="guide-section-body">
             <p><strong>Synthetic test data only.</strong> Every value is randomly generated on the spot. Bank and branch codes are random — they are <strong>not</strong> mapped to any real institution, and no output corresponds to a real account. This tool exists to test form/validation logic (does your form accept a correctly-formatted IBAN, does it verify the checksum), not to reproduce any real bank or account.</p>
             <p>Pick a <strong>Country</strong> (35 SEPA+ countries available) and click <strong>Generate</strong> — you get an <strong>IBAN</strong> (plus a space-grouped copy for readability), a <strong>SWIFT / BIC</strong>, the <strong>Bank Code</strong>, a <strong>Branch Code</strong> where that country uses one, and the <strong>Account Number</strong>. All fields are consistent — the Bank Code and Account Number are the actual segments inside the IBAN above them. Click any field's copy icon to copy just that value, or Generate again for a new set.</p>
             <p><strong>IBAN</strong> is built to the official ISO 13616 structure for each country (correct total length and bank/branch/account layout) and carries correct <strong>ISO 7064 MOD-97-10 check digits</strong> — so it passes the universal IBAN checksum that virtually all validators and payment libraries use. Some countries additionally embed a <em>national</em> check digit inside the account portion (e.g. France's RIB key, Belgium's mod-97, Italy's CIN, Spain's DC); those national digits are <strong>not</strong> separately computed here (they're random), so a strict national-level validator may reject them even though the IBAN checksum itself is valid.</p>
             <p><strong>SWIFT / BIC</strong> follows the ISO 9362 format (4-letter bank code + 2-letter country code + 2-character location code, plus an optional 3-character branch code — 8 or 11 characters). There is no BIC checksum, so this is format-correct only. <strong>Account Number</strong> is the domestic account segment of the IBAN; most countries have no universal standalone account-number checksum, so treat it as correctly-shaped, not independently checksummed.</p>
+          </div>
+        </div>
+        <div class="guide-section">
+          <button class="guide-section-header">Non-IBAN <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p><strong>Synthetic test data only.</strong> For the ~150 countries that don't use IBAN, there's no international standard for account structure the way IBAN defines one — so this tool covers a curated set of <strong>18 major countries whose domestic bank formats are publicly documented</strong>, rather than fabricating structures for countries where no reliable format exists. Everything is randomly generated; bank/branch codes are not mapped to any real institution.</p>
+            <p>Pick a <strong>Country</strong> and click <strong>Generate</strong>. You get that country's real domestic identifiers — e.g. USA's <strong>ABA routing number</strong>, Australia's <strong>BSB</strong>, Canada's <strong>institution + transit</strong>, India's <strong>IFSC</strong>, Japan's <strong>bank + branch code</strong>, Mexico's <strong>CLABE</strong>, Argentina's <strong>CBU</strong> — plus an <strong>Account Number</strong> and a <strong>SWIFT / BIC</strong> (ISO 9362, correct format). Click any field's copy icon to copy just that value.</p>
+            <p><strong>Checksums:</strong> three of these identifiers carry a real, verifiable check digit, computed with the published algorithm and verified in the test suite against known reference values — the <strong>USA ABA routing number</strong> (weighted MOD-10), <strong>Mexico CLABE</strong> (MOD-10), and <strong>Argentina CBU</strong> (two check digits). All other identifiers and account numbers have no public checksum standard, so they are correct in <em>format/length only</em> — plausible shape for testing, not independently checksummed.</p>
           </div>
         </div>
       </div>
@@ -100,7 +108,10 @@
         <button class="tab-btn" data-tab="profile">Profile</button>
       </div>
       <div class="tool-nav-item">
-        <button class="tab-btn" data-tab="bank">Bank</button>
+        <button class="tab-btn" data-tab="iban">IBAN</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="noniban">Non-IBAN</button>
       </div>
     </nav>
     <main id="app-main">
@@ -293,22 +304,39 @@
 
         <div id="pf-fields"></div>
       </section>
-      <section id="tab-bank" class="tab-content">
+      <section id="tab-iban" class="tab-content">
         <p class="pf-disclaimer">Synthetic test data only — random bank/branch codes, not real banks or accounts. IBANs pass the ISO 7064 MOD-97-10 checksum; for form/validation testing.</p>
         <div class="tt-row">
           <label>Country</label>
           <div class="ft-select">
-            <button type="button" class="ft-select-trigger" id="bk-country-trigger" aria-haspopup="listbox">
-              <span id="bk-country-trigger-label">Germany</span>
+            <button type="button" class="ft-select-trigger" id="ib-country-trigger" aria-haspopup="listbox">
+              <span id="ib-country-trigger-label">Germany</span>
               <span class="ft-select-arrow">▾</span>
             </button>
-            <div class="ft-select-panel" id="bk-country-panel" hidden role="listbox"></div>
+            <div class="ft-select-panel" id="ib-country-panel" hidden role="listbox"></div>
           </div>
         </div>
-        <p class="tt-error" id="bk-error" hidden></p>
-        <button id="bk-generate" class="tt-generate-btn">Generate</button>
+        <p class="tt-error" id="ib-error" hidden></p>
+        <button id="ib-generate" class="tt-generate-btn">Generate</button>
 
-        <div id="bk-fields"></div>
+        <div id="ib-fields"></div>
+      </section>
+      <section id="tab-noniban" class="tab-content">
+        <p class="pf-disclaimer">Synthetic test data only — random bank/branch codes, not real banks or accounts. Domestic account formats for countries that don't use IBAN; for form/validation testing.</p>
+        <div class="tt-row">
+          <label>Country</label>
+          <div class="ft-select">
+            <button type="button" class="ft-select-trigger" id="nb-country-trigger" aria-haspopup="listbox">
+              <span id="nb-country-trigger-label">United States</span>
+              <span class="ft-select-arrow">▾</span>
+            </button>
+            <div class="ft-select-panel" id="nb-country-panel" hidden role="listbox"></div>
+          </div>
+        </div>
+        <p class="tt-error" id="nb-error" hidden></p>
+        <button id="nb-generate" class="tt-generate-btn">Generate</button>
+
+        <div id="nb-fields"></div>
       </section>
     </main>
   </div>
@@ -317,6 +345,7 @@
   <script src="js/text-tool.js"></script>
   <script src="js/file-tool.js"></script>
   <script src="js/profile-tool.js"></script>
-  <script src="js/bank-tool.js"></script>
+  <script src="js/iban-tool.js"></script>
+  <script src="js/noniban-tool.js"></script>
 </body>
 </html>

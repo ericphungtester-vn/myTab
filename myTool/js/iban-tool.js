@@ -1,4 +1,4 @@
-// ---- Bank Tool: generates SYNTHETIC IBAN / SWIFT-BIC / bank account numbers per country for
+// ---- IBAN Tool: generates SYNTHETIC IBAN / SWIFT-BIC / bank account numbers per country for
 // form/validation testing. Nothing here is a real bank or a real account — bank/branch codes are
 // randomly generated and are NOT mapped to any real institution.
 //
@@ -11,27 +11,27 @@
 // random — so a strict national-level validator may reject them, even though the IBAN checksum is
 // valid. SWIFT/BIC values are format-correct only (there is no BIC checksum).
 
-function bk_randInt(min, max) {
+function ib_randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
-function bk_randDigits(n) {
+function ib_randDigits(n) {
   let s = ''
-  for (let i = 0; i < n; i++) s += bk_randInt(0, 9)
+  for (let i = 0; i < n; i++) s += ib_randInt(0, 9)
   return s
 }
 
-function bk_randLetters(n) {
+function ib_randLetters(n) {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
   let s = ''
-  for (let i = 0; i < n; i++) s += alphabet[bk_randInt(0, 25)]
+  for (let i = 0; i < n; i++) s += alphabet[ib_randInt(0, 25)]
   return s
 }
 
-function bk_randAlnum(n) {
+function ib_randAlnum(n) {
   const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
   let s = ''
-  for (let i = 0; i < n; i++) s += chars[bk_randInt(0, chars.length - 1)]
+  for (let i = 0; i < n; i++) s += chars[ib_randInt(0, chars.length - 1)]
   return s
 }
 
@@ -105,22 +105,22 @@ function ibanIsValid(iban) {
 // SWIFT/BIC (ISO 9362): 4-letter bank code + 2-letter country code + 2-char location code, plus an
 // optional 3-char branch code (8 or 11 chars total). No checksum exists — format only.
 function generateBIC(countryCode) {
-  const bic = bk_randLetters(4) + countryCode + bk_randAlnum(2)
-  return bk_randInt(0, 1) === 1 ? bic + bk_randAlnum(3) : bic
+  const bic = ib_randLetters(4) + countryCode + ib_randAlnum(2)
+  return ib_randInt(0, 1) === 1 ? bic + ib_randAlnum(3) : bic
 }
 
 function generateBBAN(spec) {
   let bban = ''
   const roles = { bank: '', branch: '', account: '' }
   for (const [role, len, charset] of spec.bban) {
-    const seg = charset === 'n' ? bk_randDigits(len) : charset === 'a' ? bk_randLetters(len) : bk_randAlnum(len)
+    const seg = charset === 'n' ? ib_randDigits(len) : charset === 'a' ? ib_randLetters(len) : ib_randAlnum(len)
     bban += seg
     if (role in roles) roles[role] += seg
   }
   return { bban, roles }
 }
 
-function generateBank(countryCode) {
+function generateIban(countryCode) {
   const spec = IBAN_COUNTRIES.find(c => c.code === countryCode)
   if (!spec) throw new Error('Unsupported country: ' + countryCode)
   const { bban, roles } = generateBBAN(spec)
@@ -138,13 +138,13 @@ function generateBank(countryCode) {
 }
 
 // ---- Wiring ----
-;(function initBankTool() {
-  const countryTrigger = document.getElementById('bk-country-trigger')
-  const countryTriggerLabel = document.getElementById('bk-country-trigger-label')
-  const countryPanel = document.getElementById('bk-country-panel')
-  const generateBtn = document.getElementById('bk-generate')
-  const fieldsEl = document.getElementById('bk-fields')
-  const errorEl = document.getElementById('bk-error')
+;(function initIbanTool() {
+  const countryTrigger = document.getElementById('ib-country-trigger')
+  const countryTriggerLabel = document.getElementById('ib-country-trigger-label')
+  const countryPanel = document.getElementById('ib-country-panel')
+  const generateBtn = document.getElementById('ib-generate')
+  const fieldsEl = document.getElementById('ib-fields')
+  const errorEl = document.getElementById('ib-error')
 
   if (!countryTrigger) return // Bank tab not present in this build
 
@@ -213,7 +213,7 @@ function generateBank(countryCode) {
     </div>`
   }
 
-  function renderBank(bank) {
+  function renderIban(bank) {
     const rows = [
       fieldRow('IBAN', bank.iban),
       fieldRow('IBAN (spaced)', bank.ibanPretty),
@@ -241,7 +241,7 @@ function generateBank(countryCode) {
   function generate() {
     errorEl.hidden = true
     try {
-      renderBank(generateBank(currentCountry))
+      renderIban(generateIban(currentCountry))
     } catch (err) {
       errorEl.textContent = err.message
       errorEl.hidden = false

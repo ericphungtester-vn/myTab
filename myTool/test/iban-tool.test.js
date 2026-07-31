@@ -2,10 +2,10 @@ const { test, describe } = require('node:test')
 const assert = require('node:assert/strict')
 const { loadToolScript } = require('./helpers/loadScript')
 
-const lib = loadToolScript('js/bank-tool.js')
+const lib = loadToolScript('js/iban-tool.js')
 const {
   IBAN_COUNTRIES, ibanMod97, ibanCheckDigits, ibanIsValid,
-  generateBIC, generateBank
+  generateBIC, generateIban
 } = lib
 
 // Real published IBAN examples from the ISO 13616 registry / national banks — used to prove the
@@ -88,11 +88,11 @@ describe('IBAN country registry integrity', () => {
   })
 })
 
-describe('generateBank: every country, many samples', () => {
+describe('generateIban: every country, many samples', () => {
   test('output is structurally correct and passes the IBAN checksum', () => {
     for (const c of IBAN_COUNTRIES) {
       for (let i = 0; i < 50; i++) {
-        const b = generateBank(c.code)
+        const b = generateIban(c.code)
         assert.equal(b.iban.length, c.ibanLength, `${c.code} wrong IBAN length`)
         assert.equal(b.iban.slice(0, 2), c.code, `${c.code} wrong country prefix`)
         assert.equal(ibanIsValid(b.iban), true, `${c.code} produced an IBAN failing mod-97: ${b.iban}`)
@@ -105,7 +105,7 @@ describe('generateBank: every country, many samples', () => {
 
   test('bank code and account number are the actual IBAN segments (consistency)', () => {
     for (const c of IBAN_COUNTRIES) {
-      const b = generateBank(c.code)
+      const b = generateIban(c.code)
       const bbanPart = b.iban.slice(4)
       assert.ok(bbanPart.includes(b.bankCode), `${c.code} bank code not inside IBAN`)
       assert.ok(bbanPart.includes(b.accountNumber), `${c.code} account number not inside IBAN`)
@@ -114,12 +114,12 @@ describe('generateBank: every country, many samples', () => {
   })
 
   test('spaced IBAN has no spaces once stripped and equals the plain IBAN', () => {
-    const b = generateBank('DE')
+    const b = generateIban('DE')
     assert.equal(b.ibanPretty.replace(/\s+/g, ''), b.iban)
   })
 
   test('unsupported country throws', () => {
-    assert.throws(() => generateBank('ZZ'), /Unsupported country/)
+    assert.throws(() => generateIban('ZZ'), /Unsupported country/)
   })
 })
 
