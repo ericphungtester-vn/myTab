@@ -89,6 +89,14 @@
             <p><strong>Checksums:</strong> three of these identifiers carry a real, verifiable check digit, computed with the published algorithm and verified in the test suite against known reference values — the <strong>USA ABA routing number</strong> (weighted MOD-10), <strong>Mexico CLABE</strong> (MOD-10), and <strong>Argentina CBU</strong> (two check digits). All other identifiers and account numbers have no public checksum standard, so they are correct in <em>format/length only</em> — plausible shape for testing, not independently checksummed.</p>
           </div>
         </div>
+        <div class="guide-section">
+          <button class="guide-section-header">BBAN <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p><strong>Synthetic test data only.</strong> The BBAN (Basic Bank Account Number) is the domestic part of an IBAN — the account number a country used before IBAN. Some countries embed a <strong>national check digit</strong> inside it (e.g. France's RIB key, Italy's CIN). The IBAN tab only guarantees the outer mod-97 IBAN checksum, leaving those national digits random; this tab computes them <strong>correctly</strong>, so the account number is valid at the national layer too — and the assembled IBAN is valid at <em>both</em> layers.</p>
+            <p>Pick a <strong>Country</strong> and click <strong>Generate</strong>. You get the domestic pieces (bank / branch / account), the <strong>national check digit</strong> shown as its own field, the full <strong>BBAN</strong>, and the assembled <strong>IBAN</strong> (valid at both layers). Bank/branch codes are random and not mapped to any real institution.</p>
+            <p><strong>Coverage is deliberately limited to 10 countries</strong> whose national check-digit algorithm was verified against a real ISO 13616 registry IBAN (the algorithm reproduces the check digit embedded in a known-valid IBAN): <strong>Belgium, Finland, France, Italy, Monaco, Norway, Portugal, San Marino, Slovenia, Spain</strong>. Countries whose algorithm couldn't be verified unambiguously (e.g. Estonia, whose single reference was inconclusive) are deliberately left out rather than guessed — for those, use the IBAN tab (valid at the mod-97 layer).</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -112,6 +120,9 @@
       </div>
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="noniban">Non-IBAN</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="bban">BBAN</button>
       </div>
     </nav>
     <main id="app-main">
@@ -338,6 +349,23 @@
 
         <div id="nb-fields"></div>
       </section>
+      <section id="tab-bban" class="tab-content">
+        <p class="pf-disclaimer">Synthetic test data only — random bank/branch codes, not real banks or accounts. Domestic account numbers (BBAN) with a valid national check digit; the assembled IBAN is valid at both the mod-97 and national layer.</p>
+        <div class="tt-row">
+          <label>Country</label>
+          <div class="ft-select">
+            <button type="button" class="ft-select-trigger" id="bb-country-trigger" aria-haspopup="listbox">
+              <span id="bb-country-trigger-label">France</span>
+              <span class="ft-select-arrow">▾</span>
+            </button>
+            <div class="ft-select-panel" id="bb-country-panel" hidden role="listbox"></div>
+          </div>
+        </div>
+        <p class="tt-error" id="bb-error" hidden></p>
+        <button id="bb-generate" class="tt-generate-btn">Generate</button>
+
+        <div id="bb-fields"></div>
+      </section>
     </main>
   </div>
 
@@ -347,5 +375,6 @@
   <script src="js/profile-tool.js"></script>
   <script src="js/iban-tool.js"></script>
   <script src="js/noniban-tool.js"></script>
+  <script src="js/bban-tool.js"></script>
 </body>
 </html>

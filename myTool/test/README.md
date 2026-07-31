@@ -1,6 +1,7 @@
 # myTool unit tests
 
-Fast, dependency-free tests for myTool's core logic (`js/file-tool.js`, `js/text-tool.js`) using
+Fast, dependency-free tests for myTool's core logic (`js/file-tool.js`, `js/text-tool.js`,
+`js/profile-tool.js`, `js/iban-tool.js`, `js/noniban-tool.js`, `js/bban-tool.js`) using
 Node's built-in test runner — no npm install needed.
 
 ## Running
@@ -25,12 +26,26 @@ including `test/helpers/`, which aren't test files themselves — the explicit g
 - **text-tool.test.js** — the Text tool's generation logic: word banks are non-empty for every
   language, each Unit (Characters/Words/Sentences/Paragraphs) hits its exact target, and the
   random-string generator's "one character per checked class guaranteed" + validation rules.
-- **id-tool.test.js** — the ID tool's generators for all 18 countries: every real checksum
-  algorithm (Luhn, Verhoeff, ISO 7064 Mod 11-2, and each country's own weighted-sum formula) is
-  checked against a real published test vector *and*, across many random samples, by independently
-  recomputing the checksum rather than trusting the generator's own math — plus the structure-only
-  formats (Vietnam, USA, UK), every country's passport number format, and the ICAO 9303 MRZ TD3
-  builder's composite check digit.
+- **profile-tool.test.js** — the Profile tool's generators for all 21 countries (formerly the "ID"
+  tool). Every real checksum algorithm (Luhn, Verhoeff, ISO 7064 Mod 11-2, and each country's own
+  weighted-sum formula) is checked against a real published test vector *and*, across many random
+  samples, by independently recomputing the checksum rather than trusting the generator's own math —
+  plus the structure-only formats (Vietnam, USA, UK, Indonesia, Malaysia), every country's passport
+  number format, the ICAO 9303 MRZ TD3 builder's composite check digit, and the Company section's
+  Tax Code / Business Registration Number checksums.
+- **iban-tool.test.js** — the IBAN tool's 35 SEPA+ countries: the ISO 7064 MOD-97-10 checksum is
+  verified against known real reference IBANs (and a flipped-digit fails), every country's BBAN
+  length/structure matches ISO 13616, all generated IBANs pass the checksum, the bank/account
+  segments are consistent with the IBAN, and the SWIFT/BIC format is correct.
+- **noniban-tool.test.js** — the Non-IBAN tool's 18 documented countries: each produces its domestic
+  identifiers + account number + a format-correct SWIFT/BIC. The three verifiable check digits — USA
+  ABA routing (weighted MOD-10), Mexico CLABE (MOD-10), Argentina CBU (two check digits) — are
+  verified against known reference values (real published routing numbers, reference CLABE/CBU).
+- **bban-tool.test.js** — the BBAN tool's 10 countries whose national check-digit algorithm was
+  verified by reproducing the check digit embedded in a real ISO 13616 registry IBAN (Belgium,
+  Finland, France, Italy, Monaco, Norway, Portugal, San Marino, Slovenia, Spain). Generated BBANs
+  re-verify their own national check, and the assembled IBAN is valid at both the mod-97 and
+  national layer.
 
 ## What's NOT covered here
 
