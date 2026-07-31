@@ -1,8 +1,8 @@
 # myTool unit tests
 
 Fast, dependency-free tests for myTool's core logic (`js/file-tool.js`, `js/text-tool.js`,
-`js/profile-tool.js`, `js/iban-tool.js`, `js/noniban-tool.js`, `js/bban-tool.js`) using
-Node's built-in test runner — no npm install needed.
+`js/profile-tool.js`, `js/iban-tool.js`, `js/noniban-tool.js`, `js/bban-tool.js`,
+`js/resize-tool.js`, `js/compare-tool.js`) using Node's built-in test runner — no npm install needed.
 
 ## Running
 
@@ -46,6 +46,15 @@ including `test/helpers/`, which aren't test files themselves — the explicit g
   Finland, France, Italy, Monaco, Norway, Portugal, San Marino, Slovenia, Spain). Generated BBANs
   re-verify their own national check, and the assembled IBAN is valid at both the mod-97 and
   national layer.
+- **resize-tool.test.js** — the Resize tool's pure math (the canvas encoding itself is DOM-only):
+  KB/MB target parsing, aspect-ratio dimension math, dimension validation, base64 data-URL byte
+  sizing, the quality binary-search that hits a target file size (driven by a monotonic mock
+  encoder), and the format→MIME/extension mapping.
+- **compare-tool.test.js** — the Compare tool's diff engine: the LCS core, line-level diff (equal /
+  insert / delete / paired "mod" rows with independent line numbers), the normalization options
+  (ignore case / whitespace / trim), word-level diff within a changed line, the add/remove/change +
+  similarity stats, and HTML rendering (content is escaped, changed words are tagged, and the
+  standalone report is a full self-contained document).
 
 ## What's NOT covered here
 

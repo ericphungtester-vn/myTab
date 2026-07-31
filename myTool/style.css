@@ -564,6 +564,52 @@ body {
 }
 .rs-preview[hidden] { display: none; }
 
+/* Compare tool */
+.cp-input {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 6px 8px;
+}
+.cp-input:focus { border-color: var(--hover-border); outline: none; }
+.cp-opts { display: flex; flex-direction: column; gap: 4px; padding-top: 2px; }
+.cp-output {
+  margin-bottom: 12px;
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.cp-output[hidden] { display: none; }
+.cp-diff {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+}
+.cp-diff td {
+  padding: 1px 6px;
+  vertical-align: top;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border-top: 1px solid var(--border);
+}
+.cp-ln { width: 34px; text-align: right; color: var(--text-secondary); opacity: 0.7; user-select: none; }
+.cp-side { width: calc(50% - 34px); }
+tr.cp-del td:nth-of-type(2) { background: rgba(224, 49, 49, 0.14); }
+tr.cp-ins td:nth-of-type(4) { background: rgba(47, 158, 68, 0.16); }
+tr.cp-mod td:nth-of-type(2) { background: rgba(224, 49, 49, 0.08); }
+tr.cp-mod td:nth-of-type(4) { background: rgba(47, 158, 68, 0.10); }
+.cp-w-del { background: rgba(224, 49, 49, 0.34); border-radius: 2px; }
+.cp-w-ins { background: rgba(47, 158, 68, 0.34); border-radius: 2px; }
+
 /* Custom dropdown for Type — a native <select> repositions its native menu to keep the selected
    item under the cursor, which for a long list in a small popup can render the menu above the
    popup entirely (into the browser chrome). This stays fixed-positioned but clamped to the

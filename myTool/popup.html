@@ -110,6 +110,15 @@
             <p>Click <strong>Resize &amp; Download</strong> to save the result (named <code>&lt;original&gt;-resized.&lt;ext&gt;</code>) and show a preview; the result line shows the final dimensions, size, and (for lossy) quality. Nothing is stored between sessions — it's a one-shot transform.</p>
           </div>
         </div>
+        <div class="guide-section">
+          <button class="guide-section-header">Compare <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>Compares two texts and shows the differences <strong>side by side</strong> — original on the left, changed on the right, with line numbers. Paste into both boxes and click <strong>Compare</strong>.</p>
+            <p>Matching uses a line-level diff (like <code>git diff</code>): unchanged lines line up, added lines are green on the right, removed lines are red on the left, and a <strong>changed line is paired left/right with the exact words that differ highlighted</strong> within it. The summary line reports how many lines were added / removed / changed and an overall similarity %.</p>
+            <p><strong>Options:</strong> <em>Ignore case</em> (treat A and a as equal), <em>Ignore whitespace</em> (collapse runs of spaces/tabs and ignore leading/trailing), and <em>Trim lines</em> (ignore only leading/trailing spaces). These affect matching only — the text shown is always your original.</p>
+            <p><strong>Download HTML report</strong> saves the full side-by-side diff as a self-contained <code>text-comparison.html</code> file you can open in any browser — handy when the comparison is wider or longer than the popup. Each side is limited to 2000 lines. Nothing is stored between sessions.</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -139,6 +148,9 @@
       </div>
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="resize">Resize</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="compare">Compare</button>
       </div>
     </nav>
     <main id="app-main">
@@ -425,6 +437,29 @@
         <p class="ft-result" id="rs-result" hidden></p>
         <img id="rs-preview" class="rs-preview" hidden alt="resized preview">
       </section>
+      <section id="tab-compare" class="tab-content">
+        <div class="tt-row tt-row--top">
+          <label for="cp-a">Original</label>
+          <textarea id="cp-a" class="cp-input" rows="5" placeholder="Paste the original text…"></textarea>
+        </div>
+        <div class="tt-row tt-row--top">
+          <label for="cp-b">Changed</label>
+          <textarea id="cp-b" class="cp-input" rows="5" placeholder="Paste the changed text…"></textarea>
+        </div>
+        <div class="tt-row tt-row--top">
+          <label>Options</label>
+          <div class="cp-opts">
+            <label class="rs-check"><input type="checkbox" id="cp-ignore-case"> Ignore case</label>
+            <label class="rs-check"><input type="checkbox" id="cp-ignore-ws"> Ignore whitespace</label>
+            <label class="rs-check"><input type="checkbox" id="cp-trim"> Trim lines</label>
+          </div>
+        </div>
+        <p class="tt-error" id="cp-error" hidden></p>
+        <button id="cp-compare" class="tt-generate-btn">Compare</button>
+        <p class="ft-result" id="cp-stats" hidden></p>
+        <div id="cp-output" class="cp-output" hidden></div>
+        <button id="cp-download" class="tt-generate-btn cp-download-btn" hidden>Download HTML report</button>
+      </section>
     </main>
   </div>
 
@@ -436,5 +471,6 @@
   <script src="js/noniban-tool.js"></script>
   <script src="js/bban-tool.js"></script>
   <script src="js/resize-tool.js"></script>
+  <script src="js/compare-tool.js"></script>
 </body>
 </html>
