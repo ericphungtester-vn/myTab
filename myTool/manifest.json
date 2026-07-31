@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "myTool",
-  "version": "0.1.0",
-  "description": "A small toolbox of personal utilities — Text (placeholder text generator + character counter) and File (generate a file of a target size)",
+  "version": "1.0.0",
+  "description": "Local dev/QA toolbox: placeholder text, test files, synthetic data (IDs, IBAN, cards) and utilities (JSON, JWT, regex, hashing).",
   "action": {
     "default_popup": "popup.html",
     "default_title": "myTool",
