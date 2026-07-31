@@ -3,7 +3,8 @@
 Fast, dependency-free tests for myTool's core logic (`js/file-tool.js`, `js/text-tool.js`,
 `js/profile-tool.js`, `js/iban-tool.js`, `js/noniban-tool.js`, `js/bban-tool.js`,
 `js/resize-tool.js`, `js/compare-tool.js`, `js/card-tool.js`, `js/uuid-tool.js`,
-`js/encode-tool.js`, `js/jwt-tool.js`) using Node's built-in test runner — no npm install needed.
+`js/encode-tool.js`, `js/jwt-tool.js`, `js/timestamp-tool.js`, `js/json-tool.js`, `js/base-tool.js`,
+`js/color-tool.js`, `js/regex-tool.js`) using Node's built-in test runner — no npm install needed.
 
 ## Running
 
@@ -70,6 +71,16 @@ including `test/helpers/`, which aren't test files themselves — the explicit g
 - **jwt-tool.test.js** — decodes the canonical jwt.io example token (header + payload + raw
   signature), handles the base64url alphabet, formats `exp`/`iat` as UTC, and rejects malformed
   tokens with a clear error.
+- **timestamp-tool.test.js** — epoch detection (seconds vs millis), parsing of epochs and ISO
+  dates, ISO formatting from ms, and the relative "x ago / in x / just now" phrasing.
+- **json-tool.test.js** — format (indent + key-order preserved), tab indent, minify, and validate,
+  with parser errors surfaced instead of thrown.
+- **base-tool.test.js** — dec/hex/bin/oct conversion both directions, `0x`/`0b`/`0o` prefixes,
+  negatives, exactness beyond `Number.MAX_SAFE_INTEGER` (BigInt), and invalid-digit errors.
+- **color-tool.test.js** — parsing hex (3/6-digit), rgb(), and hsl(); the rgb↔hex↔hsl conversion
+  math on primary colors; and the combined format strings.
+- **regex-tool.test.js** — all-matches enumeration with capture groups, flags, invalid-pattern
+  errors, zero-width termination, and the escape-then-<mark> highlighter.
 
 ## What's NOT covered here
 

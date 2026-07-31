@@ -156,6 +156,37 @@
             <p><strong>It only decodes — it does not verify the signature.</strong> Verifying needs the signing secret or public key; this tool never asks for either. A malformed token or non-JSON segment gives a clear error. Nothing is sent anywhere; decoding happens locally.</p>
           </div>
         </div>
+        <div class="guide-section">
+          <button class="guide-section-header">Timestamp <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>Converts between Unix time and human-readable dates. Type an <strong>epoch</strong> (seconds or milliseconds — auto-detected by length) or any date string (ISO 8601, etc.), or leave it blank for <strong>now</strong>; click <strong>Now</strong> to reset to the current time. Results update as you type.</p>
+            <p>You get the <strong>Unix seconds</strong> and <strong>milliseconds</strong>, the <strong>ISO 8601</strong> (UTC) form, the full <strong>UTC</strong> and <strong>Local</strong> strings, and a <strong>Relative</strong> note (e.g. "3 hours ago" / "in 2 days"). Each has a copy button.</p>
+          </div>
+        </div>
+        <div class="guide-section">
+          <button class="guide-section-header">JSON <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>Formats, minifies, or validates JSON. Paste into the box, pick an <strong>Indent</strong> (2, 4, or Tab), and click <strong>Format</strong> to pretty-print or <strong>Minify</strong> to strip whitespace. If the JSON is invalid, the parser's <strong>error message</strong> is shown (with the position it choked on) instead of output. Copy the result with the icon.</p>
+          </div>
+        </div>
+        <div class="guide-section">
+          <button class="guide-section-header">Base <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>Converts an integer between <strong>decimal, hex, binary, and octal</strong>. Enter a value, pick which base it's written in (<strong>From</strong>), and all four forms appear at once. A <code>0x</code>/<code>0b</code>/<code>0o</code> prefix and a leading <code>-</code> are accepted; an invalid digit for the chosen base shows an error. Uses BigInt, so very large numbers stay exact (no floating-point rounding).</p>
+          </div>
+        </div>
+        <div class="guide-section">
+          <button class="guide-section-header">Color <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>Converts a color between <strong>HEX, RGB, and HSL</strong>, with a live swatch. Type any of the three forms (<code>#0080ff</code>, <code>rgb(0,128,255)</code>, <code>hsl(210,100%,50%)</code>) or use the native color picker; the other forms and the swatch update instantly. Each form has a copy button.</p>
+          </div>
+        </div>
+        <div class="guide-section">
+          <button class="guide-section-header">Regex <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>Tests a JavaScript regular expression against sample text. Enter a <strong>Pattern</strong> and optional <strong>flags</strong> (<code>i</code>, <code>m</code>, <code>s</code>, <code>u</code> — matching is always global so every hit is found), then type into the <strong>Text</strong> box. Matches are <strong>highlighted</strong> in place and counted; an invalid pattern shows the engine's error. Everything runs locally with the browser's own regex engine.</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -210,6 +241,26 @@
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="jwt">JWT</button>
         <button id="jw-reset-btn" class="tool-reset-btn" aria-label="Reset JWT" title="Reset JWT">⟲</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="timestamp">Timestamp</button>
+        <button id="ts-reset-btn" class="tool-reset-btn" aria-label="Reset Timestamp" title="Reset Timestamp">⟲</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="json">JSON</button>
+        <button id="jf-reset-btn" class="tool-reset-btn" aria-label="Reset JSON" title="Reset JSON">⟲</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="base">Base</button>
+        <button id="bn-reset-btn" class="tool-reset-btn" aria-label="Reset Base" title="Reset Base">⟲</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="color">Color</button>
+        <button id="cl-reset-btn" class="tool-reset-btn" aria-label="Reset Color" title="Reset Color">⟲</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="regex">Regex</button>
+        <button id="rx-reset-btn" class="tool-reset-btn" aria-label="Reset Regex" title="Reset Regex">⟲</button>
       </div>
     </nav>
     <main id="app-main">
@@ -603,6 +654,78 @@
           <pre id="jw-claims" class="jw-claims" hidden></pre>
         </div>
       </section>
+      <section id="tab-timestamp" class="tab-content">
+        <div class="tt-row">
+          <label for="ts-input">Input</label>
+          <input type="text" id="ts-input" class="tool-input" placeholder="epoch or date — blank = now" spellcheck="false">
+          <button type="button" id="ts-now" class="tool-mini-btn">Now</button>
+        </div>
+        <p class="tt-error" id="ts-error" hidden></p>
+        <div id="ts-fields"></div>
+      </section>
+      <section id="tab-json" class="tab-content">
+        <div class="tt-row tt-row--top">
+          <label for="jf-input">Input</label>
+          <textarea id="jf-input" class="cp-input" rows="5" placeholder="Paste JSON…" spellcheck="false"></textarea>
+        </div>
+        <div class="tt-row">
+          <label>Indent</label>
+          <div class="segmented" data-group="jf-indent">
+            <button class="seg-btn active" data-value="2">2</button>
+            <button class="seg-btn" data-value="4">4</button>
+            <button class="seg-btn" data-value="tab">Tab</button>
+          </div>
+        </div>
+        <div class="tool-btn-row">
+          <button id="jf-format" class="tt-generate-btn">Format</button>
+          <button id="jf-minify" class="tt-generate-btn tt-generate-btn--alt">Minify</button>
+        </div>
+        <p class="tt-error" id="jf-error" hidden></p>
+        <div class="tt-output-textwrap">
+          <textarea id="jf-output" class="cp-input dev-output" readonly rows="6" spellcheck="false"></textarea>
+          <button id="jf-copy" class="tt-copy-icon-btn" title="Copy" aria-label="Copy"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+        </div>
+      </section>
+      <section id="tab-base" class="tab-content">
+        <div class="tt-row">
+          <label for="bn-input">Value</label>
+          <input type="text" id="bn-input" class="tool-input" placeholder="number to convert" spellcheck="false">
+        </div>
+        <div class="tt-row">
+          <label>From</label>
+          <div class="segmented" data-group="bn-base">
+            <button class="seg-btn active" data-value="DEC">DEC</button>
+            <button class="seg-btn" data-value="HEX">HEX</button>
+            <button class="seg-btn" data-value="BIN">BIN</button>
+            <button class="seg-btn" data-value="OCT">OCT</button>
+          </div>
+        </div>
+        <p class="tt-error" id="bn-error" hidden></p>
+        <div id="bn-fields"></div>
+      </section>
+      <section id="tab-color" class="tab-content">
+        <div class="tt-row">
+          <label for="cl-input">Color</label>
+          <input type="text" id="cl-input" class="tool-input" placeholder="#hex, rgb(…), hsl(…)" spellcheck="false">
+          <input type="color" id="cl-picker" class="tool-color-picker" value="#2563eb">
+        </div>
+        <p class="tt-error" id="cl-error" hidden></p>
+        <div id="cl-fields"></div>
+      </section>
+      <section id="tab-regex" class="tab-content">
+        <div class="tt-row">
+          <label for="rx-pattern">Pattern</label>
+          <input type="text" id="rx-pattern" class="tool-input" placeholder="\d+" spellcheck="false">
+          <input type="text" id="rx-flags" class="tool-flags" value="g" title="flags (g, i, m, s, u)" spellcheck="false">
+        </div>
+        <div class="tt-row tt-row--top">
+          <label for="rx-text">Text</label>
+          <textarea id="rx-text" class="cp-input" rows="5" placeholder="Test string…" spellcheck="false"></textarea>
+        </div>
+        <p class="tt-error" id="rx-error" hidden></p>
+        <p class="ft-result" id="rx-count" hidden></p>
+        <pre id="rx-output" class="rx-output"></pre>
+      </section>
     </main>
   </div>
 
@@ -619,5 +742,10 @@
   <script src="js/uuid-tool.js"></script>
   <script src="js/encode-tool.js"></script>
   <script src="js/jwt-tool.js"></script>
+  <script src="js/timestamp-tool.js"></script>
+  <script src="js/json-tool.js"></script>
+  <script src="js/base-tool.js"></script>
+  <script src="js/color-tool.js"></script>
+  <script src="js/regex-tool.js"></script>
 </body>
 </html>
