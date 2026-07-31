@@ -526,6 +526,44 @@ body {
 }
 .ft-result[hidden] { display: none; }
 
+/* Resize tool */
+.rs-drop {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 22px 12px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.rs-drop.dragover { border-color: var(--primary); background: var(--hover-bg); }
+.rs-drop p { margin: 0; }
+.rs-hint { margin-top: 6px !important; font-size: 10px; color: var(--text-secondary); opacity: 0.75; }
+.rs-link {
+  background: none;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  text-decoration: underline;
+  font: inherit;
+  padding: 0;
+}
+.rs-info { font-size: 11px; color: var(--text-secondary); margin: 0 0 10px; word-break: break-word; }
+.rs-info[hidden] { display: none; }
+.rs-unit { font-size: 12px; color: var(--text-secondary); margin-left: 6px; }
+.rs-check { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text); cursor: pointer; }
+.rs-check input { margin: 0; }
+.rs-preview {
+  max-width: 100%;
+  max-height: 220px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  display: block;
+}
+.rs-preview[hidden] { display: none; }
+
 /* Custom dropdown for Type — a native <select> repositions its native menu to keep the selected
    item under the cursor, which for a long list in a small popup can render the menu above the
    popup entirely (into the browser chrome). This stays fixed-positioned but clamped to the
