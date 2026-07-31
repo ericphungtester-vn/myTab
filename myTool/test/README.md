@@ -2,7 +2,8 @@
 
 Fast, dependency-free tests for myTool's core logic (`js/file-tool.js`, `js/text-tool.js`,
 `js/profile-tool.js`, `js/iban-tool.js`, `js/noniban-tool.js`, `js/bban-tool.js`,
-`js/resize-tool.js`, `js/compare-tool.js`) using Node's built-in test runner — no npm install needed.
+`js/resize-tool.js`, `js/compare-tool.js`, `js/card-tool.js`) using Node's built-in test runner —
+no npm install needed.
 
 ## Running
 
@@ -55,6 +56,11 @@ including `test/helpers/`, which aren't test files themselves — the explicit g
   (ignore case / whitespace / trim), word-level diff within a changed line, the add/remove/change +
   similarity stats, and HTML rendering (content is escaped, changed words are tagged, and the
   standalone report is a full self-contained document).
+- **card-tool.test.js** — the Card tool's synthetic payment-card generator: the Luhn checksum and
+  network detection are verified against well-known public test card numbers (Visa/Mastercard/Amex/
+  Discover/JCB/Diners/UnionPay), every network generates numbers that are Luhn-valid, correct-length,
+  and detect back to the intended network, plus CVV length, digit grouping, expiry formatting, and
+  that a full record's expiry is always in the future.
 
 ## What's NOT covered here
 

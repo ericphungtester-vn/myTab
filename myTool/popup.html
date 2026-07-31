@@ -119,6 +119,14 @@
             <p><strong>Coverage is deliberately limited to 10 countries</strong> whose national check-digit algorithm was verified against a real ISO 13616 registry IBAN (the algorithm reproduces the check digit embedded in a known-valid IBAN): <strong>Belgium, Finland, France, Italy, Monaco, Norway, Portugal, San Marino, Slovenia, Spain</strong>. Countries whose algorithm couldn't be verified unambiguously (e.g. Estonia, whose single reference was inconclusive) are deliberately left out rather than guessed — for those, use the IBAN tab (valid at the mod-97 layer).</p>
           </div>
         </div>
+        <div class="guide-section">
+          <button class="guide-section-header">Card <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p><strong>Synthetic test data only.</strong> Generates fake payment-card details for testing checkout/validation forms. Card numbers are randomly generated with a valid <strong>Luhn check digit</strong> and the correct network prefix and length — so they pass a real card-number validator — but they belong to <strong>no real account and cannot be used for any transaction</strong>. The prefix identifies the card <em>network</em> (Visa, Mastercard, …), not any specific bank.</p>
+            <p>Pick a <strong>Network</strong> — <strong>Random</strong> (default), Visa, Mastercard, American Express, Discover, JCB, Diners Club, or UnionPay — and click <strong>Generate</strong>. You get the <strong>Card Number</strong> (grouped for readability; its copy button copies the raw digits), the <strong>Network</strong>, the security code (<strong>CVV / CVC / CID / CVN</strong> depending on network — 4 digits for Amex, 3 otherwise), an <strong>Expiry</strong> (MM/YY, always a future date), and a <strong>Cardholder Name</strong>. Generate again for a fresh card.</p>
+            <p>Numbers use each network's real IIN ranges (Visa <code>4…</code>, Mastercard <code>51–55</code> / <code>2221–2720</code>, Amex <code>34/37</code>, etc.) and standard lengths (15 for Amex, 14 for Diners, 16 otherwise) — enough to satisfy format + Luhn checks. The Luhn algorithm is the same one verified in the Profile tool's tests.</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -151,6 +159,9 @@
       </div>
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="bban">BBAN</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="card">Card</button>
       </div>
     </nav>
     <main id="app-main">
@@ -394,6 +405,22 @@
 
         <div id="bb-fields"></div>
       </section>
+      <section id="tab-card" class="tab-content">
+        <p class="pf-disclaimer">Synthetic test data only — Luhn-valid card numbers with real network prefixes, but not real cards and not usable for any transaction. For form/validation testing.</p>
+        <div class="tt-row">
+          <label>Network</label>
+          <div class="ft-select">
+            <button type="button" class="ft-select-trigger" id="cc-network-trigger" aria-haspopup="listbox">
+              <span id="cc-network-trigger-label">Random network</span>
+              <span class="ft-select-arrow">▾</span>
+            </button>
+            <div class="ft-select-panel" id="cc-network-panel" hidden role="listbox"></div>
+          </div>
+        </div>
+        <button id="cc-generate" class="tt-generate-btn">Generate</button>
+
+        <div id="cc-fields"></div>
+      </section>
       <section id="tab-resize" class="tab-content">
         <div class="rs-drop" id="rs-drop">
           <input type="file" id="rs-file" accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,image/avif" hidden>
@@ -472,5 +499,6 @@
   <script src="js/bban-tool.js"></script>
   <script src="js/resize-tool.js"></script>
   <script src="js/compare-tool.js"></script>
+  <script src="js/card-tool.js"></script>
 </body>
 </html>
