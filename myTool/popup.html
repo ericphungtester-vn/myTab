@@ -127,6 +127,35 @@
             <p>Numbers use each network's real IIN ranges (Visa <code>4…</code>, Mastercard <code>51–55</code> / <code>2221–2720</code>, Amex <code>34/37</code>, etc.) and standard lengths (15 for Amex, 14 for Diners, 16 otherwise) — enough to satisfy format + Luhn checks. The Luhn algorithm is the same one verified in the Profile tool's tests.</p>
           </div>
         </div>
+        <div class="guide-section">
+          <button class="guide-section-header">UUID <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>Generates identifiers in the formats developers actually use. Pick a <strong>Type</strong> and a <strong>Count</strong> (1–25) and click <strong>Generate</strong>; the output box lists them, and the copy icon copies all of them.</p>
+            <ul>
+              <li><strong>UUID v4</strong> — fully random (with the version/variant bits set per RFC 4122).</li>
+              <li><strong>UUID v7</strong> — time-ordered: a 48-bit millisecond timestamp up front, then randomness, so IDs sort by creation time.</li>
+              <li><strong>ULID</strong> — 26-char Crockford base32, also time-sortable (48-bit time + 80-bit randomness).</li>
+              <li><strong>NanoID</strong> — 21 chars from a 64-symbol URL-safe alphabet.</li>
+              <li><strong>Mongo ObjectId</strong> — 24 hex: 4-byte timestamp + 5-byte random + 3-byte counter.</li>
+            </ul>
+            <p>Randomness comes from the browser's <code>crypto.getRandomValues</code>. Each format's bit layout is built to spec (verified in the unit tests), so the values pass real parsers.</p>
+          </div>
+        </div>
+        <div class="guide-section">
+          <button class="guide-section-header">Encode <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>Encodes, decodes, and hashes text — all in your browser. Pick an <strong>Operation</strong>, type/paste into <strong>Input</strong>, and click <strong>Convert</strong>; copy the result with the icon.</p>
+            <p><strong>Encode / decode:</strong> Base64, URL (percent-encoding), and Hex — each way. Unicode is handled as UTF-8, so emoji and accents round-trip correctly. A bad input for the chosen operation (e.g. odd-length hex) shows an inline error instead of garbage.</p>
+            <p><strong>Hash:</strong> SHA-1, SHA-256, SHA-512 via the browser's Web Crypto, output as lowercase hex. (MD5 isn't offered — it isn't in Web Crypto, and we don't ship an unverified implementation.)</p>
+          </div>
+        </div>
+        <div class="guide-section">
+          <button class="guide-section-header">JWT <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>Decodes a JSON Web Token so you can read what's inside it. Paste a token (<code>header.payload.signature</code>) and click <strong>Decode</strong> — the <strong>Header</strong> and <strong>Payload</strong> are shown as pretty-printed JSON, each with its own copy button, and any <code>iat</code>/<code>nbf</code>/<code>exp</code> timestamps are spelled out as UTC datetimes (with <code>exp</code> flagged expired/valid).</p>
+            <p><strong>It only decodes — it does not verify the signature.</strong> Verifying needs the signing secret or public key; this tool never asks for either. A malformed token or non-JSON segment gives a clear error. Nothing is sent anywhere; decoding happens locally.</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -169,6 +198,18 @@
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="card">Card</button>
         <button id="cc-reset-btn" class="tool-reset-btn" aria-label="Reset Card settings" title="Reset Card settings">⟲</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="uuid">UUID</button>
+        <button id="uu-reset-btn" class="tool-reset-btn" aria-label="Reset UUID settings" title="Reset UUID settings">⟲</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="encode">Encode</button>
+        <button id="eh-reset-btn" class="tool-reset-btn" aria-label="Reset Encode settings" title="Reset Encode settings">⟲</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="jwt">JWT</button>
+        <button id="jw-reset-btn" class="tool-reset-btn" aria-label="Reset JWT" title="Reset JWT">⟲</button>
       </div>
     </nav>
     <main id="app-main">
@@ -494,6 +535,74 @@
         <div id="cp-output" class="cp-output" hidden></div>
         <button id="cp-download" class="tt-generate-btn cp-download-btn" hidden>Download HTML report</button>
       </section>
+      <section id="tab-uuid" class="tab-content">
+        <div class="tt-row">
+          <label>Type</label>
+          <div class="ft-select">
+            <button type="button" class="ft-select-trigger" id="uu-type-trigger" aria-haspopup="listbox">
+              <span id="uu-type-trigger-label">UUID v4 (random)</span>
+              <span class="ft-select-arrow">▾</span>
+            </button>
+            <div class="ft-select-panel" id="uu-type-panel" hidden role="listbox"></div>
+          </div>
+        </div>
+        <div class="tt-row">
+          <label>Count</label>
+          <div class="segmented" data-group="uu-count">
+            <button class="seg-btn active" data-value="1">1</button>
+            <button class="seg-btn" data-value="5">5</button>
+            <button class="seg-btn" data-value="10">10</button>
+            <button class="seg-btn" data-value="25">25</button>
+          </div>
+        </div>
+        <button id="uu-generate" class="tt-generate-btn">Generate</button>
+        <div class="tt-output-textwrap">
+          <textarea id="uu-output" class="cp-input dev-output" readonly rows="6" spellcheck="false"></textarea>
+          <button id="uu-copy" class="tt-copy-icon-btn" title="Copy all" aria-label="Copy all"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+        </div>
+      </section>
+      <section id="tab-encode" class="tab-content">
+        <div class="tt-row">
+          <label>Operation</label>
+          <div class="ft-select">
+            <button type="button" class="ft-select-trigger" id="eh-op-trigger" aria-haspopup="listbox">
+              <span id="eh-op-trigger-label">Base64 encode</span>
+              <span class="ft-select-arrow">▾</span>
+            </button>
+            <div class="ft-select-panel" id="eh-op-panel" hidden role="listbox"></div>
+          </div>
+        </div>
+        <div class="tt-row tt-row--top">
+          <label for="eh-input">Input</label>
+          <textarea id="eh-input" class="cp-input" rows="4" placeholder="Text to encode / decode / hash…" spellcheck="false"></textarea>
+        </div>
+        <p class="tt-error" id="eh-error" hidden></p>
+        <button id="eh-convert" class="tt-generate-btn">Convert</button>
+        <div class="tt-output-textwrap">
+          <textarea id="eh-output" class="cp-input dev-output" readonly rows="4" spellcheck="false"></textarea>
+          <button id="eh-copy" class="tt-copy-icon-btn" title="Copy" aria-label="Copy"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+        </div>
+      </section>
+      <section id="tab-jwt" class="tab-content">
+        <div class="tt-row tt-row--top">
+          <label for="jw-input">Token</label>
+          <textarea id="jw-input" class="cp-input" rows="4" placeholder="Paste a JWT: header.payload.signature" spellcheck="false"></textarea>
+        </div>
+        <p class="tt-error" id="jw-error" hidden></p>
+        <button id="jw-decode" class="tt-generate-btn">Decode</button>
+        <div id="jw-result" hidden>
+          <p class="jw-note">Decoded only — the signature is <strong>not</strong> verified.</p>
+          <div class="jw-block">
+            <div class="jw-block-head"><span>Header</span><button class="jw-copy" data-target="jw-header" title="Copy header" aria-label="Copy header"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+            <pre id="jw-header" class="jw-pre"></pre>
+          </div>
+          <div class="jw-block">
+            <div class="jw-block-head"><span>Payload</span><button class="jw-copy" data-target="jw-payload" title="Copy payload" aria-label="Copy payload"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+            <pre id="jw-payload" class="jw-pre"></pre>
+          </div>
+          <pre id="jw-claims" class="jw-claims" hidden></pre>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -507,5 +616,8 @@
   <script src="js/resize-tool.js"></script>
   <script src="js/compare-tool.js"></script>
   <script src="js/card-tool.js"></script>
+  <script src="js/uuid-tool.js"></script>
+  <script src="js/encode-tool.js"></script>
+  <script src="js/jwt-tool.js"></script>
 </body>
 </html>

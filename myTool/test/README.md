@@ -2,8 +2,8 @@
 
 Fast, dependency-free tests for myTool's core logic (`js/file-tool.js`, `js/text-tool.js`,
 `js/profile-tool.js`, `js/iban-tool.js`, `js/noniban-tool.js`, `js/bban-tool.js`,
-`js/resize-tool.js`, `js/compare-tool.js`, `js/card-tool.js`) using Node's built-in test runner —
-no npm install needed.
+`js/resize-tool.js`, `js/compare-tool.js`, `js/card-tool.js`, `js/uuid-tool.js`,
+`js/encode-tool.js`, `js/jwt-tool.js`) using Node's built-in test runner — no npm install needed.
 
 ## Running
 
@@ -61,6 +61,15 @@ including `test/helpers/`, which aren't test files themselves — the explicit g
   Discover/JCB/Diners/UnionPay), every network generates numbers that are Luhn-valid, correct-length,
   and detect back to the intended network, plus CVV length, digit grouping, expiry formatting, and
   that a full record's expiry is always in the future.
+- **uuid-tool.test.js** — the ID generators: UUID v4/v7 version+variant bits and (for v7) the
+  embedded timestamp, ULID length + Crockford alphabet + time round-trip, NanoID length/alphabet,
+  and Mongo ObjectId hex length + embedded seconds. Builders take injected random bytes so they're
+  deterministic.
+- **encode-tool.test.js** — Base64/Hex/URL encode+decode: known vectors, UTF-8 unicode round-trips,
+  padding variants, the operation router, and that bad input returns an error instead of throwing.
+- **jwt-tool.test.js** — decodes the canonical jwt.io example token (header + payload + raw
+  signature), handles the base64url alphabet, formats `exp`/`iat` as UTC, and rejects malformed
+  tokens with a clear error.
 
 ## What's NOT covered here
 

@@ -610,6 +610,60 @@ tr.cp-mod td:nth-of-type(4) { background: rgba(47, 158, 68, 0.10); }
 .cp-w-del { background: rgba(224, 49, 49, 0.34); border-radius: 2px; }
 .cp-w-ins { background: rgba(47, 158, 68, 0.34); border-radius: 2px; }
 
+/* Dev tools (UUID / Encode / JWT) */
+.dev-output { word-break: break-all; }
+.jw-note { font-size: 11px; color: var(--text-secondary); margin: 4px 0 10px; }
+.jw-block { margin-bottom: 10px; }
+.jw-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.jw-copy {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  width: 24px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  cursor: pointer;
+  opacity: 0.85;
+  transition: all 0.15s;
+}
+.jw-copy:hover { border-color: var(--hover-border); background: var(--hover-bg); color: var(--primary); }
+.jw-copy.copied { border-color: #16A34A; color: #16A34A; }
+.jw-pre {
+  margin: 0;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text);
+  overflow-x: auto;
+}
+.jw-claims {
+  margin: 4px 0 0;
+  padding: 8px 10px;
+  background: var(--hover-bg);
+  border-radius: var(--radius);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+}
+.jw-claims[hidden] { display: none; }
+
 /* Custom dropdown for Type — a native <select> repositions its native menu to keep the selected
    item under the cursor, which for a long list in a small popup can render the menu above the
    popup entirely (into the browser chrome). This stays fixed-positioned but clamped to the
