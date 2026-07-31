@@ -73,6 +73,28 @@
           </div>
         </div>
         <div class="guide-section">
+          <button class="guide-section-header">Resize <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>Resizes and/or compresses an image entirely <strong>in your browser</strong> — the image is read from the file you pick and written back as a download; it never leaves your machine and no permissions are used. <strong>Drop an image</strong> onto the box (or click <em>browse</em>); it shows the original name, dimensions, and size, and <strong>auto-fills the width and height from the original</strong>. EXIF orientation from phone photos is applied automatically.</p>
+            <p>Everything is in one form — set any combination and click Resize:</p>
+            <ul>
+              <li><strong>Width / Height</strong> (px) — pre-filled from the original. <strong>Lock ratio</strong> (on by default) keeps the aspect ratio: edit either one and the other follows.</li>
+              <li><strong>File size</strong> — <em>optional</em>. Leave it blank to just resize. If you enter a target (KB/MB, base 1000), the tool binary-searches the encoder quality to land at or under it. The width/height above act as a <strong>maximum</strong> — if even the lowest quality can't reach the target at those dimensions, it downscales further and reports the final size. A file-size target needs a lossy format (JPEG or WebP); with PNG/Original it will ask you to switch.</li>
+              <li><strong>Format</strong> — Original, JPEG, PNG, or WebP.</li>
+            </ul>
+            <p>Click <strong>Resize &amp; Download</strong> to save the result (named <code>&lt;original&gt;-resized.&lt;ext&gt;</code>) and show a preview; the result line shows the final dimensions, size, and (for lossy) quality. Nothing is stored between sessions — it's a one-shot transform.</p>
+          </div>
+        </div>
+        <div class="guide-section">
+          <button class="guide-section-header">Compare <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>Compares two texts and shows the differences <strong>side by side</strong> — original on the left, changed on the right, with line numbers. Paste into both boxes and click <strong>Compare</strong>.</p>
+            <p>Matching uses a line-level diff (like <code>git diff</code>): unchanged lines line up, added lines are green on the right, removed lines are red on the left, and a <strong>changed line is paired left/right with the exact words that differ highlighted</strong> within it. The summary line reports how many lines were added / removed / changed and an overall similarity %.</p>
+            <p><strong>Options:</strong> <em>Ignore case</em> (treat A and a as equal), <em>Ignore whitespace</em> (collapse runs of spaces/tabs and ignore leading/trailing), and <em>Trim lines</em> (ignore only leading/trailing spaces). These affect matching only — the text shown is always your original.</p>
+            <p><strong>Download HTML report</strong> saves the full side-by-side diff as a self-contained <code>text-comparison.html</code> file you can open in any browser — handy when the comparison is wider or longer than the popup. Each side is limited to 2000 lines. Nothing is stored between sessions.</p>
+          </div>
+        </div>
+        <div class="guide-section">
           <button class="guide-section-header">IBAN <span class="guide-arrow">▾</span></button>
           <div class="guide-section-body">
             <p><strong>Synthetic test data only.</strong> Every value is randomly generated on the spot. Bank and branch codes are random — they are <strong>not</strong> mapped to any real institution, and no output corresponds to a real account. This tool exists to test form/validation logic (does your form accept a correctly-formatted IBAN, does it verify the checksum), not to reproduce any real bank or account.</p>
@@ -97,28 +119,6 @@
             <p><strong>Coverage is deliberately limited to 10 countries</strong> whose national check-digit algorithm was verified against a real ISO 13616 registry IBAN (the algorithm reproduces the check digit embedded in a known-valid IBAN): <strong>Belgium, Finland, France, Italy, Monaco, Norway, Portugal, San Marino, Slovenia, Spain</strong>. Countries whose algorithm couldn't be verified unambiguously (e.g. Estonia, whose single reference was inconclusive) are deliberately left out rather than guessed — for those, use the IBAN tab (valid at the mod-97 layer).</p>
           </div>
         </div>
-        <div class="guide-section">
-          <button class="guide-section-header">Resize <span class="guide-arrow">▾</span></button>
-          <div class="guide-section-body">
-            <p>Resizes and/or compresses an image entirely <strong>in your browser</strong> — the image is read from the file you pick and written back as a download; it never leaves your machine and no permissions are used. <strong>Drop an image</strong> onto the box (or click <em>browse</em>); it shows the original name, dimensions, and size, and <strong>auto-fills the width and height from the original</strong>. EXIF orientation from phone photos is applied automatically.</p>
-            <p>Everything is in one form — set any combination and click Resize:</p>
-            <ul>
-              <li><strong>Width / Height</strong> (px) — pre-filled from the original. <strong>Lock ratio</strong> (on by default) keeps the aspect ratio: edit either one and the other follows.</li>
-              <li><strong>File size</strong> — <em>optional</em>. Leave it blank to just resize. If you enter a target (KB/MB, base 1000), the tool binary-searches the encoder quality to land at or under it. The width/height above act as a <strong>maximum</strong> — if even the lowest quality can't reach the target at those dimensions, it downscales further and reports the final size. A file-size target needs a lossy format (JPEG or WebP); with PNG/Original it will ask you to switch.</li>
-              <li><strong>Format</strong> — Original, JPEG, PNG, or WebP.</li>
-            </ul>
-            <p>Click <strong>Resize &amp; Download</strong> to save the result (named <code>&lt;original&gt;-resized.&lt;ext&gt;</code>) and show a preview; the result line shows the final dimensions, size, and (for lossy) quality. Nothing is stored between sessions — it's a one-shot transform.</p>
-          </div>
-        </div>
-        <div class="guide-section">
-          <button class="guide-section-header">Compare <span class="guide-arrow">▾</span></button>
-          <div class="guide-section-body">
-            <p>Compares two texts and shows the differences <strong>side by side</strong> — original on the left, changed on the right, with line numbers. Paste into both boxes and click <strong>Compare</strong>.</p>
-            <p>Matching uses a line-level diff (like <code>git diff</code>): unchanged lines line up, added lines are green on the right, removed lines are red on the left, and a <strong>changed line is paired left/right with the exact words that differ highlighted</strong> within it. The summary line reports how many lines were added / removed / changed and an overall similarity %.</p>
-            <p><strong>Options:</strong> <em>Ignore case</em> (treat A and a as equal), <em>Ignore whitespace</em> (collapse runs of spaces/tabs and ignore leading/trailing), and <em>Trim lines</em> (ignore only leading/trailing spaces). These affect matching only — the text shown is always your original.</p>
-            <p><strong>Download HTML report</strong> saves the full side-by-side diff as a self-contained <code>text-comparison.html</code> file you can open in any browser — handy when the comparison is wider or longer than the popup. Each side is limited to 2000 lines. Nothing is stored between sessions.</p>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -138,6 +138,12 @@
         <button class="tab-btn" data-tab="profile">Profile</button>
       </div>
       <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="resize">Resize</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="compare">Compare</button>
+      </div>
+      <div class="tool-nav-item">
         <button class="tab-btn" data-tab="iban">IBAN</button>
       </div>
       <div class="tool-nav-item">
@@ -145,12 +151,6 @@
       </div>
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="bban">BBAN</button>
-      </div>
-      <div class="tool-nav-item">
-        <button class="tab-btn" data-tab="resize">Resize</button>
-      </div>
-      <div class="tool-nav-item">
-        <button class="tab-btn" data-tab="compare">Compare</button>
       </div>
     </nav>
     <main id="app-main">
