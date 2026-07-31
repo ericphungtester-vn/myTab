@@ -178,6 +178,7 @@ function card_generate(key) {
     const opt = e.target.closest('.ft-select-option')
     if (!opt) return
     setNetwork(opt.dataset.value)
+    saveSettings()
     closePanel()
     generate()
   })
@@ -227,6 +228,11 @@ function card_generate(key) {
 
   generateBtn.addEventListener('click', generate)
 
-  setNetwork('random')
-  generate()
+  const resetBtn = document.getElementById('cc-reset-btn')
+  const SETTINGS_KEY = 'card-tool-network'
+  const DEFAULT_NETWORK = 'random'
+  function saveSettings() { syncSet({ [SETTINGS_KEY]: currentNetwork }) }
+  resetBtn.addEventListener('click', () => { setNetwork(DEFAULT_NETWORK); saveSettings(); generate() })
+
+  syncGet([SETTINGS_KEY]).then(d => { setNetwork(d[SETTINGS_KEY] || DEFAULT_NETWORK); generate() })
 })()

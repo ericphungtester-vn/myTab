@@ -256,7 +256,37 @@ function rs_isLossy(mime) {
     const btn = e.target.closest('.seg-btn')
     if (!btn) return
     setSegmented(unitSeg, btn.dataset.value)
+    saveSettings()
   })
 
   generateBtn.addEventListener('click', generate)
+
+  // Persistence + reset — options only; the image itself is never stored.
+  const resetBtn = document.getElementById('rs-reset-btn')
+  const SETTINGS_KEY = 'resize-tool-settings'
+  const DEFAULTS = { format: 'original', lock: true, unit: 'KB' }
+  function saveSettings() {
+    syncSet({ [SETTINGS_KEY]: { format: formatSelect.value, lock: lockInput.checked, unit: segValue(unitSeg) } })
+  }
+  function applySettings(s) {
+    formatSelect.value = s.format
+    lockInput.checked = s.lock
+    setSegmented(unitSeg, s.unit)
+  }
+  formatSelect.addEventListener('change', saveSettings)
+  lockInput.addEventListener('change', saveSettings)
+  resetBtn.addEventListener('click', () => {
+    applySettings(DEFAULTS)
+    widthInput.value = ''
+    heightInput.value = ''
+    targetInput.value = ''
+    errorEl.hidden = true
+    resultEl.hidden = true
+    previewEl.hidden = true
+    infoEl.hidden = true
+    if (bitmap) { bitmap.close(); bitmap = null }
+    generateBtn.disabled = true
+    saveSettings()
+  })
+  syncGet([SETTINGS_KEY]).then(d => { if (d[SETTINGS_KEY]) applySettings({ ...DEFAULTS, ...d[SETTINGS_KEY] }) })
 })()

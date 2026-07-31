@@ -1208,6 +1208,7 @@ function generateCompany(countryCode, names) {
     const opt = e.target.closest('.ft-select-option')
     if (!opt) return
     setCountry(opt.dataset.value)
+    saveSettings()
     closePanel()
     generate()
   })
@@ -1293,6 +1294,11 @@ function generateCompany(countryCode, names) {
 
   generateBtn.addEventListener('click', generate)
 
-  setCountry('br')
-  generate()
+  const resetBtn = document.getElementById('pf-reset-btn')
+  const SETTINGS_KEY = 'profile-tool-country'
+  const DEFAULT_COUNTRY = 'br'
+  function saveSettings() { syncSet({ [SETTINGS_KEY]: currentCountry }) }
+  resetBtn.addEventListener('click', () => { setCountry(DEFAULT_COUNTRY); saveSettings(); generate() })
+
+  syncGet([SETTINGS_KEY]).then(d => { setCountry(d[SETTINGS_KEY] || DEFAULT_COUNTRY); generate() })
 })()

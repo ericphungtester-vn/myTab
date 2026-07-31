@@ -225,4 +225,30 @@ function cp_buildStandaloneHtml(rows, stats, opts = {}) {
 
   compareBtn.addEventListener('click', compare)
   downloadBtn.addEventListener('click', download)
+
+  // Persistence + reset — options only; pasted text is never stored.
+  const resetBtn = document.getElementById('cp-reset-btn')
+  const SETTINGS_KEY = 'compare-tool-settings'
+  const DEFAULTS = { ignoreCase: false, ignoreWhitespace: false, trim: false }
+  function saveSettings() {
+    syncSet({ [SETTINGS_KEY]: { ignoreCase: ignoreCaseEl.checked, ignoreWhitespace: ignoreWsEl.checked, trim: trimEl.checked } })
+  }
+  function applySettings(s) {
+    ignoreCaseEl.checked = s.ignoreCase
+    ignoreWsEl.checked = s.ignoreWhitespace
+    trimEl.checked = s.trim
+  }
+  ;[ignoreCaseEl, ignoreWsEl, trimEl].forEach(el => el.addEventListener('change', saveSettings))
+  resetBtn.addEventListener('click', () => {
+    applySettings(DEFAULTS)
+    aEl.value = ''
+    bEl.value = ''
+    outputEl.hidden = true
+    statsEl.hidden = true
+    downloadBtn.hidden = true
+    errorEl.hidden = true
+    lastReport = null
+    saveSettings()
+  })
+  syncGet([SETTINGS_KEY]).then(d => { if (d[SETTINGS_KEY]) applySettings({ ...DEFAULTS, ...d[SETTINGS_KEY] }) })
 })()
