@@ -5,6 +5,9 @@ node_modules/
 tests/test-results/
 tests/playwright-report/
 tests/blob-report/
+myTool/e2e/test-results/
+myTool/e2e/playwright-report/
+myTool/e2e/blob-report/
 
 # OS
 .DS_Store

@@ -66,6 +66,12 @@ including `test/helpers/`, which aren't test files themselves — the explicit g
 
 These are pure-logic tests only — they load the tool scripts' logic into a Node `vm` sandbox
 (see `test/helpers/loadScript.js`), stripping out the DOM-dependent wiring at the bottom of each
-file. They don't verify the popup's actual UI (dropdown positioning, layout, click handling,
-Chrome Sync persistence). That would need a real browser — see the top-level `tests/` folder for
-how myTab does this with Playwright; myTool doesn't have an equivalent yet.
+file. They don't verify the popup's actual UI.
+
+The **DOM-dependent behavior is covered separately by Playwright end-to-end tests in
+[`../e2e/`](../e2e/)** — those drive the real `popup.html` (served over http, using main.js's
+localStorage fallback for `chrome.storage`) through Chromium and cover the Compare diff render +
+HTML-report download, the Resize load/aspect-lock/resize/download flow (including the real
+canvas + `createImageBitmap` path), copy-to-clipboard, and the Reset + last-selection persistence
+added across the tools. Run them with `cd e2e && npm install && npm test`. Between the two suites
+(pure logic here + UI there), the remaining untested surface is mostly pure styling/layout.
