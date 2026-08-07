@@ -1563,7 +1563,12 @@ function generateCompany(countryCode, names) {
     errorEl.hidden = true
     try {
       const names = PROFILE_NAMES[currentCountry] || GENERIC_NAMES
-      renderProfile(generateProfile(currentCountry, { emailDomain: emailDomainEl.value }), generateCompany(currentCountry, names))
+      const profile = generateProfile(currentCountry, { emailDomain: emailDomainEl.value })
+      const company = generateCompany(currentCountry, names)
+      renderProfile(profile, company)
+      // Persist the generated data so reopening the popup shows the SAME profile (handy while
+      // filling a form) instead of regenerating and losing what you were using.
+      syncSet({ [LAST_KEY]: { profile, company } })
     } catch (err) {
       errorEl.textContent = err.message
       errorEl.hidden = false
@@ -1576,15 +1581,20 @@ function generateCompany(countryCode, names) {
   const resetBtn = document.getElementById('pf-reset-btn')
   const COUNTRY_KEY = 'profile-tool-country'
   const DOMAIN_KEY = 'profile-tool-email-domain'
+  const LAST_KEY = 'profile-tool-last'
   const DEFAULT_COUNTRY = 'br'
   const DEFAULT_DOMAIN = 'yopmail.com'
   function saveSettings() { syncSet({ [COUNTRY_KEY]: currentCountry, [DOMAIN_KEY]: emailDomainEl.value }) }
   emailDomainEl.addEventListener('change', () => { saveSettings(); generate() })
   resetBtn.addEventListener('click', () => { setCountry(DEFAULT_COUNTRY); emailDomainEl.value = DEFAULT_DOMAIN; saveSettings(); generate() })
 
-  syncGet([COUNTRY_KEY, DOMAIN_KEY]).then(d => {
+  syncGet([COUNTRY_KEY, DOMAIN_KEY, LAST_KEY]).then(d => {
     if (d[DOMAIN_KEY]) emailDomainEl.value = d[DOMAIN_KEY]
     setCountry(d[COUNTRY_KEY] || DEFAULT_COUNTRY)
-    generate()
+    // Restore the last generated profile instead of making a new one, so reopening the popup keeps
+    // the data you were using. Only generate fresh if nothing was saved yet.
+    const last = d[LAST_KEY]
+    if (last && last.profile && last.company) renderProfile(last.profile, last.company)
+    else generate()
   })
 })()

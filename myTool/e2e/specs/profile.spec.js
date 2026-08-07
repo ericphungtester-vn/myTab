@@ -23,3 +23,29 @@ test('Profile: the email domain selector changes the generated email', async ({ 
   const email = await page.locator('#pf-fields .pf-field', { hasText: 'Email' }).first().locator('.pf-field-value').inputValue()
   expect(email).toContain('@mailinator.com')
 })
+
+const fullName = page => page.locator('#pf-fields .pf-field', { hasText: 'Full Name' }).first().locator('.pf-field-value').inputValue()
+
+test('Profile: reopening keeps the same profile (no regenerate on open)', async ({ page }) => {
+  await page.goto('/popup.html')
+  await page.click('.tab-btn[data-tab="profile"]')
+  const before = await fullName(page)
+  expect(before).not.toBe('')
+
+  await page.reload() // simulates closing and reopening the popup
+  await page.click('.tab-btn[data-tab="profile"]')
+  expect(await fullName(page)).toBe(before)
+})
+
+test('Profile: Generate replaces the saved profile', async ({ page }) => {
+  await page.goto('/popup.html')
+  await page.click('.tab-btn[data-tab="profile"]')
+  const before = await fullName(page)
+  // Generate a few times; at least one should differ (names are random)
+  let changed = false
+  for (let i = 0; i < 5 && !changed; i++) {
+    await page.click('#pf-generate')
+    if ((await fullName(page)) !== before) changed = true
+  }
+  expect(changed).toBe(true)
+})
