@@ -12,7 +12,7 @@ const {
   genNIK_ID, genNRIC_MY,
   generateWithRetry, genPassportNumber, buildPassportMrz, PASSPORT_FORMATS,
   ID_COUNTRIES, NATIONAL_ID_TYPES,
-  generateProfile, transliterateForMrz, genPhoneNumber, genPostalCode, genAddressLine, genAddress, VN_ADDRESSES,
+  generateProfile, transliterateForMrz, genPhoneNumber, genPostalCode, genAddressLine, genAddress, COUNTRY_ADDRESSES,
   PROFILE_NAMES, PHONE_SPECS,
   generateCompany, genCNPJ_BR, genVAT_BG_company, genUSCC_CN, genYTunnus_FI, genSIREN_FR, genTVA_FR,
   genPAN_IN, genGSTIN_IN, genNPWP_ID_company, genIVA_IT, genOrgnr_NO, genNIP_PL, genREGON_PL,
@@ -932,37 +932,41 @@ describe('generateCompany', () => {
   })
 })
 
-describe('Vietnam address dataset', () => {
-  test('every entry has a real street/district/city and a province-level postal code', () => {
-    assert.ok(VN_ADDRESSES.length >= 10)
-    for (const a of VN_ADDRESSES) {
-      assert.ok(a.street && a.district && a.city, `incomplete entry: ${JSON.stringify(a)}`)
-      assert.match(a.postal, /^\d{5}$/, `postal not 5 digits: ${a.postal}`)
+describe('Address datasets (real street/district/city per country)', () => {
+  test('every dataset entry has a non-empty street, district, and city', () => {
+    const codes = Object.keys(COUNTRY_ADDRESSES)
+    assert.ok(codes.length >= 20)
+    for (const cc of codes) {
+      assert.ok(COUNTRY_ADDRESSES[cc].length >= 3, `${cc} has too few entries`)
+      for (const a of COUNTRY_ADDRESSES[cc]) {
+        assert.ok(a.street && a.district && a.city, `${cc} incomplete entry: ${JSON.stringify(a)}`)
+      }
     }
   })
 
-  test("genAddress('vn') returns a numbered real street + matching district/city/postal from the dataset", () => {
-    for (let i = 0; i < 50; i++) {
-      const a = genAddress('vn', {})
-      const m = /^(\d+)\s+(.+)$/.exec(a.addressLine)
-      assert.ok(m, `addressLine not "<number> <street>": ${a.addressLine}`)
-      // the whole {street, district, city, postal} combo must come from one real dataset entry
-      const entry = VN_ADDRESSES.find(e => e.street === m[2] && e.district === a.district && e.city === a.city && e.postal === a.postalCode)
-      assert.ok(entry, `combo not found in dataset: ${JSON.stringify(a)}`)
+  test('Vietnam keeps real 5-digit province-level postal codes', () => {
+    for (const a of COUNTRY_ADDRESSES.vn) assert.match(a.postal, /^\d{5}$/)
+  })
+
+  test('genAddress uses the dataset: street/district/city all come from one real entry', () => {
+    for (const cc of Object.keys(COUNTRY_ADDRESSES)) {
+      for (let i = 0; i < 20; i++) {
+        const a = genAddress(cc, {})
+        assert.ok(a.district && a.city, `${cc} missing district/city`)
+        assert.ok(a.postalCode, `${cc} missing postal`)
+        // the street must be one of the dataset streets, and district+city must match that same entry
+        const entry = COUNTRY_ADDRESSES[cc].find(e =>
+          a.addressLine.includes(e.street) && e.district === a.district && e.city === a.city)
+        assert.ok(entry, `${cc} combo not from dataset: ${JSON.stringify(a)}`)
+      }
     }
   })
 
-  test('non-dataset countries still work, with empty district/city', () => {
-    const a = genAddress('us', { firstNames: ['X'], lastNames: ['Y'] })
-    assert.ok(a.addressLine)
-    assert.equal(a.district, '')
-    assert.equal(a.city, '')
-    assert.ok(a.postalCode)
-  })
-
-  test('generateProfile surfaces district/city for Vietnam', () => {
+  test('generateProfile surfaces district/city for a dataset country', () => {
     const p = generateProfile('vn')
     assert.ok(p.district && p.city)
     assert.match(p.postalCode, /^\d{5}$/)
+    const us = generateProfile('us')
+    assert.ok(us.district && us.city)
   })
 })

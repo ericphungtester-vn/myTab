@@ -665,27 +665,156 @@ const GB_STREET_NAMES = ['Abbey Road', 'Albany Road', 'Albert Road', 'Albion Str
   'Alfred Street', 'Alma Street', 'Ash Close', 'Ash Grove', 'Ash Road', 'Aspen Close', 'Avenue Road']
 const US_STREET_NAMES = ['10th Street', '11th Street', '1st Avenue', 'A Street', 'Adams Avenue',
   'Adams Street', 'Airport Road', 'Ash Street', 'Atlantic Avenue', 'Bay Street', 'Bridge Road', 'Broadway']
-// Vietnam: real street + district + province-level city, drawn from well-known (often tourist)
-// areas. The house number is randomized and the postal code is province-level; the components are
-// real, but a given combination is synthetic — a plausible address, not a verified deliverable one.
-const VN_ADDRESSES = [
-  { street: 'Nguyễn Huệ', district: 'Quận 1', city: 'Hồ Chí Minh', postal: '70000' },
-  { street: 'Đồng Khởi', district: 'Quận 1', city: 'Hồ Chí Minh', postal: '70000' },
-  { street: 'Lê Lợi', district: 'Quận 1', city: 'Hồ Chí Minh', postal: '70000' },
-  { street: 'Bùi Viện', district: 'Quận 1', city: 'Hồ Chí Minh', postal: '70000' },
-  { street: 'Hai Bà Trưng', district: 'Quận 3', city: 'Hồ Chí Minh', postal: '70000' },
-  { street: 'Tràng Tiền', district: 'Hoàn Kiếm', city: 'Hà Nội', postal: '11000' },
-  { street: 'Hàng Bài', district: 'Hoàn Kiếm', city: 'Hà Nội', postal: '11000' },
-  { street: 'Đinh Tiên Hoàng', district: 'Hoàn Kiếm', city: 'Hà Nội', postal: '11000' },
-  { street: 'Tạ Hiện', district: 'Hoàn Kiếm', city: 'Hà Nội', postal: '11000' },
-  { street: 'Bạch Đằng', district: 'Hải Châu', city: 'Đà Nẵng', postal: '55000' },
-  { street: 'Võ Nguyên Giáp', district: 'Sơn Trà', city: 'Đà Nẵng', postal: '55000' },
-  { street: 'Trần Phú', district: 'Hội An', city: 'Quảng Nam', postal: '56000' },
-  { street: 'Nguyễn Thái Học', district: 'Hội An', city: 'Quảng Nam', postal: '56000' },
-  { street: 'Trần Phú', district: 'Nha Trang', city: 'Khánh Hòa', postal: '65000' },
-  { street: 'Nguyễn Chí Thanh', district: 'Đà Lạt', city: 'Lâm Đồng', postal: '66000' },
-  { street: 'Lê Lợi', district: 'Huế', city: 'Thừa Thiên Huế', postal: '53000' }
-]
+// Per-country address data drawn from real, well-known (often tourist) streets, districts/areas, and
+// cities. The house number is randomized and the postal code is only format-correct (via
+// genPostalCode) — except Vietnam, which keeps real province-level codes. Components are real, but a
+// given combination is synthetic: a plausible address, not a verified deliverable one.
+const COUNTRY_ADDRESSES = {
+  vn: [
+    { street: 'Nguyễn Huệ', district: 'Quận 1', city: 'Hồ Chí Minh', postal: '70000' },
+    { street: 'Đồng Khởi', district: 'Quận 1', city: 'Hồ Chí Minh', postal: '70000' },
+    { street: 'Bùi Viện', district: 'Quận 1', city: 'Hồ Chí Minh', postal: '70000' },
+    { street: 'Hai Bà Trưng', district: 'Quận 3', city: 'Hồ Chí Minh', postal: '70000' },
+    { street: 'Tràng Tiền', district: 'Hoàn Kiếm', city: 'Hà Nội', postal: '11000' },
+    { street: 'Tạ Hiện', district: 'Hoàn Kiếm', city: 'Hà Nội', postal: '11000' },
+    { street: 'Bạch Đằng', district: 'Hải Châu', city: 'Đà Nẵng', postal: '55000' },
+    { street: 'Trần Phú', district: 'Hội An', city: 'Quảng Nam', postal: '56000' },
+    { street: 'Trần Phú', district: 'Nha Trang', city: 'Khánh Hòa', postal: '65000' },
+    { street: 'Nguyễn Chí Thanh', district: 'Đà Lạt', city: 'Lâm Đồng', postal: '66000' }
+  ],
+  us: [
+    { street: '5th Avenue', district: 'Manhattan', city: 'New York, NY' },
+    { street: 'Broadway', district: 'Manhattan', city: 'New York, NY' },
+    { street: 'Michigan Avenue', district: 'The Loop', city: 'Chicago, IL' },
+    { street: 'Market Street', district: 'Financial District', city: 'San Francisco, CA' }
+  ],
+  gb: [
+    { street: 'Oxford Street', district: 'Westminster', city: 'London' },
+    { street: 'Baker Street', district: 'Marylebone', city: 'London' },
+    { street: 'Piccadilly', district: 'Westminster', city: 'London' },
+    { street: 'Royal Mile', district: 'Old Town', city: 'Edinburgh' }
+  ],
+  fr: [
+    { street: 'Avenue des Champs-Élysées', district: '8e arrondissement', city: 'Paris' },
+    { street: 'Rue de Rivoli', district: '1er arrondissement', city: 'Paris' },
+    { street: 'Rue du Faubourg Saint-Honoré', district: '8e arrondissement', city: 'Paris' },
+    { street: 'Promenade des Anglais', district: 'Centre', city: 'Nice' }
+  ],
+  it: [
+    { street: 'Via del Corso', district: 'Centro Storico', city: 'Roma' },
+    { street: 'Via Veneto', district: 'Ludovisi', city: 'Roma' },
+    { street: 'Via Montenapoleone', district: 'Centro', city: 'Milano' },
+    { street: "Via de' Tornabuoni", district: 'Centro Storico', city: 'Firenze' }
+  ],
+  es: [
+    { street: 'Gran Vía', district: 'Centro', city: 'Madrid' },
+    { street: 'Calle de Alcalá', district: 'Centro', city: 'Madrid' },
+    { street: 'La Rambla', district: 'Ciutat Vella', city: 'Barcelona' },
+    { street: 'Passeig de Gràcia', district: 'Eixample', city: 'Barcelona' }
+  ],
+  pt: [
+    { street: 'Avenida da Liberdade', district: 'Santo António', city: 'Lisboa' },
+    { street: 'Rua Augusta', district: 'Baixa', city: 'Lisboa' },
+    { street: 'Rua de Santa Catarina', district: 'Santo Ildefonso', city: 'Porto' },
+    { street: 'Praça do Comércio', district: 'Baixa', city: 'Lisboa' }
+  ],
+  br: [
+    { street: 'Avenida Paulista', district: 'Bela Vista', city: 'São Paulo' },
+    { street: 'Rua Oscar Freire', district: 'Jardins', city: 'São Paulo' },
+    { street: 'Avenida Atlântica', district: 'Copacabana', city: 'Rio de Janeiro' },
+    { street: 'Rua Visconde de Pirajá', district: 'Ipanema', city: 'Rio de Janeiro' }
+  ],
+  cl: [
+    { street: 'Avenida Providencia', district: 'Providencia', city: 'Santiago' },
+    { street: 'Paseo Ahumada', district: 'Santiago Centro', city: 'Santiago' },
+    { street: 'Avenida Vitacura', district: 'Vitacura', city: 'Santiago' },
+    { street: 'Calle Esmeralda', district: 'Cerro Alegre', city: 'Valparaíso' }
+  ],
+  cn: [
+    { street: '南京东路', district: '黄浦区', city: '上海' },
+    { street: '王府井大街', district: '东城区', city: '北京' },
+    { street: '中山路', district: '越秀区', city: '广州' },
+    { street: '解放碑', district: '渝中区', city: '重庆' }
+  ],
+  sg: [
+    { street: 'Orchard Road', district: 'Orchard', city: 'Singapore' },
+    { street: 'Marina Boulevard', district: 'Marina Bay', city: 'Singapore' },
+    { street: 'Temple Street', district: 'Chinatown', city: 'Singapore' },
+    { street: 'Haji Lane', district: 'Kampong Glam', city: 'Singapore' }
+  ],
+  my: [
+    { street: 'Jalan Bukit Bintang', district: 'Bukit Bintang', city: 'Kuala Lumpur' },
+    { street: 'Jalan Alor', district: 'Bukit Bintang', city: 'Kuala Lumpur' },
+    { street: 'Petaling Street', district: 'Chinatown', city: 'Kuala Lumpur' },
+    { street: 'Jalan Penang', district: 'George Town', city: 'Pulau Pinang' }
+  ],
+  id: [
+    { street: 'Jalan M.H. Thamrin', district: 'Menteng', city: 'Jakarta' },
+    { street: 'Jalan Malioboro', district: 'Gedongtengen', city: 'Yogyakarta' },
+    { street: 'Jalan Legian', district: 'Kuta', city: 'Bali' },
+    { street: 'Jalan Sudirman', district: 'Setiabudi', city: 'Jakarta' }
+  ],
+  in: [
+    { street: 'Marine Drive', district: 'Nariman Point', city: 'Mumbai' },
+    { street: 'Colaba Causeway', district: 'Colaba', city: 'Mumbai' },
+    { street: 'Connaught Place', district: 'New Delhi', city: 'Delhi' },
+    { street: 'Chandni Chowk', district: 'Old Delhi', city: 'Delhi' }
+  ],
+  za: [
+    { street: 'Long Street', district: 'City Centre', city: 'Cape Town' },
+    { street: 'Adderley Street', district: 'City Centre', city: 'Cape Town' },
+    { street: 'Vilakazi Street', district: 'Soweto', city: 'Johannesburg' },
+    { street: 'Florida Road', district: 'Morningside', city: 'Durban' }
+  ],
+  pl: [
+    { street: 'Nowy Świat', district: 'Śródmieście', city: 'Warszawa' },
+    { street: 'Krakowskie Przedmieście', district: 'Śródmieście', city: 'Warszawa' },
+    { street: 'Floriańska', district: 'Stare Miasto', city: 'Kraków' },
+    { street: 'Długi Targ', district: 'Śródmieście', city: 'Gdańsk' }
+  ],
+  ro: [
+    { street: 'Calea Victoriei', district: 'Sector 1', city: 'București' },
+    { street: 'Bulevardul Magheru', district: 'Sector 1', city: 'București' },
+    { street: 'Strada Lipscani', district: 'Sector 3', city: 'București' },
+    { street: 'Bulevardul Eroilor', district: 'Centru', city: 'Cluj-Napoca' }
+  ],
+  se: [
+    { street: 'Drottninggatan', district: 'Norrmalm', city: 'Stockholm' },
+    { street: 'Kungsgatan', district: 'Norrmalm', city: 'Stockholm' },
+    { street: 'Kungsportsavenyen', district: 'Vasastaden', city: 'Göteborg' },
+    { street: 'Stortorget', district: 'Gamla stan', city: 'Stockholm' }
+  ],
+  no: [
+    { street: 'Karl Johans gate', district: 'Sentrum', city: 'Oslo' },
+    { street: 'Bogstadveien', district: 'Frogner', city: 'Oslo' },
+    { street: 'Bryggen', district: 'Bergenhus', city: 'Bergen' },
+    { street: 'Aker Brygge', district: 'Sentrum', city: 'Oslo' }
+  ],
+  fi: [
+    { street: 'Aleksanterinkatu', district: 'Kluuvi', city: 'Helsinki' },
+    { street: 'Mannerheimintie', district: 'Kamppi', city: 'Helsinki' },
+    { street: 'Esplanadi', district: 'Kluuvi', city: 'Helsinki' },
+    { street: 'Hämeenkatu', district: 'Keskusta', city: 'Tampere' }
+  ],
+  bg: [
+    { street: 'Vitosha Boulevard', district: 'Sredets', city: 'Sofia' },
+    { street: 'Graf Ignatiev', district: 'Sredets', city: 'Sofia' },
+    { street: 'Knyaz Alexander I', district: 'Tsentralen', city: 'Plovdiv' },
+    { street: 'Aleksandrovska', district: 'Tsentralen', city: 'Ruse' }
+  ]
+}
+
+// Places the house number the way each country writes it (prefix, suffix, comma, "No.", 号, …).
+function formatAddressLine(countryCode, street, num) {
+  switch (countryCode) {
+    case 'br': case 'it': case 'pt': case 'es': return `${street}, ${num}`
+    case 'cl': case 'fi': case 'no': case 'se': case 'pl': return `${street} ${num}`
+    case 'cn': return `${street}${num}号`
+    case 'id': return `${street} No. ${num}`
+    case 'ro': return `${street}, nr. ${num}`
+    default: return `${num} ${street}` // us, gb, fr, in, my, sg, za, bg, vn
+  }
+}
 
 function genAddressLine(countryCode, names) {
   switch (countryCode) {
@@ -714,12 +843,19 @@ function genAddressLine(countryCode, names) {
 }
 
 // Full address as { addressLine, district, city, postalCode }. Countries with a curated dataset
-// (Vietnam) return real street/district/city components; all others fall back to the generated
-// street line + postal code with no district/city.
+// return real street/district/city components (postal format-correct via genPostalCode, or the
+// real code baked into the entry where present); any country without a dataset falls back to the
+// generated street line with no district/city.
 function genAddress(countryCode, names) {
-  if (countryCode === 'vn') {
-    const a = pick(VN_ADDRESSES)
-    return { addressLine: `${randInt(1, 300)} ${a.street}`, district: a.district, city: a.city, postalCode: a.postal }
+  const data = COUNTRY_ADDRESSES[countryCode]
+  if (data) {
+    const a = pick(data)
+    return {
+      addressLine: formatAddressLine(countryCode, a.street, randInt(1, 500)),
+      district: a.district,
+      city: a.city,
+      postalCode: a.postal || genPostalCode(countryCode)
+    }
   }
   return { addressLine: genAddressLine(countryCode, names), district: '', city: '', postalCode: genPostalCode(countryCode) }
 }
