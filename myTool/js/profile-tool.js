@@ -1067,7 +1067,10 @@ function generateProfile(countryCode, options = {}) {
   const country = ID_COUNTRIES.find(c => c.code === countryCode)
   const names = PROFILE_NAMES[countryCode] || { nameOrder: 'western', firstNames: GENERIC_NAMES.firstNames, lastNames: GENERIC_NAMES.lastNames }
   const firstName = pick(names.firstNames)
-  const middleName = genMiddleName({ ...names, _lastFirstNamePick: firstName })
+  // Eastern name orders (Vietnam, China) don't use a Western-style middle name, and it isn't part
+  // of their Full Name — so don't invent one (it would show a value absent from the Full Name).
+  const isEastern = names.nameOrder === 'eastern-spaced' || names.nameOrder === 'eastern-nospace'
+  const middleName = isEastern ? '' : genMiddleName({ ...names, _lastFirstNamePick: firstName })
   const lastName = pick(names.lastNames)
   const fullName = buildFullName(names.nameOrder, firstName, middleName, lastName)
 
@@ -1503,7 +1506,7 @@ function generateCompany(countryCode, names) {
     const rows = [
       sectionHeader('Name'),
       fieldRow('First Name', profile.firstName),
-      fieldRow('Middle Name', profile.middleName),
+      ...(profile.middleName ? [fieldRow('Middle Name', profile.middleName)] : []),
       fieldRow('Last Name', profile.lastName),
       fieldRow('Full Name', profile.fullName),
       sectionHeader('Personal'),

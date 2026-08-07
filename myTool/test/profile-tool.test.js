@@ -497,7 +497,7 @@ describe('generateProfile', () => {
     for (const c of ID_COUNTRIES) {
       for (let i = 0; i < 5; i++) {
         const p = generateProfile(c.code)
-        assert.ok(p.firstName && p.lastName && p.middleName, c.code)
+        assert.ok(p.firstName && p.lastName, c.code)
         assert.ok(p.fullName.includes(p.firstName) || p.fullName.includes(p.lastName), c.code)
         assert.ok(p.addressLine.length > 0, c.code)
         assert.ok(p.postalCode.length > 0, c.code)
@@ -1056,5 +1056,22 @@ describe('Personal / Account / Company extras', () => {
     assert.match(c.companyEmail, /@.+\.example\.com$/)
     assert.ok(c.companyPhone)
     assert.match(c.companyWebsite, /^https:\/\/www\..+\.example\.com$/)
+  })
+})
+
+describe('Middle name only where the culture uses it', () => {
+  test('eastern name orders (Vietnam, China) have no middle name, and Full Name stays consistent', () => {
+    for (const cc of ['vn', 'cn']) {
+      const p = generateProfile(cc)
+      assert.equal(p.middleName, '', `${cc} should have no middle name`)
+      assert.ok(!p.fullName.includes('  '), `${cc} full name has a double space`)
+    }
+  })
+  test('western name orders keep a middle name that appears in the Full Name', () => {
+    for (const cc of ['us', 'fr', 'it']) {
+      const p = generateProfile(cc)
+      assert.ok(p.middleName, `${cc} should have a middle name`)
+      assert.ok(p.fullName.includes(p.middleName), `${cc} full name missing middle: ${p.fullName}`)
+    }
   })
 })
