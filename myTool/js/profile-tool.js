@@ -1005,6 +1005,20 @@ const MRZ_NON_LATIN_NAME = {
 // The single entry point the UI uses: builds one full, self-consistent synthetic profile for a
 // country — every National ID/Passport variant available for that country, plus name/address/
 // phone/postal fields, all as plain text (never a rendered/visual document).
+// Name -> ASCII email local part: strip diacritics (Nguyễn -> nguyen), đ/Đ -> d, drop anything
+// non-alphanumeric. Returns '' for scripts that don't reduce to ASCII (e.g. Chinese).
+function emailLocalPart(s) {
+  return String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+// Synthetic email on @yopmail.com (a public disposable-inbox service — safe, real people not
+// implied). A trailing number keeps each generated address unique.
+function genEmail(firstName, lastName) {
+  const parts = [emailLocalPart(firstName), emailLocalPart(lastName)].filter(Boolean)
+  const local = (parts.length ? parts.join('.') : 'user') + randInt(1, 999)
+  return `${local}@yopmail.com`
+}
+
 function generateProfile(countryCode) {
   const country = ID_COUNTRIES.find(c => c.code === countryCode)
   const names = PROFILE_NAMES[countryCode] || { nameOrder: 'western', firstNames: GENERIC_NAMES.firstNames, lastNames: GENERIC_NAMES.lastNames }
@@ -1033,6 +1047,7 @@ function generateProfile(countryCode) {
     postalCode: address.postalCode,
     countryName: country.name,
     fullAddress,
+    email: genEmail(firstName, lastName),
     phoneNumber: genPhoneNumber(countryCode),
     nationalIds,
     passportNumber,
@@ -1433,6 +1448,7 @@ function generateCompany(countryCode, names) {
       fieldRow('Country', profile.countryName),
       fieldRow('Full Address', profile.fullAddress),
       sectionHeader('Contact'),
+      fieldRow('Email', profile.email),
       fieldRow('Phone Number', profile.phoneNumber),
       sectionHeader('ID & Passport'),
       ...profile.nationalIds.map(id => fieldRow(id.label, id.value)),

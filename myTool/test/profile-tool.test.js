@@ -12,7 +12,7 @@ const {
   genNIK_ID, genNRIC_MY,
   generateWithRetry, genPassportNumber, buildPassportMrz, PASSPORT_FORMATS,
   ID_COUNTRIES, NATIONAL_ID_TYPES,
-  generateProfile, transliterateForMrz, genPhoneNumber, genPostalCode, genAddressLine, genAddress, COUNTRY_ADDRESSES,
+  generateProfile, transliterateForMrz, genPhoneNumber, genPostalCode, genAddressLine, genAddress, COUNTRY_ADDRESSES, genEmail, emailLocalPart,
   PROFILE_NAMES, PHONE_SPECS,
   generateCompany, genCNPJ_BR, genVAT_BG_company, genUSCC_CN, genYTunnus_FI, genSIREN_FR, genTVA_FR,
   genPAN_IN, genGSTIN_IN, genNPWP_ID_company, genIVA_IT, genOrgnr_NO, genNIP_PL, genREGON_PL,
@@ -977,5 +977,23 @@ describe('Address datasets (real street/district/city per country)', () => {
         assert.ok(p.fullAddress.includes(part), `${cc} fullAddress missing "${part}": ${p.fullAddress}`)
       }
     }
+  })
+})
+
+describe('Email generation (@yopmail.com)', () => {
+  test('always ends in @yopmail.com with an ASCII local part', () => {
+    for (const cc of ['vn', 'us', 'cn', 'fr']) {
+      const email = generateProfile(cc).email
+      assert.match(email, /^[a-z0-9.]+@yopmail\.com$/, `bad email for ${cc}: ${email}`)
+    }
+  })
+  test('strips Vietnamese diacritics and đ', () => {
+    assert.match(genEmail('Nguyễn', 'Trần'), /^nguyen\.tran\d+@yopmail\.com$/)
+    assert.match(genEmail('Đinh', 'Bình'), /^dinh\.binh\d+@yopmail\.com$/)
+    assert.equal(emailLocalPart('Nguyễn'), 'nguyen')
+    assert.equal(emailLocalPart('Đinh'), 'dinh')
+  })
+  test('falls back to "user" when the name has no ASCII letters (e.g. Chinese)', () => {
+    assert.match(genEmail('广州', '李'), /^user\d+@yopmail\.com$/)
   })
 })
