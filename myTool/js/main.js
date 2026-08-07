@@ -56,16 +56,37 @@ function activateTab(tab) {
   content.classList.add('active')
 }
 
+// Scroll position of the content area — persisted so reopening the popup lands where you left off.
+const appMain = document.getElementById('app-main')
+const SCROLL_KEY = 'scroll-top'
+let scrollSaveTimer = null
+appMain.addEventListener('scroll', () => {
+  clearTimeout(scrollSaveTimer)
+  scrollSaveTimer = setTimeout(() => syncSet({ [SCROLL_KEY]: appMain.scrollTop }), 150)
+})
+
 tabBtns.forEach(btn => {
   btn.addEventListener('click', () => {
     activateTab(btn.dataset.tab)
-    syncSet({ 'active-tab': btn.dataset.tab })
+    appMain.scrollTop = 0 // a different tab is a fresh view — start at the top
+    syncSet({ 'active-tab': btn.dataset.tab, [SCROLL_KEY]: 0 })
   })
 })
 
-// Restore the tab that was active before the last close
-syncGet(['active-tab']).then(data => {
+// Restore the tab + scroll position that were active before the last close. Tool content renders
+// asynchronously (each tool does its own syncGet().then(render)), so the container may still be
+// short when we first try — retry briefly until it's tall enough to reach the saved offset.
+syncGet(['active-tab', SCROLL_KEY]).then(data => {
   if (data['active-tab']) activateTab(data['active-tab'])
+  const top = data[SCROLL_KEY]
+  if (top) {
+    let tries = 0
+    const apply = () => {
+      appMain.scrollTop = top
+      if (appMain.scrollTop < top - 1 && tries++ < 12) setTimeout(apply, 60)
+    }
+    requestAnimationFrame(apply)
+  }
 })
 
 // Help Panel
