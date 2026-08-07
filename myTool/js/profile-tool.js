@@ -665,9 +665,27 @@ const GB_STREET_NAMES = ['Abbey Road', 'Albany Road', 'Albert Road', 'Albion Str
   'Alfred Street', 'Alma Street', 'Ash Close', 'Ash Grove', 'Ash Road', 'Aspen Close', 'Avenue Road']
 const US_STREET_NAMES = ['10th Street', '11th Street', '1st Avenue', 'A Street', 'Adams Avenue',
   'Adams Street', 'Airport Road', 'Ash Street', 'Atlantic Avenue', 'Bay Street', 'Bridge Road', 'Broadway']
-const VN_STREET_TYPES = ['Đường', 'Phố']
-const VN_CITY_NAMES = ['An Nhơn', 'Biên Hòa', 'Buôn Ma Thuột', 'Bắc Ninh', 'Cà Mau', 'Cần Thơ',
-  'Hải Phòng', 'Hà Nội', 'Thành phố Hồ Chí Minh', 'Huế']
+// Vietnam: real street + district + province-level city, drawn from well-known (often tourist)
+// areas. The house number is randomized and the postal code is province-level; the components are
+// real, but a given combination is synthetic — a plausible address, not a verified deliverable one.
+const VN_ADDRESSES = [
+  { street: 'Nguyễn Huệ', district: 'Quận 1', city: 'Hồ Chí Minh', postal: '70000' },
+  { street: 'Đồng Khởi', district: 'Quận 1', city: 'Hồ Chí Minh', postal: '70000' },
+  { street: 'Lê Lợi', district: 'Quận 1', city: 'Hồ Chí Minh', postal: '70000' },
+  { street: 'Bùi Viện', district: 'Quận 1', city: 'Hồ Chí Minh', postal: '70000' },
+  { street: 'Hai Bà Trưng', district: 'Quận 3', city: 'Hồ Chí Minh', postal: '70000' },
+  { street: 'Tràng Tiền', district: 'Hoàn Kiếm', city: 'Hà Nội', postal: '11000' },
+  { street: 'Hàng Bài', district: 'Hoàn Kiếm', city: 'Hà Nội', postal: '11000' },
+  { street: 'Đinh Tiên Hoàng', district: 'Hoàn Kiếm', city: 'Hà Nội', postal: '11000' },
+  { street: 'Tạ Hiện', district: 'Hoàn Kiếm', city: 'Hà Nội', postal: '11000' },
+  { street: 'Bạch Đằng', district: 'Hải Châu', city: 'Đà Nẵng', postal: '55000' },
+  { street: 'Võ Nguyên Giáp', district: 'Sơn Trà', city: 'Đà Nẵng', postal: '55000' },
+  { street: 'Trần Phú', district: 'Hội An', city: 'Quảng Nam', postal: '56000' },
+  { street: 'Nguyễn Thái Học', district: 'Hội An', city: 'Quảng Nam', postal: '56000' },
+  { street: 'Trần Phú', district: 'Nha Trang', city: 'Khánh Hòa', postal: '65000' },
+  { street: 'Nguyễn Chí Thanh', district: 'Đà Lạt', city: 'Lâm Đồng', postal: '66000' },
+  { street: 'Lê Lợi', district: 'Huế', city: 'Thừa Thiên Huế', postal: '53000' }
+]
 
 function genAddressLine(countryCode, names) {
   switch (countryCode) {
@@ -691,9 +709,19 @@ function genAddressLine(countryCode, names) {
     case 'sg': return `${randInt(1, 999)} ${pick(GENERIC_STREET_WORDS)} Street`
     case 'gb': return `${randInt(1, 200)} ${pick(GB_STREET_NAMES)}`
     case 'us': return `${randInt(1, 9999)} ${pick(US_STREET_NAMES)}`
-    case 'vn': return `${randInt(1, 200)} ${pick(VN_STREET_TYPES)} ${pick(VN_CITY_NAMES)}`
     default: return `${randInt(1, 999)} ${pick(GENERIC_STREET_WORDS)} Street`
   }
+}
+
+// Full address as { addressLine, district, city, postalCode }. Countries with a curated dataset
+// (Vietnam) return real street/district/city components; all others fall back to the generated
+// street line + postal code with no district/city.
+function genAddress(countryCode, names) {
+  if (countryCode === 'vn') {
+    const a = pick(VN_ADDRESSES)
+    return { addressLine: `${randInt(1, 300)} ${a.street}`, district: a.district, city: a.city, postalCode: a.postal }
+  }
+  return { addressLine: genAddressLine(countryCode, names), district: '', city: '', postalCode: genPostalCode(countryCode) }
 }
 
 // nameOrder: 'western' -> First Middle Last; 'eastern-nospace' -> LastFirst (China, no middle
@@ -857,10 +885,14 @@ function generateProfile(countryCode) {
     { surname: transliterateForMrz(lastName), given: transliterateForMrz(firstName) }
   const mrz = buildPassportMrz(country.alpha3, passportNumber, mrzName.surname, mrzName.given)
 
+  const address = genAddress(countryCode, names)
+
   return {
     firstName, middleName, lastName, fullName,
-    addressLine: genAddressLine(countryCode, names),
-    postalCode: genPostalCode(countryCode),
+    addressLine: address.addressLine,
+    district: address.district,
+    city: address.city,
+    postalCode: address.postalCode,
     phoneNumber: genPhoneNumber(countryCode),
     nationalIds,
     passportNumber,
@@ -1254,6 +1286,8 @@ function generateCompany(countryCode, names) {
       fieldRow('Last Name', profile.lastName),
       fieldRow('Full Name', profile.fullName),
       fieldRow('Address Line', profile.addressLine),
+      ...(profile.district ? [fieldRow('District', profile.district)] : []),
+      ...(profile.city ? [fieldRow('City / Province', profile.city)] : []),
       fieldRow('Postal Code', profile.postalCode),
       fieldRow('Phone Number', profile.phoneNumber),
       ...profile.nationalIds.map(id => fieldRow(id.label, id.value)),

@@ -12,7 +12,7 @@ const {
   genNIK_ID, genNRIC_MY,
   generateWithRetry, genPassportNumber, buildPassportMrz, PASSPORT_FORMATS,
   ID_COUNTRIES, NATIONAL_ID_TYPES,
-  generateProfile, transliterateForMrz, genPhoneNumber, genPostalCode, genAddressLine,
+  generateProfile, transliterateForMrz, genPhoneNumber, genPostalCode, genAddressLine, genAddress, VN_ADDRESSES,
   PROFILE_NAMES, PHONE_SPECS,
   generateCompany, genCNPJ_BR, genVAT_BG_company, genUSCC_CN, genYTunnus_FI, genSIREN_FR, genTVA_FR,
   genPAN_IN, genGSTIN_IN, genNPWP_ID_company, genIVA_IT, genOrgnr_NO, genNIP_PL, genREGON_PL,
@@ -929,5 +929,40 @@ describe('generateCompany', () => {
       const company = generateCompany(code, PROFILE_NAMES[code] || { firstNames: ['X'], lastNames: ['Y'] })
       assert.notEqual(company.taxCode, company.businessRegNumber, code)
     }
+  })
+})
+
+describe('Vietnam address dataset', () => {
+  test('every entry has a real street/district/city and a province-level postal code', () => {
+    assert.ok(VN_ADDRESSES.length >= 10)
+    for (const a of VN_ADDRESSES) {
+      assert.ok(a.street && a.district && a.city, `incomplete entry: ${JSON.stringify(a)}`)
+      assert.match(a.postal, /^\d{5}$/, `postal not 5 digits: ${a.postal}`)
+    }
+  })
+
+  test("genAddress('vn') returns a numbered real street + matching district/city/postal from the dataset", () => {
+    for (let i = 0; i < 50; i++) {
+      const a = genAddress('vn', {})
+      const m = /^(\d+)\s+(.+)$/.exec(a.addressLine)
+      assert.ok(m, `addressLine not "<number> <street>": ${a.addressLine}`)
+      // the whole {street, district, city, postal} combo must come from one real dataset entry
+      const entry = VN_ADDRESSES.find(e => e.street === m[2] && e.district === a.district && e.city === a.city && e.postal === a.postalCode)
+      assert.ok(entry, `combo not found in dataset: ${JSON.stringify(a)}`)
+    }
+  })
+
+  test('non-dataset countries still work, with empty district/city', () => {
+    const a = genAddress('us', { firstNames: ['X'], lastNames: ['Y'] })
+    assert.ok(a.addressLine)
+    assert.equal(a.district, '')
+    assert.equal(a.city, '')
+    assert.ok(a.postalCode)
+  })
+
+  test('generateProfile surfaces district/city for Vietnam', () => {
+    const p = generateProfile('vn')
+    assert.ok(p.district && p.city)
+    assert.match(p.postalCode, /^\d{5}$/)
   })
 })
