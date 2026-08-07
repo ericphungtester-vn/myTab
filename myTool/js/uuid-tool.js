@@ -163,6 +163,7 @@ const UUID_TYPES = [
     const lines = []
     for (let i = 0; i < n; i++) lines.push(makeOne(currentType))
     output.value = lines.join('\n')
+    syncSet({ [LAST_KEY]: output.value }) // keep the result across popup open/close
   }
 
   copyBtn.addEventListener('click', () => {
@@ -176,10 +177,14 @@ const UUID_TYPES = [
 
   const resetBtn = document.getElementById('uu-reset-btn')
   const SETTINGS_KEY = 'uuid-tool-settings'
+  const LAST_KEY = 'uuid-tool-last'
   const DEFAULTS = { type: 'v4', count: '1' }
   function saveSettings() { syncSet({ [SETTINGS_KEY]: { type: currentType, count: segValue(countSeg) } }) }
   function applySettings(s) { setType(s.type); setSegmented(countSeg, s.count) }
   resetBtn.addEventListener('click', () => { applySettings(DEFAULTS); saveSettings(); generate() })
 
-  syncGet([SETTINGS_KEY]).then(d => { applySettings({ ...DEFAULTS, ...(d[SETTINGS_KEY] || {}) }); generate() })
+  syncGet([SETTINGS_KEY, LAST_KEY]).then(d => {
+    applySettings({ ...DEFAULTS, ...(d[SETTINGS_KEY] || {}) })
+    if (d[LAST_KEY]) output.value = d[LAST_KEY]; else generate()
+  })
 })()

@@ -223,16 +223,22 @@ function card_generate(key) {
   })
 
   function generate() {
-    renderCard(card_generate(currentNetwork))
+    const data = card_generate(currentNetwork)
+    renderCard(data)
+    syncSet({ [LAST_KEY]: data }) // keep the result across popup open/close
   }
 
   generateBtn.addEventListener('click', generate)
 
   const resetBtn = document.getElementById('cc-reset-btn')
   const SETTINGS_KEY = 'card-tool-network'
+  const LAST_KEY = 'card-tool-last'
   const DEFAULT_NETWORK = 'random'
   function saveSettings() { syncSet({ [SETTINGS_KEY]: currentNetwork }) }
   resetBtn.addEventListener('click', () => { setNetwork(DEFAULT_NETWORK); saveSettings(); generate() })
 
-  syncGet([SETTINGS_KEY]).then(d => { setNetwork(d[SETTINGS_KEY] || DEFAULT_NETWORK); generate() })
+  syncGet([SETTINGS_KEY, LAST_KEY]).then(d => {
+    setNetwork(d[SETTINGS_KEY] || DEFAULT_NETWORK)
+    if (d[LAST_KEY]) renderCard(d[LAST_KEY]); else generate()
+  })
 })()

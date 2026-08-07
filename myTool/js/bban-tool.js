@@ -302,7 +302,9 @@ function generateBban(code) {
   function generate() {
     errorEl.hidden = true
     try {
-      renderBban(generateBban(currentCountry))
+      const data = generateBban(currentCountry)
+      renderBban(data)
+      syncSet({ [LAST_KEY]: data }) // keep the result across popup open/close
     } catch (err) {
       errorEl.textContent = err.message
       errorEl.hidden = false
@@ -314,9 +316,13 @@ function generateBban(code) {
 
   const resetBtn = document.getElementById('bb-reset-btn')
   const SETTINGS_KEY = 'bban-tool-country'
+  const LAST_KEY = 'bban-tool-last'
   const DEFAULT_COUNTRY = 'FR'
   function saveSettings() { syncSet({ [SETTINGS_KEY]: currentCountry }) }
   resetBtn.addEventListener('click', () => { setCountry(DEFAULT_COUNTRY); saveSettings(); generate() })
 
-  syncGet([SETTINGS_KEY]).then(d => { setCountry(d[SETTINGS_KEY] || DEFAULT_COUNTRY); generate() })
+  syncGet([SETTINGS_KEY, LAST_KEY]).then(d => {
+    setCountry(d[SETTINGS_KEY] || DEFAULT_COUNTRY)
+    if (d[LAST_KEY]) renderBban(d[LAST_KEY]); else generate()
+  })
 })()

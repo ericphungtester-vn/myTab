@@ -242,7 +242,9 @@ function generateIban(countryCode) {
   function generate() {
     errorEl.hidden = true
     try {
-      renderIban(generateIban(currentCountry))
+      const data = generateIban(currentCountry)
+      renderIban(data)
+      syncSet({ [LAST_KEY]: data }) // keep the result across popup open/close
     } catch (err) {
       errorEl.textContent = err.message
       errorEl.hidden = false
@@ -254,9 +256,13 @@ function generateIban(countryCode) {
 
   const resetBtn = document.getElementById('ib-reset-btn')
   const SETTINGS_KEY = 'iban-tool-country'
+  const LAST_KEY = 'iban-tool-last'
   const DEFAULT_COUNTRY = 'DE'
   function saveSettings() { syncSet({ [SETTINGS_KEY]: currentCountry }) }
   resetBtn.addEventListener('click', () => { setCountry(DEFAULT_COUNTRY); saveSettings(); generate() })
 
-  syncGet([SETTINGS_KEY]).then(d => { setCountry(d[SETTINGS_KEY] || DEFAULT_COUNTRY); generate() })
+  syncGet([SETTINGS_KEY, LAST_KEY]).then(d => {
+    setCountry(d[SETTINGS_KEY] || DEFAULT_COUNTRY)
+    if (d[LAST_KEY]) renderIban(d[LAST_KEY]); else generate()
+  })
 })()

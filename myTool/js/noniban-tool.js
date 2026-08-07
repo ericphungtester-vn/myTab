@@ -249,7 +249,9 @@ function generateNonIban(code) {
   function generate() {
     errorEl.hidden = true
     try {
-      renderNonIban(generateNonIban(currentCountry))
+      const data = generateNonIban(currentCountry)
+      renderNonIban(data)
+      syncSet({ [LAST_KEY]: data }) // keep the result across popup open/close
     } catch (err) {
       errorEl.textContent = err.message
       errorEl.hidden = false
@@ -261,9 +263,13 @@ function generateNonIban(code) {
 
   const resetBtn = document.getElementById('nb-reset-btn')
   const SETTINGS_KEY = 'noniban-tool-country'
+  const LAST_KEY = 'noniban-tool-last'
   const DEFAULT_COUNTRY = 'US'
   function saveSettings() { syncSet({ [SETTINGS_KEY]: currentCountry }) }
   resetBtn.addEventListener('click', () => { setCountry(DEFAULT_COUNTRY); saveSettings(); generate() })
 
-  syncGet([SETTINGS_KEY]).then(d => { setCountry(d[SETTINGS_KEY] || DEFAULT_COUNTRY); generate() })
+  syncGet([SETTINGS_KEY, LAST_KEY]).then(d => {
+    setCountry(d[SETTINGS_KEY] || DEFAULT_COUNTRY)
+    if (d[LAST_KEY]) renderNonIban(d[LAST_KEY]); else generate()
+  })
 })()
