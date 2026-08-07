@@ -49,3 +49,17 @@ test('Profile: Generate replaces the saved profile', async ({ page }) => {
   }
   expect(changed).toBe(true)
 })
+
+test('Profile: Copy all puts the whole profile on the clipboard', async ({ page }) => {
+  await page.goto('/popup.html')
+  await page.click('.tab-btn[data-tab="profile"]')
+  const email = await page.locator('#pf-fields .pf-field', { hasText: 'Email' }).first().locator('.pf-field-value').inputValue()
+
+  await page.click('#pf-copy-all')
+  await expect(page.locator('#pf-copy-all')).toHaveText('Copied!')
+  const clip = await page.evaluate(() => navigator.clipboard.readText())
+  // grouped, multi-field, and contains an actual generated value
+  expect(clip).toContain('== Name ==')
+  expect(clip).toContain('Full Name:')
+  expect(clip).toContain(`Email: ${email}`)
+})

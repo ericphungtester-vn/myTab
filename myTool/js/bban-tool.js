@@ -312,6 +312,21 @@ function generateBban(code) {
     }
   }
 
+  // Copy the whole record as "Label: value" lines. Uses each row's data-copy so values match the
+  // per-field copy buttons exactly (mirrors the Profile tool's Copy all).
+  const copyAllBtn = document.getElementById('bb-copy-all')
+  copyAllBtn.addEventListener('click', () => {
+    const text = [...fieldsEl.querySelectorAll('.pf-field')].map(el =>
+      el.querySelector('.pf-field-label').textContent + ': ' + el.querySelector('.pf-copy-btn').dataset.copy
+    ).join('\n')
+    if (!text) return
+    navigator.clipboard.writeText(text).then(() => {
+      copyAllBtn.textContent = 'Copied!'
+      copyAllBtn.classList.add('copied')
+      setTimeout(() => { copyAllBtn.textContent = 'Copy all'; copyAllBtn.classList.remove('copied') }, 1400)
+    })
+  })
+
   generateBtn.addEventListener('click', generate)
 
   const resetBtn = document.getElementById('bb-reset-btn')

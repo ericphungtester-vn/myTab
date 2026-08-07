@@ -228,6 +228,21 @@ function card_generate(key) {
     syncSet({ [LAST_KEY]: data }) // keep the result across popup open/close
   }
 
+  // Copy the whole record as "Label: value" lines. Uses each row's data-copy so values match the
+  // per-field copy buttons exactly (e.g. the card number without spaces; mirrors Profile's Copy all).
+  const copyAllBtn = document.getElementById('cc-copy-all')
+  copyAllBtn.addEventListener('click', () => {
+    const text = [...fieldsEl.querySelectorAll('.pf-field')].map(el =>
+      el.querySelector('.pf-field-label').textContent + ': ' + el.querySelector('.pf-copy-btn').dataset.copy
+    ).join('\n')
+    if (!text) return
+    navigator.clipboard.writeText(text).then(() => {
+      copyAllBtn.textContent = 'Copied!'
+      copyAllBtn.classList.add('copied')
+      setTimeout(() => { copyAllBtn.textContent = 'Copy all'; copyAllBtn.classList.remove('copied') }, 1400)
+    })
+  })
+
   generateBtn.addEventListener('click', generate)
 
   const resetBtn = document.getElementById('cc-reset-btn')

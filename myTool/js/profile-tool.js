@@ -1546,6 +1546,33 @@ function generateCompany(countryCode, names) {
     fieldsEl.innerHTML = rows.join('')
   }
 
+  // Flatten the currently rendered profile into "Label: value" text, grouped by section, so the
+  // whole thing can be copied at once. Reads from the DOM to stay in sync with renderProfile.
+  function buildProfileText() {
+    const lines = []
+    fieldsEl.querySelectorAll('.pf-section-header, .pf-field').forEach(el => {
+      if (el.classList.contains('pf-section-header')) {
+        lines.push((lines.length ? '\n' : '') + '== ' + el.textContent + ' ==')
+      } else {
+        const valEl = el.querySelector('.pf-field-value, .pf-mrz-box')
+        const value = valEl.tagName === 'INPUT' ? valEl.value : valEl.textContent
+        lines.push(el.querySelector('.pf-field-label').textContent + ': ' + value)
+      }
+    })
+    return lines.join('\n')
+  }
+
+  const copyAllBtn = document.getElementById('pf-copy-all')
+  copyAllBtn.addEventListener('click', () => {
+    const text = buildProfileText()
+    if (!text) return
+    navigator.clipboard.writeText(text).then(() => {
+      copyAllBtn.textContent = 'Copied!'
+      copyAllBtn.classList.add('copied')
+      setTimeout(() => { copyAllBtn.textContent = 'Copy all'; copyAllBtn.classList.remove('copied') }, 1400)
+    })
+  })
+
   fieldsEl.addEventListener('click', e => {
     const btn = e.target.closest('.pf-copy-btn')
     if (!btn) return
