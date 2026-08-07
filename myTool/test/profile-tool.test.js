@@ -969,4 +969,13 @@ describe('Address datasets (real street/district/city per country)', () => {
     const us = generateProfile('us')
     assert.ok(us.district && us.city)
   })
+
+  test('fullAddress joins every address part into one copyable line', () => {
+    for (const cc of ['vn', 'us', 'it']) {
+      const p = generateProfile(cc)
+      for (const part of [p.addressLine, p.district, p.city, p.postalCode, p.countryName]) {
+        assert.ok(p.fullAddress.includes(part), `${cc} fullAddress missing "${part}": ${p.fullAddress}`)
+      }
+    }
+  })
 })

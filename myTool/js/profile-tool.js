@@ -1022,6 +1022,8 @@ function generateProfile(countryCode) {
   const mrz = buildPassportMrz(country.alpha3, passportNumber, mrzName.surname, mrzName.given)
 
   const address = genAddress(countryCode, names)
+  const cityWithPostal = [address.city, address.postalCode].filter(Boolean).join(' ')
+  const fullAddress = [address.addressLine, address.district, cityWithPostal, country.name].filter(Boolean).join(', ')
 
   return {
     firstName, middleName, lastName, fullName,
@@ -1030,6 +1032,7 @@ function generateProfile(countryCode) {
     city: address.city,
     postalCode: address.postalCode,
     countryName: country.name,
+    fullAddress,
     phoneNumber: genPhoneNumber(countryCode),
     nationalIds,
     passportNumber,
@@ -1428,6 +1431,7 @@ function generateCompany(countryCode, names) {
       ...(profile.city ? [fieldRow('City / Province', profile.city)] : []),
       fieldRow('Postal Code', profile.postalCode),
       fieldRow('Country', profile.countryName),
+      fieldRow('Full Address', profile.fullAddress),
       sectionHeader('Contact'),
       fieldRow('Phone Number', profile.phoneNumber),
       sectionHeader('ID & Passport'),
