@@ -1019,6 +1019,50 @@ function genEmail(firstName, lastName, domain = 'yopmail.com') {
   return `${local}@${domain}`
 }
 
+const NATIONALITY = {
+  br: 'Brazilian', bg: 'Bulgarian', cl: 'Chilean', cn: 'Chinese', fi: 'Finnish', fr: 'French',
+  in: 'Indian', id: 'Indonesian', it: 'Italian', my: 'Malaysian', no: 'Norwegian', pl: 'Polish',
+  pt: 'Portuguese', ro: 'Romanian', za: 'South African', sg: 'Singaporean', es: 'Spanish',
+  se: 'Swedish', gb: 'British', us: 'American', vn: 'Vietnamese'
+}
+const JOB_TITLES = ['Software Engineer', 'Accountant', 'Teacher', 'Registered Nurse', 'Sales Manager',
+  'Graphic Designer', 'Project Manager', 'Marketing Specialist', 'Data Analyst', 'Consultant',
+  'Electrician', 'Chef', 'Architect', 'Pharmacist', 'Civil Engineer', 'HR Manager',
+  'Customer Support Specialist', 'Financial Analyst', 'Product Manager', 'Operations Manager']
+const INDUSTRIES = ['Technology', 'Finance', 'Healthcare', 'Retail', 'Manufacturing', 'Education',
+  'Construction', 'Hospitality', 'Logistics', 'Media', 'Real Estate', 'Energy',
+  'Telecommunications', 'Automotive', 'Agriculture']
+
+function genGender() { return pick(['Male', 'Female']) }
+function genTitle(gender) { return gender === 'Male' ? 'Mr' : pick(['Ms', 'Mrs']) }
+
+// Random adult (18–80). `nowYear` is passed in so this stays pure/testable.
+function genDob(nowYear) {
+  const age = randInt(18, 80)
+  return { dob: `${nowYear - age}-${pad(randInt(1, 12), 2)}-${pad(randInt(1, 28), 2)}`, age }
+}
+
+function genUsername(firstName, lastName) {
+  const base = (emailLocalPart(firstName) + emailLocalPart(lastName)) || 'user'
+  return base + randInt(1, 9999)
+}
+
+// example.com is RFC 2606 reserved — a valid-looking site guaranteed never to be a real one.
+function genWebsite(firstName, lastName) {
+  const slug = (emailLocalPart(firstName) + emailLocalPart(lastName)) || 'user'
+  return `https://${slug}.example.com`
+}
+
+// Strong 14-char password with at least one upper/lower/digit/symbol (ambiguous chars excluded).
+const PW_UPPER = 'ABCDEFGHJKLMNPQRSTUVWXYZ', PW_LOWER = 'abcdefghijkmnpqrstuvwxyz', PW_DIGIT = '23456789', PW_SYMBOL = '!@#$%&*?'
+function genPassword() {
+  const all = PW_UPPER + PW_LOWER + PW_DIGIT + PW_SYMBOL
+  const chars = [pick([...PW_UPPER]), pick([...PW_LOWER]), pick([...PW_DIGIT]), pick([...PW_SYMBOL])]
+  for (let i = 4; i < 14; i++) chars.push(pick([...all]))
+  for (let i = chars.length - 1; i > 0; i--) { const j = randInt(0, i); [chars[i], chars[j]] = [chars[j], chars[i]] }
+  return chars.join('')
+}
+
 function generateProfile(countryCode, options = {}) {
   const country = ID_COUNTRIES.find(c => c.code === countryCode)
   const names = PROFILE_NAMES[countryCode] || { nameOrder: 'western', firstNames: GENERIC_NAMES.firstNames, lastNames: GENERIC_NAMES.lastNames }
@@ -1039,8 +1083,19 @@ function generateProfile(countryCode, options = {}) {
   const cityWithPostal = [address.city, address.postalCode].filter(Boolean).join(' ')
   const fullAddress = [address.addressLine, address.district, cityWithPostal, country.name].filter(Boolean).join(', ')
 
+  const gender = genGender()
+  const { dob, age } = genDob(new Date().getFullYear())
+
   return {
     firstName, middleName, lastName, fullName,
+    title: genTitle(gender),
+    gender,
+    dob,
+    age,
+    nationality: NATIONALITY[countryCode] || '',
+    jobTitle: pick(JOB_TITLES),
+    username: genUsername(firstName, lastName),
+    password: genPassword(),
     addressLine: address.addressLine,
     district: address.district,
     city: address.city,
@@ -1048,6 +1103,7 @@ function generateProfile(countryCode, options = {}) {
     countryName: country.name,
     fullAddress,
     email: genEmail(firstName, lastName, options.emailDomain),
+    website: genWebsite(firstName, lastName),
     phoneNumber: genPhoneNumber(countryCode),
     nationalIds,
     passportNumber,
@@ -1341,7 +1397,16 @@ function generateCompany(countryCode, names) {
     default: taxCode = businessRegNumber = randDigits(9)
   }
 
-  return { companyName, taxCode, businessRegNumber }
+  const slug = emailLocalPart(companyName) || 'company'
+  return {
+    companyName,
+    industry: pick(INDUSTRIES),
+    companyEmail: `contact@${slug}.example.com`,
+    companyPhone: genPhoneNumber(countryCode),
+    companyWebsite: `https://www.${slug}.example.com`,
+    taxCode,
+    businessRegNumber
+  }
 }
 
 // ---- Wiring ----
@@ -1405,7 +1470,7 @@ function generateCompany(countryCode, names) {
   })
 
   function escapeHtml(str) {
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   }
 
   function fieldRow(label, value) {
@@ -1441,6 +1506,13 @@ function generateCompany(countryCode, names) {
       fieldRow('Middle Name', profile.middleName),
       fieldRow('Last Name', profile.lastName),
       fieldRow('Full Name', profile.fullName),
+      sectionHeader('Personal'),
+      fieldRow('Title', profile.title),
+      fieldRow('Gender', profile.gender),
+      fieldRow('Date of Birth', profile.dob),
+      fieldRow('Age', profile.age),
+      fieldRow('Nationality', profile.nationality),
+      fieldRow('Job Title', profile.jobTitle),
       sectionHeader('Address'),
       fieldRow('Address Line', profile.addressLine),
       ...(profile.district ? [fieldRow('District', profile.district)] : []),
@@ -1451,12 +1523,20 @@ function generateCompany(countryCode, names) {
       sectionHeader('Contact'),
       fieldRow('Email', profile.email),
       fieldRow('Phone Number', profile.phoneNumber),
+      fieldRow('Website', profile.website),
+      sectionHeader('Account'),
+      fieldRow('Username', profile.username),
+      fieldRow('Password', profile.password),
       sectionHeader('ID & Passport'),
       ...profile.nationalIds.map(id => fieldRow(id.label, id.value)),
       fieldRow('Passport Number', profile.passportNumber),
       mrzRow(`${profile.mrz.line1}\n${profile.mrz.line2}`),
       sectionHeader('Company'),
       fieldRow('Company Name', company.companyName),
+      fieldRow('Industry', company.industry),
+      fieldRow('Company Email', company.companyEmail),
+      fieldRow('Company Phone', company.companyPhone),
+      fieldRow('Company Website', company.companyWebsite),
       fieldRow('Tax Code', company.taxCode),
       fieldRow('Business Registration Number', company.businessRegNumber)
     ]

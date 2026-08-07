@@ -13,6 +13,7 @@ const {
   generateWithRetry, genPassportNumber, buildPassportMrz, PASSPORT_FORMATS,
   ID_COUNTRIES, NATIONAL_ID_TYPES,
   generateProfile, transliterateForMrz, genPhoneNumber, genPostalCode, genAddressLine, genAddress, COUNTRY_ADDRESSES, genEmail, emailLocalPart,
+  genGender, genTitle, genDob, genUsername, genWebsite, genPassword, NATIONALITY,
   PROFILE_NAMES, PHONE_SPECS,
   generateCompany, genCNPJ_BR, genVAT_BG_company, genUSCC_CN, genYTunnus_FI, genSIREN_FR, genTVA_FR,
   genPAN_IN, genGSTIN_IN, genNPWP_ID_company, genIVA_IT, genOrgnr_NO, genNIP_PL, genREGON_PL,
@@ -1001,5 +1002,59 @@ describe('Email generation (@yopmail.com)', () => {
     assert.match(genEmail('An', 'Binh', 'maildrop.cc'), /@maildrop\.cc$/)
     assert.match(genEmail('An', 'Binh'), /@yopmail\.com$/)
     assert.match(generateProfile('us', { emailDomain: 'guerrillamail.com' }).email, /@guerrillamail\.com$/)
+  })
+})
+
+describe('Personal / Account / Company extras', () => {
+  test('genDob: adult 18–80, YYYY-MM-DD, year = now - age', () => {
+    for (let i = 0; i < 50; i++) {
+      const { dob, age } = genDob(2026)
+      assert.ok(age >= 18 && age <= 80)
+      assert.match(dob, /^\d{4}-\d{2}-\d{2}$/)
+      assert.equal(Number(dob.slice(0, 4)), 2026 - age)
+    }
+  })
+
+  test('genGender / genTitle are consistent', () => {
+    for (let i = 0; i < 30; i++) {
+      const g = genGender()
+      assert.ok(g === 'Male' || g === 'Female')
+      const t = genTitle(g)
+      if (g === 'Male') assert.equal(t, 'Mr')
+      else assert.ok(t === 'Ms' || t === 'Mrs')
+    }
+  })
+
+  test('genPassword: 14 chars with at least one upper/lower/digit/symbol', () => {
+    for (let i = 0; i < 50; i++) {
+      const pw = genPassword()
+      assert.equal(pw.length, 14)
+      assert.match(pw, /[A-Z]/)
+      assert.match(pw, /[a-z]/)
+      assert.match(pw, /[0-9]/)
+      assert.match(pw, /[!@#$%&*?]/)
+    }
+  })
+
+  test('genUsername / genWebsite are ASCII and use example.com', () => {
+    assert.match(genUsername('Nguyễn', 'Trần'), /^nguyentran\d+$/)
+    assert.match(genWebsite('Đinh', 'Bình'), /^https:\/\/dinhbinh\.example\.com$/)
+    assert.match(genUsername('广州', '李'), /^user\d+$/)
+  })
+
+  test('NATIONALITY covers every country and generateProfile surfaces the new fields', () => {
+    for (const c of ID_COUNTRIES) assert.ok(NATIONALITY[c.code], `no nationality for ${c.code}`)
+    const p = generateProfile('vn')
+    for (const k of ['title', 'gender', 'dob', 'age', 'nationality', 'jobTitle', 'username', 'password', 'website']) {
+      assert.ok(p[k] !== undefined && p[k] !== '', `profile missing ${k}`)
+    }
+  })
+
+  test('generateCompany surfaces industry, email, phone, website', () => {
+    const c = generateCompany('us', { nameOrder: 'western', firstNames: ['X'], lastNames: ['Y'] })
+    assert.ok(c.industry)
+    assert.match(c.companyEmail, /@.+\.example\.com$/)
+    assert.ok(c.companyPhone)
+    assert.match(c.companyWebsite, /^https:\/\/www\..+\.example\.com$/)
   })
 })
