@@ -996,4 +996,10 @@ describe('Email generation (@yopmail.com)', () => {
   test('falls back to "user" when the name has no ASCII letters (e.g. Chinese)', () => {
     assert.match(genEmail('广州', '李'), /^user\d+@yopmail\.com$/)
   })
+  test('honors a custom domain (default yopmail.com)', () => {
+    assert.match(genEmail('An', 'Binh', 'mailinator.com'), /@mailinator\.com$/)
+    assert.match(genEmail('An', 'Binh', 'maildrop.cc'), /@maildrop\.cc$/)
+    assert.match(genEmail('An', 'Binh'), /@yopmail\.com$/)
+    assert.match(generateProfile('us', { emailDomain: 'guerrillamail.com' }).email, /@guerrillamail\.com$/)
+  })
 })

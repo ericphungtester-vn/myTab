@@ -1011,15 +1011,15 @@ function emailLocalPart(s) {
   return String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
-// Synthetic email on @yopmail.com (a public disposable-inbox service — safe, real people not
+// Synthetic email on a public disposable-inbox domain (default yopmail.com — safe, real people not
 // implied). A trailing number keeps each generated address unique.
-function genEmail(firstName, lastName) {
+function genEmail(firstName, lastName, domain = 'yopmail.com') {
   const parts = [emailLocalPart(firstName), emailLocalPart(lastName)].filter(Boolean)
   const local = (parts.length ? parts.join('.') : 'user') + randInt(1, 999)
-  return `${local}@yopmail.com`
+  return `${local}@${domain}`
 }
 
-function generateProfile(countryCode) {
+function generateProfile(countryCode, options = {}) {
   const country = ID_COUNTRIES.find(c => c.code === countryCode)
   const names = PROFILE_NAMES[countryCode] || { nameOrder: 'western', firstNames: GENERIC_NAMES.firstNames, lastNames: GENERIC_NAMES.lastNames }
   const firstName = pick(names.firstNames)
@@ -1047,7 +1047,7 @@ function generateProfile(countryCode) {
     postalCode: address.postalCode,
     countryName: country.name,
     fullAddress,
-    email: genEmail(firstName, lastName),
+    email: genEmail(firstName, lastName, options.emailDomain),
     phoneNumber: genPhoneNumber(countryCode),
     nationalIds,
     passportNumber,
@@ -1350,6 +1350,7 @@ function generateCompany(countryCode, names) {
   const countryTriggerLabel = document.getElementById('pf-country-trigger-label')
   const countryPanel = document.getElementById('pf-country-panel')
   const generateBtn = document.getElementById('pf-generate')
+  const emailDomainEl = document.getElementById('pf-email-domain')
   const fieldsEl = document.getElementById('pf-fields')
   const errorEl = document.getElementById('pf-error')
 
@@ -1479,7 +1480,7 @@ function generateCompany(countryCode, names) {
     errorEl.hidden = true
     try {
       const names = PROFILE_NAMES[currentCountry] || GENERIC_NAMES
-      renderProfile(generateProfile(currentCountry), generateCompany(currentCountry, names))
+      renderProfile(generateProfile(currentCountry, { emailDomain: emailDomainEl.value }), generateCompany(currentCountry, names))
     } catch (err) {
       errorEl.textContent = err.message
       errorEl.hidden = false
@@ -1490,10 +1491,17 @@ function generateCompany(countryCode, names) {
   generateBtn.addEventListener('click', generate)
 
   const resetBtn = document.getElementById('pf-reset-btn')
-  const SETTINGS_KEY = 'profile-tool-country'
+  const COUNTRY_KEY = 'profile-tool-country'
+  const DOMAIN_KEY = 'profile-tool-email-domain'
   const DEFAULT_COUNTRY = 'br'
-  function saveSettings() { syncSet({ [SETTINGS_KEY]: currentCountry }) }
-  resetBtn.addEventListener('click', () => { setCountry(DEFAULT_COUNTRY); saveSettings(); generate() })
+  const DEFAULT_DOMAIN = 'yopmail.com'
+  function saveSettings() { syncSet({ [COUNTRY_KEY]: currentCountry, [DOMAIN_KEY]: emailDomainEl.value }) }
+  emailDomainEl.addEventListener('change', () => { saveSettings(); generate() })
+  resetBtn.addEventListener('click', () => { setCountry(DEFAULT_COUNTRY); emailDomainEl.value = DEFAULT_DOMAIN; saveSettings(); generate() })
 
-  syncGet([SETTINGS_KEY]).then(d => { setCountry(d[SETTINGS_KEY] || DEFAULT_COUNTRY); generate() })
+  syncGet([COUNTRY_KEY, DOMAIN_KEY]).then(d => {
+    if (d[DOMAIN_KEY]) emailDomainEl.value = d[DOMAIN_KEY]
+    setCountry(d[COUNTRY_KEY] || DEFAULT_COUNTRY)
+    generate()
+  })
 })()
