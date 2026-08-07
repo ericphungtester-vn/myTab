@@ -250,6 +250,7 @@ function generateRandomString(amount, classes, charEnabled) {
   let currentLang = 'en'
   const unitSeg = document.querySelector('.segmented[data-group="unit"]')
   const amountInput = document.getElementById('tt-amount')
+  const amountHint = document.getElementById('tt-amount-hint')
   const paraLengthRow = document.getElementById('tt-para-length-row')
   const paraLengthInput = document.getElementById('tt-para-length')
   const linebreakRow = document.getElementById('tt-linebreak-row')
@@ -280,6 +281,12 @@ function generateRandomString(amount, classes, charEnabled) {
   const errorEl = document.getElementById('tt-error')
 
   const UNIT_DEFAULT_AMOUNT = { chars: 1, words: 1, sentences: 1, paragraphs: 2, strings: 16 }
+  // Upper caps keep a huge Amount from freezing the popup. Per-unit because a unit of "amount" costs
+  // very differently (one character vs. one paragraph). Paragraphs also multiply by paraLength, so
+  // its cap is the smallest: worst case 2,000 × 2,000 = 4M chars, which still generates instantly.
+  const UNIT_MAX_AMOUNT = { chars: 100000, words: 50000, sentences: 10000, paragraphs: 2000, strings: 100000 }
+  const UNIT_NOUN = { chars: 'characters', words: 'words', sentences: 'sentences', paragraphs: 'paragraphs', strings: 'characters' }
+  const PARA_LENGTH_MAX = 2000
   const DEFAULT_SETTINGS = {
     lang: 'en', unit: 'chars', amount: UNIT_DEFAULT_AMOUNT.chars, paraLength: 25, lineBreak: '2',
     charClasses: ['upper', 'lower', 'digits', 'symbols'], countSpaces: true
@@ -370,6 +377,19 @@ function generateRandomString(amount, classes, charEnabled) {
     linebreakRow.hidden = !isParagraphs
     charclassRow.hidden = !isStrings
     langRow.hidden = isStrings
+    const max = UNIT_MAX_AMOUNT[unit]
+    amountInput.max = max
+    amountHint.textContent = `max ${max.toLocaleString('en-US')} ${UNIT_NOUN[unit]}`
+    paraLengthInput.max = PARA_LENGTH_MAX
+  }
+
+  // Number inputs don't stop the user typing past `max`, so clamp before generating and reflect the
+  // capped value back into the field — otherwise a giant Amount would freeze the popup mid-generate.
+  function clampInputs() {
+    const unit = unitSeg.querySelector('.seg-btn.active').dataset.value
+    const max = UNIT_MAX_AMOUNT[unit]
+    if ((parseInt(amountInput.value, 10) || 0) > max) amountInput.value = max
+    if ((parseInt(paraLengthInput.value, 10) || 0) > PARA_LENGTH_MAX) paraLengthInput.value = PARA_LENGTH_MAX
   }
 
   // Sentence-ending marks include the ones our own generator uses (full-width 。！？ for zh/ja,
@@ -409,6 +429,7 @@ function generateRandomString(amount, classes, charEnabled) {
   }
 
   function generate() {
+    clampInputs()
     const settings = currentSettings()
     if (settings.unit === 'strings') {
       const error = validateStringSettings(settings.amount, settings.charClasses, settings.charEnabled)

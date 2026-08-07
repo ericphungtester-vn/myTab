@@ -305,11 +305,17 @@
         </div>
         <div class="tt-row">
           <label for="tt-amount">Amount</label>
-          <input type="number" id="tt-amount" min="1" value="1">
+          <div class="tt-amount-col">
+            <input type="number" id="tt-amount" min="1" value="1">
+            <span class="tt-field-hint" id="tt-amount-hint"></span>
+          </div>
         </div>
         <div class="tt-row" id="tt-para-length-row" hidden>
           <label for="tt-para-length">Chars/paragraph</label>
-          <input type="number" id="tt-para-length" min="1" value="25">
+          <div class="tt-amount-col">
+            <input type="number" id="tt-para-length" min="1" value="25">
+            <span class="tt-field-hint">max 2,000</span>
+          </div>
         </div>
         <div class="tt-row" id="tt-charclass-row" hidden>
           <label>Include</label>
@@ -419,6 +425,10 @@
             <button class="seg-btn active" data-value="KB">KB</button>
             <button class="seg-btn" data-value="MB">MB</button>
           </div>
+        </div>
+        <div class="tt-row tt-row--hint">
+          <label></label>
+          <span class="tt-field-hint">max 50 MB</span>
         </div>
         <div class="tt-row">
           <label>KB/MB means</label>
@@ -553,13 +563,17 @@
         <p class="rs-info" id="rs-info" hidden></p>
         <div class="tt-row">
           <label for="rs-width">Width</label>
-          <input type="number" id="rs-width" class="ft-size-input" min="1">
+          <input type="number" id="rs-width" class="ft-size-input" min="1" max="20000">
           <span class="rs-unit">px</span>
         </div>
         <div class="tt-row">
           <label for="rs-height">Height</label>
-          <input type="number" id="rs-height" class="ft-size-input" min="1">
+          <input type="number" id="rs-height" class="ft-size-input" min="1" max="20000">
           <span class="rs-unit">px</span>
+        </div>
+        <div class="tt-row tt-row--hint">
+          <label></label>
+          <span class="tt-field-hint">max 20,000 px</span>
         </div>
         <div class="tt-row">
           <label>Aspect</label>
@@ -590,11 +604,17 @@
       <section id="tab-compare" class="tab-content">
         <div class="tt-row tt-row--top">
           <label for="cp-a">Original</label>
-          <textarea id="cp-a" class="cp-input" rows="5" placeholder="Paste the original text…"></textarea>
+          <div class="cp-input-col">
+            <textarea id="cp-a" class="cp-input" rows="5" placeholder="Paste the original text…"></textarea>
+            <span class="cp-counter"><span id="cp-a-lines">0</span> / 2000 lines · <span id="cp-a-chars">0</span> chars</span>
+          </div>
         </div>
         <div class="tt-row tt-row--top">
           <label for="cp-b">Changed</label>
-          <textarea id="cp-b" class="cp-input" rows="5" placeholder="Paste the changed text…"></textarea>
+          <div class="cp-input-col">
+            <textarea id="cp-b" class="cp-input" rows="5" placeholder="Paste the changed text…"></textarea>
+            <span class="cp-counter"><span id="cp-b-lines">0</span> / 2000 lines · <span id="cp-b-chars">0</span> chars</span>
+          </div>
         </div>
         <div class="tt-row tt-row--top">
           <label>Options</label>

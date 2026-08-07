@@ -183,6 +183,22 @@ function cp_buildStandaloneHtml(rows, stats, opts = {}) {
   const MAX_LINES = 2000
   let lastReport = null
 
+  // Live line/char counters under each box — the real limit is lines, so surface it (there is no
+  // character cap). The counter turns red once a side exceeds MAX_LINES, matching the compare error.
+  const counters = [
+    { el: aEl, lines: document.getElementById('cp-a-lines'), chars: document.getElementById('cp-a-chars'), box: document.getElementById('cp-a-lines').closest('.cp-counter') },
+    { el: bEl, lines: document.getElementById('cp-b-lines'), chars: document.getElementById('cp-b-chars'), box: document.getElementById('cp-b-lines').closest('.cp-counter') }
+  ]
+  function updateCounter(c) {
+    const v = c.el.value
+    const lines = v === '' ? 0 : v.split('\n').length
+    c.lines.textContent = lines
+    c.chars.textContent = v.length
+    c.box.classList.toggle('over', lines > MAX_LINES)
+  }
+  function updateCounters() { counters.forEach(updateCounter) }
+  counters.forEach(c => c.el.addEventListener('input', () => updateCounter(c)))
+
   function currentOpts() {
     return { ignoreCase: ignoreCaseEl.checked, ignoreWhitespace: ignoreWsEl.checked, trim: trimEl.checked }
   }
@@ -248,7 +264,9 @@ function cp_buildStandaloneHtml(rows, stats, opts = {}) {
     downloadBtn.hidden = true
     errorEl.hidden = true
     lastReport = null
+    updateCounters()
     saveSettings()
   })
+  updateCounters()
   syncGet([SETTINGS_KEY]).then(d => { if (d[SETTINGS_KEY]) applySettings({ ...DEFAULTS, ...d[SETTINGS_KEY] }) })
 })()

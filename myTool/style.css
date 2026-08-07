@@ -367,6 +367,13 @@ body {
   outline: none;
 }
 .tt-row input[type="number"]:focus { border-color: var(--hover-border); }
+/* Column so the max-value hint stacks under the Amount / Chars-per-paragraph input. */
+.tt-amount-col { flex: 1; min-width: 0; }
+.tt-amount-col > input[type="number"] { width: 100%; }
+.tt-field-hint { display: block; margin-top: 3px; font-size: 10.5px; color: var(--text-muted); }
+/* Hint on its own row (empty label keeps it aligned under the field it annotates), pulled up tight. */
+.tt-row--hint { margin-top: -4px; }
+.tt-row--hint .tt-field-hint { margin-top: 0; }
 .tt-row select {
   flex: 1;
   border: 1px solid var(--border);
@@ -578,6 +585,17 @@ body {
   padding: 6px 8px;
 }
 .cp-input:focus { border-color: var(--hover-border); outline: none; }
+/* Column so the character/line counter stacks under the textarea while the row's label stays left. */
+.cp-input-col { flex: 1; min-width: 0; }
+.cp-counter {
+  display: block;
+  margin-top: 3px;
+  text-align: right;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.cp-counter.over { color: var(--danger); font-weight: 600; }
 .cp-opts { display: flex; flex-direction: column; gap: 4px; padding-top: 2px; }
 .cp-output {
   margin-bottom: 12px;
