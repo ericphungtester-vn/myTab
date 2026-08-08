@@ -819,6 +819,10 @@ tr.cp-mod td:nth-of-type(4) { background: rgba(47, 158, 68, 0.10); }
 .tz-combo-input:focus { border-color: var(--hover-border); }
 .tz-combo-empty { padding: 6px 8px; font-size: 11.5px; color: var(--text-muted); }
 
+/* QR tool: center the generated code and keep it within the popup width. */
+.qr-output { display: flex; justify-content: center; margin: 10px 0 6px; }
+.qr-output svg { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+
 /* ---- Profile tool ---- */
 .pf-disclaimer {
   font-size: 10.5px;

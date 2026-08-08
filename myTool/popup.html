@@ -189,6 +189,13 @@
           </div>
         </div>
         <div class="guide-section">
+          <button class="guide-section-header">QR <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>Generates a <strong>QR code</strong> from any text or URL, fully offline (encoding by the bundled MIT <em>qrcode-generator</em> library — nothing is sent anywhere). Type in the <strong>Content</strong> box and the code updates live. Content is encoded as UTF-8, so Vietnamese, emoji, and other Unicode work.</p>
+            <p><strong>Error correction</strong> L/M/Q/H trades capacity for damage tolerance (~7/15/25/30% of the code recoverable if obscured) — higher levels make the code denser but more robust to scan. The info line shows the chosen <strong>version</strong> and module grid. Download as <strong>PNG</strong> (raster) or <strong>SVG</strong> (vector); if the content is too long to fit, an error asks you to shorten it or lower the EC level.</p>
+          </div>
+        </div>
+        <div class="guide-section">
           <button class="guide-section-header">Regex <span class="guide-arrow">▾</span></button>
           <div class="guide-section-body">
             <p>Tests a JavaScript regular expression against sample text. Enter a <strong>Pattern</strong> and optional <strong>flags</strong> (<code>i</code>, <code>m</code>, <code>s</code>, <code>u</code> — matching is always global so every hit is found), then type into the <strong>Text</strong> box. Matches are <strong>highlighted</strong> in place and counted; an invalid pattern shows the engine's error. Everything runs locally with the browser's own regex engine.</p>
@@ -248,6 +255,10 @@
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="profile">Profile</button>
         <button id="pf-reset-btn" class="tool-reset-btn" aria-label="Reset Profile settings" title="Reset Profile settings">⟲</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="qr">QR</button>
+        <button id="qr-reset-btn" class="tool-reset-btn" aria-label="Reset QR" title="Reset QR">⟲</button>
       </div>
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="regex">Regex</button>
@@ -797,6 +808,28 @@
           </div>
         </div>
       </section>
+      <section id="tab-qr" class="tab-content">
+        <div class="tt-row tt-row--top">
+          <label for="qr-input">Content</label>
+          <textarea id="qr-input" class="cp-input" rows="3" placeholder="Text or URL to encode…" spellcheck="false"></textarea>
+        </div>
+        <div class="tt-row">
+          <label>Error corr.</label>
+          <div class="segmented" id="qr-ec" data-group="qr-ec">
+            <button class="seg-btn" data-value="L" title="Low — ~7% recoverable">L</button>
+            <button class="seg-btn active" data-value="M" title="Medium — ~15% recoverable">M</button>
+            <button class="seg-btn" data-value="Q" title="Quartile — ~25% recoverable">Q</button>
+            <button class="seg-btn" data-value="H" title="High — ~30% recoverable">H</button>
+          </div>
+        </div>
+        <p class="tt-error" id="qr-error" hidden></p>
+        <div id="qr-output" class="qr-output"></div>
+        <p class="ft-result" id="qr-info" hidden></p>
+        <div class="tool-btn-row">
+          <button id="qr-download-png" class="tt-generate-btn" type="button" disabled>Download PNG</button>
+          <button id="qr-download-svg" class="tt-generate-btn tt-generate-btn--alt" type="button" disabled>Download SVG</button>
+        </div>
+      </section>
       <section id="tab-regex" class="tab-content">
         <div class="tt-row">
           <label for="rx-pattern">Pattern</label>
@@ -830,6 +863,8 @@
   <script src="js/timestamp-tool.js"></script>
   <script src="js/timezone-zones.js"></script>
   <script src="js/timezone-tool.js"></script>
+  <script src="js/vendor/qrcode.js"></script>
+  <script src="js/qr-tool.js"></script>
   <script src="js/json-tool.js"></script>
   <script src="js/base-tool.js"></script>
   <script src="js/color-tool.js"></script>
