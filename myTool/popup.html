@@ -177,6 +177,13 @@
           </div>
         </div>
         <div class="guide-section">
+          <button class="guide-section-header">Barcode <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>Generates a <strong>1D barcode</strong> from text or numbers, fully offline (rendering by the bundled MIT <em>JsBarcode</em> library — nothing is sent anywhere). Pick a <strong>Format</strong> and type the <strong>Content</strong>; switching format loads a valid sample so you see it work immediately, and the hint under the box says what each format accepts.</p>
+            <p>Formats: <strong>Code 128</strong> (any ASCII — shipping/tracking), <strong>EAN-13 / EAN-8 / UPC-A</strong> (retail product codes, last digit is a check digit), <strong>Code 39</strong>, <strong>ITF</strong>, <strong>MSI</strong>, <strong>Codabar</strong>, <strong>Pharmacode</strong>. Input that doesn't fit the chosen format shows an error instead of a code. Download as <strong>PNG</strong> or <strong>SVG</strong>.</p>
+          </div>
+        </div>
+        <div class="guide-section">
           <button class="guide-section-header">Base <span class="guide-arrow">▾</span></button>
           <div class="guide-section-body">
             <p>Converts an integer between <strong>decimal, hex, binary, and octal</strong>. Enter a value, pick which base it's written in (<strong>From</strong>), and all four forms appear at once. A <code>0x</code>/<code>0b</code>/<code>0o</code> prefix and a leading <code>-</code> are accepted; an invalid digit for the chosen base shows an error. Uses BigInt, so very large numbers stay exact (no floating-point rounding).</p>
@@ -208,6 +215,10 @@
 
   <div id="app-body">
     <nav class="tab-nav" id="tool-sidebar">
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="barcode">Barcode</button>
+        <button id="bc-reset-btn" class="tool-reset-btn" aria-label="Reset Barcode" title="Reset Barcode">⟲</button>
+      </div>
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="base">Base</button>
         <button id="bn-reset-btn" class="tool-reset-btn" aria-label="Reset Base" title="Reset Base">⟲</button>
@@ -775,6 +786,25 @@
           <button id="jf-copy" class="tt-copy-icon-btn" title="Copy" aria-label="Copy"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
         </div>
       </section>
+      <section id="tab-barcode" class="tab-content">
+        <div class="tt-row">
+          <label for="bc-format">Format</label>
+          <select id="bc-format"></select>
+        </div>
+        <div class="tt-row tt-row--top">
+          <label for="bc-input">Content</label>
+          <div class="tt-amount-col">
+            <input type="text" id="bc-input" class="tool-input" placeholder="Value to encode…" spellcheck="false">
+            <span class="tt-field-hint" id="bc-hint"></span>
+          </div>
+        </div>
+        <p class="tt-error" id="bc-error" hidden></p>
+        <div class="bc-output"><svg id="bc-svg"></svg></div>
+        <div class="tool-btn-row">
+          <button id="bc-download-png" class="tt-generate-btn" type="button" disabled>Download PNG</button>
+          <button id="bc-download-svg" class="tt-generate-btn tt-generate-btn--alt" type="button" disabled>Download SVG</button>
+        </div>
+      </section>
       <section id="tab-base" class="tab-content">
         <div class="tt-row">
           <label for="bn-input">Value</label>
@@ -865,6 +895,8 @@
   <script src="js/timezone-tool.js"></script>
   <script src="js/vendor/qrcode.js"></script>
   <script src="js/qr-tool.js"></script>
+  <script src="js/vendor/jsbarcode.js"></script>
+  <script src="js/barcode-tool.js"></script>
   <script src="js/json-tool.js"></script>
   <script src="js/base-tool.js"></script>
   <script src="js/color-tool.js"></script>

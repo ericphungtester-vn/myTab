@@ -823,6 +823,11 @@ tr.cp-mod td:nth-of-type(4) { background: rgba(47, 158, 68, 0.10); }
 .qr-output { display: flex; justify-content: center; margin: 10px 0 6px; }
 .qr-output svg { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: var(--radius); }
 
+/* Barcode tool: center the code on a white plate so dark-theme users still get a scannable code. */
+.bc-output { display: flex; justify-content: center; margin: 10px 0 6px; }
+.bc-output svg { max-width: 100%; height: auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); }
+.bc-output svg:empty { display: none; }
+
 /* ---- Profile tool ---- */
 .pf-disclaimer {
   font-size: 10.5px;
