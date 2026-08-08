@@ -62,10 +62,14 @@ test('Regex: matches are counted and highlighted', async ({ page }) => {
   await expect(page.locator('#rx-output .rx-hit')).toHaveCount(3)
 })
 
-test('no uncaught console errors across the five utility tabs', async ({ page }) => {
+test('no uncaught errors on load or across every tab', async ({ page }) => {
   const errors = []
   page.on('pageerror', e => errors.push(e.message))
   await page.goto('/popup.html')
-  for (const t of ['timestamp', 'json', 'base', 'color', 'regex']) await page.click(`.tab-btn[data-tab="${t}"]`)
+  // Visit every tab, not a hand-picked few, so a missing element / wiring typo in any tool
+  // (e.g. a null getElementById before addEventListener) surfaces as a load-time pageerror.
+  const tabs = await page.locator('.tab-btn').evaluateAll(els => els.map(e => e.dataset.tab))
+  expect(tabs.length).toBeGreaterThan(15)
+  for (const t of tabs) await page.click(`.tab-btn[data-tab="${t}"]`)
   expect(errors).toEqual([])
 })
