@@ -804,6 +804,21 @@ tr.cp-mod td:nth-of-type(4) { background: rgba(47, 158, 68, 0.10); }
 .ft-select-option:hover { background: var(--hover-bg); }
 .ft-select-option.active { background: var(--hover-bg); color: var(--primary); font-weight: 600; }
 
+/* Searchable zone combobox (Timezone tool): an input that filters the ft-select-panel list. */
+.tz-combo-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 8px;
+  font-size: 11.5px;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--surface);
+  outline: none;
+}
+.tz-combo-input:focus { border-color: var(--hover-border); }
+.tz-combo-empty { padding: 6px 8px; font-size: 11.5px; color: var(--text-muted); }
+
 /* ---- Profile tool ---- */
 .pf-disclaimer {
   font-size: 10.5px;

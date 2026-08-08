@@ -164,6 +164,13 @@
           </div>
         </div>
         <div class="guide-section">
+          <button class="guide-section-header">Timezone <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>Converts an instant between <strong>time zones</strong>. Type an <strong>epoch</strong> or a date (blank = now), then pick a <strong>From</strong> and <strong>To</strong> zone. Zones are labeled <strong>Country — City</strong> and sorted by country, so you can type a country name in the dropdown to jump to it (UTC is pinned at the top). Results update as you type.</p>
+            <p>An <strong>epoch</strong>, or a date carrying <strong>Z</strong> or a <strong>±offset</strong>, is an absolute instant — From only changes how it's shown. A <strong>naive</strong> date (<code>YYYY-MM-DD HH:mm</code>, no zone) is read as wall-clock time <em>in the From zone</em>. Output shows the time in both zones with their <strong>UTC offset</strong> (DST-aware), plus UTC ISO and Unix seconds. Defaults: From = your local zone, To = UTC.</p>
+          </div>
+        </div>
+        <div class="guide-section">
           <button class="guide-section-header">JSON <span class="guide-arrow">▾</span></button>
           <div class="guide-section-body">
             <p>Formats, minifies, or validates JSON. Paste into the box, pick an <strong>Indent</strong> (2, 4, or Tab), and click <strong>Format</strong> to pretty-print or <strong>Minify</strong> to strip whitespace. If the JSON is invalid, the parser's <strong>error message</strong> is shown (with the position it choked on) instead of output. Copy the result with the icon.</p>
@@ -257,6 +264,10 @@
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="timestamp">Timestamp</button>
         <button id="ts-reset-btn" class="tool-reset-btn" aria-label="Reset Timestamp" title="Reset Timestamp">⟲</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="timezone">Timezone</button>
+        <button id="tz-reset-btn" class="tool-reset-btn" aria-label="Reset Timezone" title="Reset Timezone">⟲</button>
       </div>
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="uuid">UUID</button>
@@ -707,6 +718,29 @@
         <p class="tt-error" id="ts-error" hidden></p>
         <div id="ts-fields"></div>
       </section>
+      <section id="tab-timezone" class="tab-content">
+        <div class="tt-row">
+          <label for="tz-input">Input</label>
+          <input type="text" id="tz-input" class="tool-input" placeholder="epoch or date — blank = now" spellcheck="false">
+          <button type="button" id="tz-now" class="tool-mini-btn">Now</button>
+        </div>
+        <div class="tt-row">
+          <label for="tz-from">From</label>
+          <div class="ft-select tz-combo">
+            <input type="text" id="tz-from" class="tz-combo-input" placeholder="Type to search a zone…" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false">
+            <div class="ft-select-panel" id="tz-from-panel" hidden role="listbox"></div>
+          </div>
+        </div>
+        <div class="tt-row">
+          <label for="tz-to">To</label>
+          <div class="ft-select tz-combo">
+            <input type="text" id="tz-to" class="tz-combo-input" placeholder="Type to search a zone…" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false">
+            <div class="ft-select-panel" id="tz-to-panel" hidden role="listbox"></div>
+          </div>
+        </div>
+        <p class="tt-error" id="tz-error" hidden></p>
+        <div id="tz-fields"></div>
+      </section>
       <section id="tab-json" class="tab-content">
         <div class="tt-row tt-row--top">
           <label for="jf-input">Input</label>
@@ -794,6 +828,8 @@
   <script src="js/encode-tool.js"></script>
   <script src="js/jwt-tool.js"></script>
   <script src="js/timestamp-tool.js"></script>
+  <script src="js/timezone-zones.js"></script>
+  <script src="js/timezone-tool.js"></script>
   <script src="js/json-tool.js"></script>
   <script src="js/base-tool.js"></script>
   <script src="js/color-tool.js"></script>
