@@ -63,6 +63,21 @@ test('cal_monthGrid returns a Monday-first 6-week grid framing the month', () =>
   assert.equal(typeof cells[0].ld, 'number')
 })
 
+test('cal_holidaysOn matches solar and lunar holidays with the right category', () => {
+  assert.deepEqual(cal.cal_holidaysOn({ d: 25, m: 12, ld: 7, lm: 11 }).map(h => h.cat), ['intl']) // Christmas (solar)
+  assert.deepEqual(cal.cal_holidaysOn({ d: 30, m: 4, ld: 5, lm: 3 }).map(h => h.cat), ['vn']) // Reunification (solar)
+  const tet = cal.cal_holidaysOn({ d: 17, m: 2, ld: 1, lm: 1 }) // Tết Nguyên Đán matched by lunar date
+  assert.equal(tet.length, 1)
+  assert.equal(tet[0].cat, 'vn')
+  assert.deepEqual(cal.cal_holidaysOn({ d: 3, m: 3, ld: 20, lm: 1 }), []) // ordinary day
+})
+
+test('holidays surface on the right calendar days via cal_monthGrid', () => {
+  // Christmas 2026 is a real grid cell in December carrying the intl holiday.
+  const xmas = cal.cal_monthGrid(2026, 12).find(c => c.inMonth && c.d === 25)
+  assert.equal(cal.cal_holidaysOn(xmas).some(h => h.name === 'Christmas'), true)
+})
+
 test('cal_solarInfo bundles lunar date, weekday and Can Chi together', () => {
   const info = cal.cal_solarInfo(17, 2, 2026)
   assert.deepEqual(info.lunar, [1, 1, 2026, 0])

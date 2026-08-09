@@ -37,6 +37,32 @@ test('Calendar: month grid shows 6 weeks, marks today, and clicking a day shows 
   expect(errors).toEqual([])
 })
 
+test('Calendar: holidays are dotted, listed, and shown in the detail', async ({ page }) => {
+  await page.goto('/popup.html')
+  await page.click('.tab-btn[data-tab="calendar"]')
+
+  // Jump to Christmas 2026 (international -> amber dot).
+  await page.fill('#cal-d', '25')
+  await page.fill('#cal-m', '12')
+  await page.fill('#cal-y', '2026')
+  const xmas = page.locator('#cal-grid .cal-cell[data-d="25"][data-m="12"][data-y="2026"]')
+  await expect(xmas.locator('.cal-dot--intl')).toHaveCount(1)
+  await expect(page.locator('#cal-holidays')).toContainText('Christmas')
+  await expect(page.locator('#cal-fields .pf-field', { hasText: 'Holiday' }).locator('.pf-field-value')).toHaveValue('Christmas')
+
+  // Reunification Day 30/4 is a Vietnamese holiday -> red dot.
+  await page.fill('#cal-d', '30')
+  await page.fill('#cal-m', '4')
+  await page.fill('#cal-y', '2026')
+  const apr30 = page.locator('#cal-grid .cal-cell[data-d="30"][data-m="4"][data-y="2026"]')
+  await expect(apr30.locator('.cal-dot--vn')).toHaveCount(1)
+
+  // A month with no holidays says so.
+  await page.fill('#cal-m', '11')
+  await page.fill('#cal-d', '10')
+  await expect(page.locator('#cal-holidays')).toContainText('No holidays this month')
+})
+
 test('Calendar: prev/next move only the grid month', async ({ page }) => {
   await page.goto('/popup.html')
   await page.click('.tab-btn[data-tab="calendar"]')

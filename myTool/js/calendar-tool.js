@@ -243,6 +243,43 @@ function cal_monthGrid(year, month) {
   return cells
 }
 
+// Vietnamese + international holidays. `type: 'solar'` matches a fixed Gregorian day/month;
+// `type: 'lunar'` matches a lunar day/month (so it lands correctly every year). `cat` ('vn' | 'intl')
+// drives the marker colour. Fixed rules only — no per-year table needed.
+var CAL_HOLIDAYS = [
+  // Vietnam — official days off
+  { type: 'solar', d: 1, m: 1, cat: 'vn', name: "New Year's Day (Tết Dương lịch)" },
+  { type: 'solar', d: 30, m: 4, cat: 'vn', name: 'Reunification Day (Giải phóng miền Nam)' },
+  { type: 'solar', d: 1, m: 5, cat: 'vn', name: 'International Labour Day (Quốc tế Lao động)' },
+  { type: 'solar', d: 2, m: 9, cat: 'vn', name: 'National Day (Quốc khánh)' },
+  { type: 'lunar', d: 1, m: 1, cat: 'vn', name: 'Lunar New Year (Tết Nguyên Đán)' },
+  { type: 'lunar', d: 10, m: 3, cat: 'vn', name: 'Hùng Kings Commemoration (Giỗ Tổ Hùng Vương)' },
+  // Vietnam — cultural observances (not days off)
+  { type: 'lunar', d: 15, m: 1, cat: 'vn', name: 'First Full Moon (Rằm tháng Giêng / Tết Nguyên Tiêu)' },
+  { type: 'lunar', d: 3, m: 3, cat: 'vn', name: 'Cold Food Festival (Tết Hàn Thực)' },
+  { type: 'lunar', d: 5, m: 5, cat: 'vn', name: 'Mid-year Festival (Tết Đoan Ngọ)' },
+  { type: 'lunar', d: 15, m: 7, cat: 'vn', name: 'Ghost Festival / Vu Lan' },
+  { type: 'lunar', d: 15, m: 8, cat: 'vn', name: 'Mid-Autumn Festival (Tết Trung Thu)' },
+  { type: 'lunar', d: 23, m: 12, cat: 'vn', name: 'Kitchen Gods (Ông Công Ông Táo)' },
+  // International
+  { type: 'solar', d: 14, m: 2, cat: 'intl', name: "Valentine's Day" },
+  { type: 'solar', d: 8, m: 3, cat: 'intl', name: "International Women's Day" },
+  { type: 'solar', d: 1, m: 6, cat: 'intl', name: "International Children's Day" },
+  { type: 'solar', d: 31, m: 10, cat: 'intl', name: 'Halloween' },
+  { type: 'solar', d: 25, m: 12, cat: 'intl', name: 'Christmas' }
+]
+
+// Holidays on a grid cell (needs its solar d/m and lunar ld/lm) — matched by solar or lunar date.
+function cal_holidaysOn(cell) {
+  var out = []
+  for (var i = 0; i < CAL_HOLIDAYS.length; i++) {
+    var h = CAL_HOLIDAYS[i]
+    var hit = h.type === 'solar' ? (h.d === cell.d && h.m === cell.m) : (h.d === cell.ld && h.m === cell.lm)
+    if (hit) out.push(h)
+  }
+  return out
+}
+
 // ---- Wiring ----
 ;(function initCalendarTool() {
   const dEl = document.getElementById('cal-d')
@@ -254,6 +291,7 @@ function cal_monthGrid(year, month) {
   const fieldsEl = document.getElementById('cal-fields')
   const gridEl = document.getElementById('cal-grid')
   const titleEl = document.getElementById('cal-title')
+  const holListEl = document.getElementById('cal-holidays')
 
   const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] // Monday-first
   const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
@@ -279,33 +317,55 @@ function cal_monthGrid(year, month) {
 
   const key = a => a[2] + '-' + a[1] + '-' + a[0]
 
-  // Paint the month grid for gridY/gridM, marking today and the selected day.
+  // Marker dot: red for a Vietnamese holiday, amber for international (VN wins if a day has both).
+  function holDot(hs) {
+    if (!hs.length) return ''
+    return `<span class="cal-dot cal-dot--${hs.some(h => h.cat === 'vn') ? 'vn' : 'intl'}"></span>`
+  }
+
+  // Paint the month grid for gridY/gridM (marking today, the selected day and holidays) and the
+  // list of this month's holidays below it.
   function renderGrid() {
     titleEl.textContent = MONTHS[gridM - 1] + ' ' + gridY
     const now = new Date()
     const todayKey = key([now.getDate(), now.getMonth() + 1, now.getFullYear()])
+    const cells = cal_monthGrid(gridY, gridM)
     let html = DOW.map(d => `<div class="cal-dow">${d}</div>`).join('')
-    for (const c of cal_monthGrid(gridY, gridM)) {
+    for (const c of cells) {
       const k = c.y + '-' + c.m + '-' + c.d
+      const hs = cal_holidaysOn(c)
       const cls = ['cal-cell']
       if (!c.inMonth) cls.push('out')
       if (k === todayKey) cls.push('today')
       if (k === selectedKey) cls.push('selected')
       // Show the lunar month (e.g. "1/7") on the first day of each lunar month, else just the day.
       const lun = c.ld === 1 ? `${c.ld}/${c.lm}${c.leap ? 'L' : ''}` : String(c.ld)
-      html += `<button type="button" class="${cls.join(' ')}" data-d="${c.d}" data-m="${c.m}" data-y="${c.y}">
-        <span class="cal-cell-sol">${c.d}</span><span class="cal-cell-lun">${lun}</span></button>`
+      const tip = hs.length ? ` title="${esc(hs.map(h => h.name).join(' · '))}"` : ''
+      html += `<button type="button" class="${cls.join(' ')}"${tip} data-d="${c.d}" data-m="${c.m}" data-y="${c.y}">
+        ${holDot(hs)}<span class="cal-cell-sol">${c.d}</span><span class="cal-cell-lun">${lun}</span></button>`
     }
     gridEl.innerHTML = html
+
+    // Holidays falling inside this month (grid order is date-ascending).
+    const items = []
+    for (const c of cells) {
+      if (!c.inMonth) continue
+      for (const h of cal_holidaysOn(c)) items.push({ c, h })
+    }
+    holListEl.innerHTML = items.length
+      ? items.map(({ c, h }) => `<div class="cal-hol-item"><span class="cal-dot cal-dot--${h.cat}"></span><span class="cal-hol-date">${c.d}/${c.m}</span><span class="cal-hol-name">${esc(h.name)}</span></div>`).join('')
+      : '<p class="cal-hol-empty">No holidays this month.</p>'
   }
 
   // Show a computed date: fill the detail fields and sync the grid highlight to it.
   function showInfo(info) {
     errorEl.hidden = true
+    const hs = cal_holidaysOn({ d: info.solar[0], m: info.solar[1], ld: info.lunar[0], lm: info.lunar[1] })
     fieldsEl.innerHTML = [
       fieldRow('Solar', fmtSolar(info.solar)),
       fieldRow('Lunar', fmtLunar(info.lunar)),
       fieldRow('Weekday', info.weekday),
+      hs.length ? fieldRow('Holiday', hs.map(h => h.name).join(' · ')) : '',
       fieldRow('Year (Can Chi)', info.yearCanChi),
       fieldRow('Month (Can Chi)', info.monthCanChi),
       fieldRow('Day (Can Chi)', info.dayCanChi),
