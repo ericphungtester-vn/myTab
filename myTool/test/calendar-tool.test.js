@@ -72,6 +72,14 @@ test('cal_holidaysOn matches solar and lunar holidays with the right category', 
   assert.deepEqual(cal.cal_holidaysOn({ d: 3, m: 3, ld: 20, lm: 1 }), []) // ordinary day
 })
 
+test('cal_holidaysOn covers Vietnamese commemorative days', () => {
+  const teachers = cal.cal_holidaysOn({ d: 20, m: 11, ld: 11, lm: 10 }) // 20 Nov
+  assert.equal(teachers.length, 1)
+  assert.equal(teachers[0].cat, 'vn')
+  assert.match(teachers[0].name, /Teachers/)
+  assert.equal(cal.cal_holidaysOn({ d: 22, m: 12, ld: 1, lm: 12 })[0].cat, 'vn') // Army Day 22/12
+})
+
 test('holidays surface on the right calendar days via cal_monthGrid', () => {
   // Christmas 2026 is a real grid cell in December carrying the intl holiday.
   const xmas = cal.cal_monthGrid(2026, 12).find(c => c.inMonth && c.d === 25)

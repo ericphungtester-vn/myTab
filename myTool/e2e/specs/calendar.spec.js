@@ -57,10 +57,12 @@ test('Calendar: holidays are dotted, listed, and shown in the detail', async ({ 
   const apr30 = page.locator('#cal-grid .cal-cell[data-d="30"][data-m="4"][data-y="2026"]')
   await expect(apr30.locator('.cal-dot--vn')).toHaveCount(1)
 
-  // A month with no holidays says so.
+  // Vietnamese commemorative days are marked too (e.g. Teachers' Day 20/11 -> red dot).
   await page.fill('#cal-m', '11')
-  await page.fill('#cal-d', '10')
-  await expect(page.locator('#cal-holidays')).toContainText('No holidays this month')
+  await page.fill('#cal-d', '20')
+  await expect(page.locator('#cal-holidays')).toContainText("Teachers' Day")
+  const nov20 = page.locator('#cal-grid .cal-cell[data-d="20"][data-m="11"][data-y="2026"]')
+  await expect(nov20.locator('.cal-dot--vn')).toHaveCount(1)
 })
 
 test('Calendar: prev/next move only the grid month', async ({ page }) => {
