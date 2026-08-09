@@ -856,6 +856,18 @@ tr.cp-mod td:nth-of-type(4) { background: rgba(47, 158, 68, 0.10); }
 .rp-bp-chip:hover { border-color: var(--hover-border); }
 .rp-bp-chip.copied { border-color: #16A34A; color: #16A34A; }
 
+/* Validator tool: one result row per matching format. */
+.va-row { display: flex; align-items: baseline; gap: 8px; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 6px; font-size: 12px; }
+.va-row.va-ok { border-color: #16A34A; background: rgba(22, 163, 74, 0.08); }
+.va-row.va-bad { border-color: var(--danger); background: var(--danger-bg); }
+.va-badge { flex-shrink: 0; font-weight: 700; }
+.va-ok .va-badge { color: #16A34A; }
+.va-bad .va-badge { color: var(--danger); }
+.va-type { flex-shrink: 0; font-weight: 600; min-width: 92px; }
+.va-detail { color: var(--text-secondary); }
+.va-none { font-size: 11.5px; color: var(--text-muted); }
+.ur-count { font-weight: 400; color: var(--text-muted); font-size: 11px; }
+
 /* ---- Profile tool ---- */
 .pf-disclaimer {
   font-size: 10.5px;

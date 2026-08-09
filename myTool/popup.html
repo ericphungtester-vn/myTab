@@ -145,6 +145,18 @@
           </div>
         </div>
         <div class="guide-section">
+          <button class="guide-section-header">URL <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>Splits a URL into <strong>protocol, host, port, path, query, and fragment</strong>, and lists each <strong>query parameter</strong> percent-decoded (with <code>+</code> read as a space). Copy any part with its button. A missing scheme is tolerated (<code>https://</code> is assumed); an unparseable URL shows an error. Updates as you type.</p>
+          </div>
+        </div>
+        <div class="guide-section">
+          <button class="guide-section-header">Validator <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>Checks whether a pasted value is valid and explains why — the reverse of the generator tools. Recognizes an <strong>IBAN</strong> (ISO mod-97 + country length), a <strong>card number</strong> (Luhn + network), an <strong>EAN-8/13 or UPC-A</strong> barcode (GTIN check digit), and a <strong>US routing number</strong> (ABA checksum). It shows a result only for the formats whose shape matches your input, so a 16-digit number is checked as a card, not flagged as a bad IBAN. Spaces and dashes are ignored.</p>
+          </div>
+        </div>
+        <div class="guide-section">
           <button class="guide-section-header">UUID <span class="guide-arrow">▾</span></button>
           <div class="guide-section-body">
             <p>Generates identifiers in the formats developers actually use. Pick a <strong>Type</strong> and a <strong>Count</strong> (1–25) and click <strong>Generate</strong>; the output box lists them, and the copy icon copies all of them.</p>
@@ -316,8 +328,16 @@
         <button id="tz-reset-btn" class="tool-reset-btn" aria-label="Reset Timezone" title="Reset Timezone">⟲</button>
       </div>
       <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="url">URL</button>
+        <button id="ur-reset-btn" class="tool-reset-btn" aria-label="Reset URL" title="Reset URL">⟲</button>
+      </div>
+      <div class="tool-nav-item">
         <button class="tab-btn" data-tab="uuid">UUID</button>
         <button id="uu-reset-btn" class="tool-reset-btn" aria-label="Reset UUID settings" title="Reset UUID settings">⟲</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="validator">Validator</button>
+        <button id="va-reset-btn" class="tool-reset-btn" aria-label="Reset Validator" title="Reset Validator">⟲</button>
       </div>
     </nav>
     <main id="app-main">
@@ -712,6 +732,23 @@
         <div id="cp-output" class="cp-output" hidden></div>
         <button id="cp-download" class="tt-generate-btn cp-download-btn" hidden>Download HTML report</button>
       </section>
+      <section id="tab-url" class="tab-content">
+        <div class="tt-row tt-row--top">
+          <label for="ur-input">URL</label>
+          <textarea id="ur-input" class="cp-input" rows="3" placeholder="https://example.com/path?a=1&b=hello%20world#frag" spellcheck="false"></textarea>
+        </div>
+        <p class="tt-error" id="ur-error" hidden></p>
+        <p class="tt-field-hint" id="ur-hint">Paste a URL to split it into parts and decode its query parameters.</p>
+        <div id="ur-output"></div>
+      </section>
+      <section id="tab-validator" class="tab-content">
+        <div class="tt-row">
+          <label for="va-input">Value</label>
+          <input type="text" id="va-input" class="tool-input" placeholder="IBAN, card number, EAN/UPC, or routing…" spellcheck="false">
+        </div>
+        <p class="tt-field-hint" id="va-hint">Paste an IBAN, card number, EAN/UPC barcode, or 9-digit US routing number to check it.</p>
+        <div id="va-results"></div>
+      </section>
       <section id="tab-uuid" class="tab-content">
         <div class="tt-row">
           <label>Type</label>
@@ -949,6 +986,8 @@
   <script src="js/vendor/zxing.js"></script>
   <script src="js/scan-tool.js"></script>
   <script src="js/responsive-tool.js"></script>
+  <script src="js/url-tool.js"></script>
+  <script src="js/validator-tool.js"></script>
   <script src="js/json-tool.js"></script>
   <script src="js/base-tool.js"></script>
   <script src="js/color-tool.js"></script>
