@@ -971,8 +971,6 @@ tr.cp-mod td:nth-of-type(4) { background: rgba(47, 158, 68, 0.10); }
 .cal-hol-date { flex: 0 0 auto; min-width: 34px; color: var(--text-secondary); }
 .cal-hol-name { min-width: 0; }
 .cal-hol-empty { margin: 0; font-size: 11.5px; color: var(--text-secondary); }
-.cal-hint { margin: 8px 0 0; font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
-.cal-hint .cal-dot { margin: 0 1px; }
 .cal-date-inputs { display: flex; align-items: center; gap: 4px; }
 .cal-num { flex: 0 0 auto; width: 2.8em; padding-left: 6px; padding-right: 6px; text-align: center; -moz-appearance: textfield; appearance: textfield; }
 .cal-num::-webkit-outer-spin-button, .cal-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }

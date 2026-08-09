@@ -220,6 +220,7 @@
           <button class="guide-section-header">Calendar <span class="guide-arrow">▾</span></button>
           <div class="guide-section-body">
             <p>A month <strong>grid calendar</strong> for the Vietnamese lunar calendar: each day shows the solar date (large) over the lunar date (small); the first day of a lunar month shows as day/month (e.g. "1/7", with "L" for a leap month). Use <strong>‹ ›</strong> to change month, <strong>Today</strong> to jump to today (highlighted), and click any day to see its full detail below.</p>
+            <p>A dot marks a <strong>holiday</strong> — <span class="cal-dot cal-dot--vn"></span> red for Vietnamese, <span class="cal-dot cal-dot--intl"></span> amber for international (Vietnamese public holidays, lunar cultural festivals, and common international days). The month's holidays are listed under the grid, and a selected holiday also shows in the detail.</p>
             <p>The date box in the header (day / month / year) also acts as a jump box: type a <strong>solar date</strong> and the grid moves to it and shows its detail — handy without scrolling months.</p>
             <p>The detail shows the matching <strong>Solar</strong> / <strong>Lunar</strong> dates, the <strong>weekday</strong>, the <strong>Can Chi</strong> (sexagenary) name of the year / month / day, and the Julian day. Conversions use the Hồ Ngọc Đức astronomical algorithm evaluated at Vietnam's UTC+7, so leap months match the official Vietnamese calendar.</p>
           </div>
@@ -822,7 +823,6 @@
           </div>
           <div class="cal-grid" id="cal-grid"></div>
           <div id="cal-holidays" class="cal-holidays"></div>
-          <p class="cal-hint">Large number = solar date, small number = lunar date (the first day of a lunar month shows as day/month, "L" = leap month). A dot marks a holiday: <span class="cal-dot cal-dot--vn"></span> Vietnamese, <span class="cal-dot cal-dot--intl"></span> international. Type a solar date above to jump, or click a day for its detail.</p>
         </div>
         <p class="tt-error" id="cal-error" hidden></p>
         <div id="cal-fields"></div>
