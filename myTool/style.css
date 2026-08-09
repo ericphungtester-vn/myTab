@@ -966,7 +966,7 @@ tr.cp-mod td:nth-of-type(4) { background: rgba(47, 158, 68, 0.10); }
 .cal-dot--vn { background: var(--cal-vn); }
 .cal-dot--intl { background: var(--cal-intl); }
 .cal-cell > .cal-dot { position: absolute; top: 4px; right: 4px; box-shadow: 0 0 0 1px var(--surface); }
-.cal-holidays { margin-top: 8px; display: flex; flex-direction: column; gap: 3px; }
+.cal-holidays { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 3px; }
 .cal-hol-item { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text); }
 .cal-hol-date { flex: 0 0 auto; min-width: 34px; color: var(--text-secondary); }
 .cal-hol-name { min-width: 0; }
