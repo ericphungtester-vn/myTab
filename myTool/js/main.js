@@ -47,16 +47,33 @@ themeToggleBtn.addEventListener('click', () => {
 // toolbar popup, which the browser closes on blur). Hidden unless we're the toolbar popup in a real
 // extension context: the detached window itself (marked ?window=1) and the http test harness (no
 // chrome.windows) both leave the button hidden.
+const _params = new URLSearchParams(location.search)
+const isDetached = _params.has('window') // the movable pop-out window
+const inPanel = _params.has('panel')     // Chrome side panel
+const hasExt = typeof chrome !== 'undefined' && chrome.runtime
+
 const popoutBtn = document.getElementById('popout-btn')
-if (popoutBtn) {
-  const isDetached = new URLSearchParams(location.search).has('window')
-  if (!isDetached && typeof chrome !== 'undefined' && chrome.windows && chrome.runtime) {
-    popoutBtn.hidden = false
-    popoutBtn.addEventListener('click', () => {
-      chrome.windows.create({ url: chrome.runtime.getURL('popup.html?window=1'), type: 'popup', width: 576, height: 540 })
+if (popoutBtn && !isDetached && !inPanel && hasExt && chrome.windows) {
+  popoutBtn.hidden = false
+  popoutBtn.addEventListener('click', () => {
+    chrome.windows.create({ url: chrome.runtime.getURL('popup.html?window=1'), type: 'popup', width: 576, height: 540 })
+    window.close()
+  })
+}
+
+// Open the tool in Chrome's side panel — docked and stays open while you browse (unlike the popup),
+// handy for copy-pasting between the tool and the page you're testing. Hidden when already detached,
+// already in the panel, or outside a real extension (the http test harness).
+const panelBtn = document.getElementById('panel-btn')
+if (panelBtn && !isDetached && !inPanel && hasExt && chrome.sidePanel && chrome.windows) {
+  panelBtn.hidden = false
+  panelBtn.addEventListener('click', async () => {
+    try {
+      const win = await chrome.windows.getCurrent()
+      await chrome.sidePanel.open({ windowId: win.id })
       window.close()
-    })
-  }
+    } catch (e) { /* open must follow a user gesture; ignore if it races */ }
+  })
 }
 
 // Lazy-load a script once, resolving when it's ready. Lets heavy vendor libraries (ZXing, qrcode,

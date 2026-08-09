@@ -50,6 +50,9 @@ body {
   overflow: hidden;
 }
 
+/* Side panel: fill the docked surface instead of the fixed popup box. */
+html.as-panel, html.as-panel body { width: 100%; height: 100vh; }
+
 /* ---- HEADER ---- */
 #app-header {
   height: 44px;
