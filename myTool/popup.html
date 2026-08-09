@@ -83,6 +83,13 @@
           </div>
         </div>
         <div class="guide-section">
+          <button class="guide-section-header">Responsive <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>A cheat-sheet for testing responsive layouts with Chrome's built-in <strong>Device Mode</strong> — no physical devices, no extra permissions (this tab is reference only; it doesn't resize anything itself). The tab lists the steps to open Device Mode plus copy-ready <strong>device viewports</strong> and <strong>framework breakpoints</strong>.</p>
+            <p>Why DevTools rather than a built-in emulator here: Device Mode already does true viewport, DPR, touch, User-Agent and network emulation — and can reach real phone widths (which a resized desktop window can't). Copy a size and paste it into DevTools' Responsive width field.</p>
+          </div>
+        </div>
+        <div class="guide-section">
           <button class="guide-section-header">Resize <span class="guide-arrow">▾</span></button>
           <div class="guide-section-body">
             <p>Resizes and/or compresses an image entirely <strong>in your browser</strong> — the image is read from the file you pick and written back as a download; it never leaves your machine and no permissions are used. <strong>Drop an image</strong> onto the box (or click <em>browse</em>); it shows the original name, dimensions, and size, and <strong>auto-fills the width and height from the original</strong>. EXIF orientation from phone photos is applied automatically.</p>
@@ -290,6 +297,9 @@
         <button id="rs-reset-btn" class="tool-reset-btn" aria-label="Reset Resize settings" title="Reset Resize settings">⟲</button>
       </div>
       <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="responsive">Responsive</button>
+      </div>
+      <div class="tool-nav-item">
         <button class="tab-btn" data-tab="scan">Scan</button>
         <button id="sc-reset-btn" class="tool-reset-btn" aria-label="Reset Scan" title="Reset Scan">⟲</button>
       </div>
@@ -311,6 +321,22 @@
       </div>
     </nav>
     <main id="app-main">
+      <section id="tab-responsive" class="tab-content">
+        <p class="rp-intro">Test responsive layouts with no physical devices, using Chrome's built-in <strong>Device Mode</strong>.</p>
+        <ol class="rp-steps">
+          <li>Open your web app / page in Chrome.</li>
+          <li>Open DevTools — <kbd>F12</kbd>, or <kbd>Ctrl+Shift+I</kbd> (<kbd>⌘+⌥+I</kbd> on Mac).</li>
+          <li>Toggle the <strong>Device toolbar</strong> — the phone/tablet icon, or <kbd>Ctrl+Shift+M</kbd> (<kbd>⌘+Shift+M</kbd>).</li>
+          <li>Pick a device from the <strong>Dimensions</strong> dropdown, or choose <strong>Responsive</strong> and type a width × height (copy one below).</li>
+          <li>Use the toolbar to set <strong>DPR</strong>, <strong>rotate</strong> (portrait/landscape), and <strong>throttling</strong> (slow network/CPU).</li>
+          <li>Some sites serve different HTML by User-Agent — DevTools sends the device's UA, so <strong>reload</strong> after switching.</li>
+          <li>Need a size that isn't listed? Dimensions dropdown → <strong>Edit…</strong> to add a custom device.</li>
+        </ol>
+        <h3 class="pf-section-header">Common device viewports</h3>
+        <div id="rp-devices" class="rp-devices"></div>
+        <h3 class="pf-section-header">Framework breakpoints (min-width)</h3>
+        <div id="rp-breakpoints" class="rp-breakpoints"></div>
+      </section>
       <section id="tab-scan" class="tab-content">
         <div id="sc-drop" class="sc-drop">
           <p>Drop an image here, click to choose a file, or paste (⌘/Ctrl+V) an image of a QR code or barcode.</p>
@@ -922,6 +948,7 @@
   <script src="js/barcode-tool.js"></script>
   <script src="js/vendor/zxing.js"></script>
   <script src="js/scan-tool.js"></script>
+  <script src="js/responsive-tool.js"></script>
   <script src="js/json-tool.js"></script>
   <script src="js/base-tool.js"></script>
   <script src="js/color-tool.js"></script>

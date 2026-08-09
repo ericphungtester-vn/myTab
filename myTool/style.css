@@ -837,6 +837,25 @@ tr.cp-mod td:nth-of-type(4) { background: rgba(47, 158, 68, 0.10); }
 .sc-drop p { margin: 0; }
 .sc-preview { display: block; max-width: 100%; max-height: 200px; margin: 10px auto; border: 1px solid var(--border); border-radius: var(--radius); background: #fff; }
 
+/* Responsive tool: DevTools Device Mode cheat-sheet (steps + reference tables). */
+.rp-intro { font-size: 12px; color: var(--text-secondary); margin: 0 0 8px; }
+.rp-steps { margin: 0 0 6px; padding-left: 18px; font-size: 12px; line-height: 1.7; color: var(--text); }
+.rp-steps li { margin-bottom: 2px; }
+.rp-steps kbd { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10.5px; background: var(--subtle-bg); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; }
+.rp-table { border-collapse: collapse; width: 100%; font-size: 11.5px; }
+.rp-table th { text-align: left; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border); padding: 4px 8px; }
+.rp-table td { border-bottom: 1px solid var(--border); padding: 3px 8px; }
+.rp-dim { font-family: ui-monospace, Menlo, Consolas, monospace; white-space: nowrap; }
+.rp-copy { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface); color: var(--text-secondary); cursor: pointer; }
+.rp-copy:hover { border-color: var(--hover-border); color: var(--primary); }
+.rp-copy svg { pointer-events: none; }
+.rp-bp-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; }
+.rp-bp-fw { font-size: 11px; color: var(--text-secondary); width: 84px; flex-shrink: 0; }
+.rp-bp-chip { font-family: inherit; font-size: 11px; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px; cursor: pointer; }
+.rp-bp-chip b { color: var(--text); font-variant-numeric: tabular-nums; }
+.rp-bp-chip:hover { border-color: var(--hover-border); }
+.rp-bp-chip.copied { border-color: #16A34A; color: #16A34A; }
+
 /* ---- Profile tool ---- */
 .pf-disclaimer {
   font-size: 10.5px;
