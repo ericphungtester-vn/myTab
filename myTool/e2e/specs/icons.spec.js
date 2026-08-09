@@ -49,6 +49,25 @@ test('Icons: SVG mode lazy-loads Lucide and copies SVG / data-URI', async ({ pag
   expect(errors).toEqual([])
 })
 
+test('Icons: category dropdown groups the icons', async ({ page }) => {
+  await page.goto('/popup.html')
+  await page.click('.tab-btn[data-tab="icons"]')
+  await page.click('#ic-mode .seg-btn[data-value="icons"]')
+
+  // Dropdown fills once the library loads (needs more than the default "All" option).
+  await expect.poll(() => page.locator('#ic-category option').count()).toBeGreaterThan(10)
+
+  // Pick the Weather category — every shown icon must belong to it.
+  await page.selectOption('#ic-category', 'weather')
+  await expect(page.locator('#ic-grid .ic-icon').first()).toBeVisible()
+  const allWeather = await page.evaluate(() =>
+    [...document.querySelectorAll('#ic-grid .ic-icon')].every(b => (window.LUCIDE_CATS[b.dataset.name] || []).includes('weather')))
+  expect(allWeather).toBe(true)
+
+  // Sun is a weather icon and should be present.
+  await expect(page.locator('#ic-grid .ic-icon[data-name="sun"]')).toBeVisible()
+})
+
 test('Icons: size and stroke controls change the copied SVG', async ({ page }) => {
   await page.goto('/popup.html')
   await page.click('.tab-btn[data-tab="icons"]')

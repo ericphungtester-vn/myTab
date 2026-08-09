@@ -44,6 +44,26 @@ test('ic_filterSymbols keeps only groups with matches and filters their items', 
   assert.equal(ic.ic_filterSymbols(groups, 'times').length, 1) // keyword match
 })
 
+test('ic_iconsInCategory filters names by Lucide category', () => {
+  const cats = { house: ['buildings', 'home'], tent: ['buildings', 'travel'], star: ['shapes'] }
+  const names = ['house', 'tent', 'star']
+  assert.deepEqual(ic.ic_iconsInCategory(cats, names, 'buildings'), ['house', 'tent'])
+  assert.deepEqual(ic.ic_iconsInCategory(cats, names, 'travel'), ['tent'])
+  assert.deepEqual(ic.ic_iconsInCategory(cats, names, 'all'), names) // 'all' passes everything
+  assert.deepEqual(ic.ic_iconsInCategory(cats, names, 'zzz'), [])
+})
+
+test('ic_categoryList returns sorted categories with counts', () => {
+  const cats = { house: ['buildings', 'home'], tent: ['buildings', 'travel'], star: ['shapes'] }
+  const list = ic.ic_categoryList(cats, Object.keys(cats))
+  assert.deepEqual(list, [
+    { name: 'buildings', count: 2 },
+    { name: 'home', count: 1 },
+    { name: 'shapes', count: 1 },
+    { name: 'travel', count: 1 }
+  ])
+})
+
 test('the bundled symbol set has non-empty groups and valid [char, keywords] pairs', () => {
   assert.ok(ic.IC_SYMBOLS.length >= 5)
   for (const g of ic.IC_SYMBOLS) {

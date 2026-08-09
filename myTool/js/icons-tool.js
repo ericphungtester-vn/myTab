@@ -52,6 +52,31 @@ function ic_filterSymbols(groups, query) {
   return out
 }
 
+// Icon names belonging to a Lucide category ('all' = every name). `cats` maps name -> [category…].
+function ic_iconsInCategory(cats, names, category) {
+  if (!category || category === 'all') return names.slice()
+  var out = []
+  for (var i = 0; i < names.length; i++) {
+    var cs = cats[names[i]]
+    if (cs && cs.indexOf(category) >= 0) out.push(names[i])
+  }
+  return out
+}
+
+// The distinct categories with their icon counts, alphabetically. Uses for-in (no Object.keys) so it
+// runs in the unit-test sandbox too; caller passes the icon names.
+function ic_categoryList(cats, names) {
+  var counts = {}
+  for (var i = 0; i < names.length; i++) {
+    var cs = cats[names[i]] || []
+    for (var j = 0; j < cs.length; j++) counts[cs[j]] = (counts[cs[j]] || 0) + 1
+  }
+  var out = []
+  for (var k in counts) out.push({ name: k, count: counts[k] })
+  out.sort(function (a, b) { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0 })
+  return out
+}
+
 // Curated emoji + Unicode symbols. Each item is [character, keywords]. Copying yields the character,
 // which pastes as text anywhere.
 var IC_SYMBOLS = [
@@ -131,6 +156,7 @@ var IC_SYMBOLS = [
   const symWrap = document.getElementById('ic-symbols')
   const ctrlsEl = document.getElementById('ic-icon-ctrls')
   const gridEl = document.getElementById('ic-grid')
+  const catSel = document.getElementById('ic-category')
   const fmtSeg = document.getElementById('ic-format')
   const sizeSeg = document.getElementById('ic-size')
   const strokeSeg = document.getElementById('ic-stroke')
@@ -165,15 +191,27 @@ var IC_SYMBOLS = [
 
   // ---- SVG icons (Lucide, lazy-loaded) ----
   let libReady = false
+  let savedCat = 'all'
   function ensureLib() {
     return window.loadScriptOnce('js/vendor/lucide-icons.js').then(() => { libReady = true })
   }
   function iconOpts() { return { size: +segVal(sizeSeg) || 24, stroke: +segVal(strokeSeg) || 2, color: colorEl.value } }
 
+  function cap(s) { s = String(s).replace(/-/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1) }
+  function populateCats() {
+    if (catSel.dataset.filled) return
+    const list = ic_categoryList(window.LUCIDE_CATS, Object.keys(window.LUCIDE_CATS))
+    catSel.innerHTML = '<option value="all">All categories</option>' +
+      list.map(c => '<option value="' + c.name + '">' + cap(c.name) + ' (' + c.count + ')</option>').join('')
+    catSel.dataset.filled = '1'
+    if (savedCat !== 'all' && [...catSel.options].some(o => o.value === savedCat)) catSel.value = savedCat
+  }
+
   function renderIcons() {
     if (!libReady) { gridEl.innerHTML = '<p class="ic-empty">Loading icons…</p>'; ensureLib().then(renderIcons); return }
-    const names = Object.keys(window.LUCIDE_ICONS)
-    const matched = ic_search(names, window.LUCIDE_TAGS, searchEl.value, MAX + 1)
+    populateCats()
+    const base = ic_iconsInCategory(window.LUCIDE_CATS, Object.keys(window.LUCIDE_ICONS), catSel.value || 'all')
+    const matched = ic_search(base, window.LUCIDE_TAGS, searchEl.value, MAX + 1)
     const shown = matched.slice(0, MAX)
     const o = iconOpts()
     gridEl.innerHTML = shown.length
@@ -222,7 +260,7 @@ var IC_SYMBOLS = [
   }
 
   const CTRL_KEY = 'icons-ctrls'
-  function saveCtrls() { syncSet({ [CTRL_KEY]: { size: segVal(sizeSeg), stroke: segVal(strokeSeg), color: colorEl.value, fmt: segVal(fmtSeg) } }) }
+  function saveCtrls() { syncSet({ [CTRL_KEY]: { size: segVal(sizeSeg), stroke: segVal(strokeSeg), color: colorEl.value, fmt: segVal(fmtSeg), cat: catSel.value } }) }
   function setSeg(seg, val) { seg.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.value === String(val))) }
 
   modeSeg.addEventListener('click', e => {
@@ -236,6 +274,7 @@ var IC_SYMBOLS = [
   }))
   fmtSeg.addEventListener('click', e => { const b = e.target.closest('.seg-btn'); if (!b) return; setSeg(fmtSeg, b.dataset.value); saveCtrls() })
   colorEl.addEventListener('input', () => { renderIcons(); saveCtrls() })
+  catSel.addEventListener('change', () => { savedCat = catSel.value; renderIcons(); saveCtrls() })
 
   symWrap.addEventListener('click', e => {
     const b = e.target.closest('.ic-sym'); if (!b) return
@@ -250,6 +289,7 @@ var IC_SYMBOLS = [
     searchEl.value = ''
     setSeg(sizeSeg, 24); setSeg(strokeSeg, 2); setSeg(fmtSeg, 'svg')
     colorEl.value = defaultColor()
+    savedCat = 'all'; if (catSel.dataset.filled) catSel.value = 'all'
     saveCtrls(); applyMode('symbols'); syncSet({ 'icons-mode': 'symbols' })
   })
 
@@ -266,7 +306,7 @@ var IC_SYMBOLS = [
   applyMode('symbols')
   syncGet(['icons-mode', CTRL_KEY]).then(d => {
     const c = d[CTRL_KEY]
-    if (c) { if (c.size) setSeg(sizeSeg, c.size); if (c.stroke) setSeg(strokeSeg, c.stroke); if (c.fmt) setSeg(fmtSeg, c.fmt); if (c.color) colorEl.value = c.color }
+    if (c) { if (c.size) setSeg(sizeSeg, c.size); if (c.stroke) setSeg(strokeSeg, c.stroke); if (c.fmt) setSeg(fmtSeg, c.fmt); if (c.color) colorEl.value = c.color; if (c.cat) savedCat = c.cat }
     const m = d['icons-mode']
     if (m && m !== 'symbols') applyMode(m); else if (c) { /* controls updated; nothing to re-render in symbols mode */ }
   })
