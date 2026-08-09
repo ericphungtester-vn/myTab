@@ -2,6 +2,7 @@
   "manifest_version": 3,
   "name": "myTool",
   "version": "1.0.0",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqs51+2ceTDZb0U1/YXzzSiyllW6Dh/ocfrSg57LLc8yPhc8QrAiAMMfVoMs8Hbe7416MNUnvmLUZIgRMgd4DmNy7f8o+kRr9p2hBUums4VLFYIh+q6wYj5aW00/xYp6xYYarpVGIXmWPr1JuR9+eVOyiQpjm5YePmoAscSyZkmWG6bdQUfdgoyo8JzHIf88XuoHfiUJ1/ie0eCRQ/nK08TLcn+8EsOs+ewFx37ORkwB2FCzAhtRfRrRuCsM+H1MYOZyCrEpSdQEewBEs1oH0wedEy9sDM9egceQoeoiiPQyxmY2wzgZ+ZP9Jw+5a+SsnXPUaDHl1VquX6vlwCUgVYwIDAQAB",
   "description": "Local dev/QA toolbox: placeholder text, test files, synthetic data (IDs, IBAN, cards) and utilities (JSON, JWT, regex, hashing).",
   "action": {
     "default_popup": "popup.html",
