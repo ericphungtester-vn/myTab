@@ -108,6 +108,70 @@ tabBtns.forEach(btn => {
   })
 })
 
+// Sidebar grouping — the same tabs, arranged two ways with a toggle: by Action (what you're doing)
+// or by Object (what the tool works on). Purely presentational; it reorders the existing nav items
+// (keeping their listeners) and inserts group headers.
+const NAV_GROUPS = {
+  action: {
+    order: [['generate', 'Generate'], ['convert', 'Convert'], ['inspect', 'Inspect'], ['check', 'Check'], ['other', 'Other']],
+    map: {
+      barcode: 'generate', bban: 'generate', card: 'generate', file: 'generate', iban: 'generate', noniban: 'generate', profile: 'generate', qr: 'generate', text: 'generate', uuid: 'generate',
+      base: 'convert', color: 'convert', encode: 'convert', number: 'convert', timestamp: 'convert', timezone: 'convert', tree: 'convert',
+      json: 'inspect', jwt: 'inspect', scan: 'inspect', unicode: 'inspect', url: 'inspect',
+      compare: 'check', regex: 'check', validator: 'check',
+      resize: 'other', responsive: 'other'
+    }
+  },
+  object: {
+    order: [['bank', 'Bank & Payment'], ['web', 'Web & API'], ['text', 'Text'], ['codes', 'Codes'], ['time', 'Time'], ['file', 'File & Image'], ['identity', 'Identity'], ['other', 'Other']],
+    map: {
+      bban: 'bank', card: 'bank', iban: 'bank', noniban: 'bank', validator: 'bank',
+      base: 'web', encode: 'web', json: 'web', jwt: 'web', url: 'web',
+      compare: 'text', regex: 'text', text: 'text', unicode: 'text',
+      barcode: 'codes', qr: 'codes', scan: 'codes',
+      timestamp: 'time', timezone: 'time',
+      file: 'file', resize: 'file',
+      profile: 'identity', uuid: 'identity',
+      color: 'other', number: 'other', responsive: 'other', tree: 'other'
+    }
+  }
+}
+
+const navItemsEl = document.getElementById('nav-items')
+const navModeEl = document.getElementById('nav-mode')
+
+function renderNav(mode) {
+  const cfg = NAV_GROUPS[mode] || NAV_GROUPS.action
+  const items = {}
+  navItemsEl.querySelectorAll('.tool-nav-item').forEach(el => { items[el.querySelector('.tab-btn').dataset.tab] = el })
+  navItemsEl.querySelectorAll('.nav-group-header').forEach(h => h.remove())
+  const label = t => items[t].querySelector('.tab-btn').textContent
+  cfg.order.forEach(([key, title]) => {
+    const tabs = Object.keys(items).filter(t => cfg.map[t] === key).sort((a, b) => label(a).localeCompare(label(b)))
+    if (!tabs.length) return
+    const h = document.createElement('div')
+    h.className = 'nav-group-header'
+    h.textContent = title
+    navItemsEl.appendChild(h)
+    tabs.forEach(t => navItemsEl.appendChild(items[t])) // appendChild moves the existing element
+  })
+  // any tab missing from the map (safety net) keeps its place at the end
+  Object.keys(items).forEach(t => { if (!cfg.map[t]) navItemsEl.appendChild(items[t]) })
+}
+
+function setNavMode(mode) {
+  navModeEl.querySelectorAll('.nav-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.value === mode))
+  renderNav(mode)
+}
+navModeEl.addEventListener('click', e => {
+  const b = e.target.closest('.nav-mode-btn')
+  if (!b) return
+  setNavMode(b.dataset.value)
+  syncSet({ 'nav-mode': b.dataset.value })
+})
+setNavMode('action') // group immediately; the saved choice (if any) overrides below
+syncGet(['nav-mode']).then(d => { if (d['nav-mode'] && d['nav-mode'] !== 'action') setNavMode(d['nav-mode']) })
+
 // Restore the tab + scroll position that were active before the last close. Tool content renders
 // asynchronously (each tool does its own syncGet().then(render)), so the container may still be
 // short when we first try — retry briefly until it's tall enough to reach the saved offset.

@@ -265,6 +265,11 @@
 
   <div id="app-body">
     <nav class="tab-nav" id="tool-sidebar">
+      <div class="nav-mode" id="nav-mode">
+        <button type="button" class="nav-mode-btn active" data-value="action">Action</button>
+        <button type="button" class="nav-mode-btn" data-value="object">Object</button>
+      </div>
+      <div id="nav-items">
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="barcode">Barcode</button>
         <button id="bc-reset-btn" class="tool-reset-btn" aria-label="Reset Barcode" title="Reset Barcode">⟲</button>
@@ -371,6 +376,7 @@
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="validator">Validator</button>
         <button id="va-reset-btn" class="tool-reset-btn" aria-label="Reset Validator" title="Reset Validator">⟲</button>
+      </div>
       </div>
     </nav>
     <main id="app-main">
