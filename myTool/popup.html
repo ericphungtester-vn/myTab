@@ -237,7 +237,7 @@
           <div class="guide-section-body">
             <p>Grab an icon and paste it anywhere. Two modes via the <strong>Type</strong> toggle:</p>
             <p><strong>Symbols</strong> — emoji and Unicode glyphs (arrows, ticks, maths, currency, punctuation…). Click one to copy the <strong>character</strong>; it pastes as text into literally any field (chat, docs, filenames, code).</p>
-            <p><strong>SVG icons</strong> — the Lucide set (1,700+), searchable by name or keyword. Set <strong>Copy as</strong> to <strong>SVG</strong> (markup), <strong>PNG</strong> (image on the clipboard — paste into Docs, Slack, Figma, email) or <strong>Data-URI</strong> (for CSS <code>url()</code>), then adjust <strong>Size</strong>, <strong>Stroke</strong> and <strong>Color</strong> and click an icon to copy it in that form. The icon library loads the first time you open this mode. Everything is offline; nothing is uploaded.</p>
+            <p><strong>SVG icons</strong> — the Lucide set (1,700+). In the <strong>Find</strong> box, pick a <strong>Category</strong> (Lucide's 42 official groups) and/or type to search by name or keyword; scroll to load more. Set <strong>Copy as</strong> to <strong>SVG</strong> (markup), <strong>PNG</strong> (image on the clipboard — paste into Docs, Slack, Figma, email) or <strong>Data-URI</strong> (for CSS <code>url()</code>), then adjust <strong>Size</strong>, <strong>Stroke</strong> and <strong>Color</strong> and click an icon to copy it in that form. The icon library loads the first time you open this mode. Everything is offline; nothing is uploaded.</p>
           </div>
         </div>
         <div class="guide-section">
@@ -848,16 +848,15 @@
           </div>
         </div>
         <div class="tt-row">
-          <label for="ic-search">Search</label>
-          <input type="text" id="ic-search" class="tool-input" placeholder="Search symbols…" spellcheck="false">
+          <label for="ic-search">Find</label>
+          <div class="ic-find">
+            <select id="ic-category" class="ic-cat-inline" hidden aria-label="Category">
+              <option value="all">All</option>
+            </select>
+            <input type="text" id="ic-search" class="ic-find-input" placeholder="Search symbols…" spellcheck="false">
+          </div>
         </div>
         <div id="ic-icon-ctrls" hidden>
-          <div class="tt-row">
-            <label for="ic-category">Category</label>
-            <select id="ic-category" class="ic-category-sel">
-              <option value="all">All categories</option>
-            </select>
-          </div>
           <div class="tt-row">
             <label>Copy as</label>
             <div class="segmented" id="ic-format">

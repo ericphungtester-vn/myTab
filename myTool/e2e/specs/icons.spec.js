@@ -68,6 +68,38 @@ test('Icons: category dropdown groups the icons', async ({ page }) => {
   await expect(page.locator('#ic-grid .ic-icon[data-name="sun"]')).toBeVisible()
 })
 
+test('Icons: All reports the full count and lazy-loads more on scroll', async ({ page }) => {
+  await page.goto('/popup.html')
+  await page.click('.tab-btn[data-tab="icons"]')
+  await page.click('#ic-mode .seg-btn[data-value="icons"]')
+  await expect.poll(() => page.locator('#ic-category option').count()).toBeGreaterThan(10)
+
+  await page.selectOption('#ic-category', 'all')
+  await page.fill('#ic-search', '')
+  await expect(page.locator('#ic-count')).toHaveText(/^1764 icons$/) // no 300 cap
+
+  // Lazy: not every tile is in the DOM up front, and scrolling reveals more.
+  const initial = await page.locator('#ic-grid .ic-icon').count()
+  expect(initial).toBeGreaterThan(0)
+  expect(initial).toBeLessThan(1764)
+  await page.evaluate(() => { const m = document.getElementById('app-main'); m.scrollTop = m.scrollHeight })
+  await expect.poll(() => page.locator('#ic-grid .ic-icon').count()).toBeGreaterThan(initial)
+})
+
+test('Icons: always opens in the light Symbols mode, even after using SVG mode', async ({ page }) => {
+  await page.goto('/popup.html')
+  await page.click('.tab-btn[data-tab="icons"]')
+  await page.click('#ic-mode .seg-btn[data-value="icons"]') // switch to the heavy SVG mode
+  await expect(page.locator('#ic-icon-ctrls')).toBeVisible()
+
+  await page.reload()
+  await page.click('.tab-btn[data-tab="icons"]')
+  // Defaults back to Symbols so opening never triggers the Lucide load.
+  await expect(page.locator('#ic-mode .seg-btn[data-value="symbols"]')).toHaveClass(/active/)
+  await expect(page.locator('#ic-symbols')).toBeVisible()
+  await expect(page.locator('#ic-icon-ctrls')).toBeHidden()
+})
+
 test('Icons: size and stroke controls change the copied SVG', async ({ page }) => {
   await page.goto('/popup.html')
   await page.click('.tab-btn[data-tab="icons"]')

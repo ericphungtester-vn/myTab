@@ -979,8 +979,13 @@ tr.cp-mod td:nth-of-type(4) { background: rgba(47, 158, 68, 0.10); }
 
 /* ---- Icons tool ---- */
 .ic-color { width: 40px; height: 28px; padding: 2px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); cursor: pointer; }
-.ic-category-sel { flex: 1; min-width: 0; padding: 6px 8px; font-size: 12px; font-family: var(--font); color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; }
-.ic-category-sel:focus { outline: none; border-color: var(--hover-border); }
+.ic-find { flex: 1; min-width: 0; display: flex; align-items: stretch; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.ic-find:focus-within { border-color: var(--hover-border); }
+.ic-cat-inline { flex: 0 0 auto; max-width: 44%; border: none; border-right: 1px solid var(--border); background: transparent; color: var(--text); font-family: var(--font); font-size: 12px; padding: 6px 6px 6px 9px; border-radius: var(--radius) 0 0 var(--radius); cursor: pointer; }
+.ic-cat-inline:focus { outline: none; }
+.ic-cat-inline[hidden] { display: none; }
+.ic-find-input { flex: 1; min-width: 0; border: none; background: transparent; color: var(--text); font-family: var(--font); font-size: 12px; padding: 7px 10px; outline: none; }
+.ic-sentinel { grid-column: 1 / -1; height: 1px; }
 .ic-count { margin: 2px 0 0; font-size: 11px; color: var(--text-secondary); }
 .ic-empty { margin: 10px 2px; font-size: 12px; color: var(--text-secondary); }
 .ic-group { margin: 12px 0 5px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }

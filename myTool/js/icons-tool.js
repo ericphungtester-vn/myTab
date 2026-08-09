@@ -163,7 +163,8 @@ var IC_SYMBOLS = [
   const colorEl = document.getElementById('ic-color')
   const countEl = document.getElementById('ic-count')
   const toastEl = document.getElementById('ic-toast')
-  const MAX = 300
+  const appMain = document.getElementById('app-main')
+  const CHUNK = 120 // icons rendered per lazy batch as you scroll
 
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') }
   function segVal(seg) { const b = seg.querySelector('.seg-btn.active'); return b ? b.dataset.value : '' }
@@ -201,24 +202,44 @@ var IC_SYMBOLS = [
   function populateCats() {
     if (catSel.dataset.filled) return
     const list = ic_categoryList(window.LUCIDE_CATS, Object.keys(window.LUCIDE_CATS))
-    catSel.innerHTML = '<option value="all">All categories</option>' +
+    catSel.innerHTML = '<option value="all">All</option>' +
       list.map(c => '<option value="' + c.name + '">' + cap(c.name) + ' (' + c.count + ')</option>').join('')
     catSel.dataset.filled = '1'
     if (savedCat !== 'all' && [...catSel.options].some(o => o.value === savedCat)) catSel.value = savedCat
+  }
+
+  // Lazy rendering: matches are held in `queue` and drawn a CHUNK at a time; an IntersectionObserver
+  // on a sentinel at the end of the grid draws the next batch as it scrolls into view.
+  let queue = []
+  const sentinel = document.createElement('div')
+  sentinel.className = 'ic-sentinel'
+  let io = null
+
+  function tileHtml(n, o) {
+    return '<button type="button" class="ic-icon" data-name="' + n + '" title="' + esc(n) + '">' +
+      ic_svg(window.LUCIDE_ICONS[n], { size: 24, stroke: o.stroke, color: o.color }) + '</button>'
+  }
+  function drawChunk() {
+    if (!queue.length) return
+    const o = iconOpts()
+    const batch = queue.splice(0, CHUNK)
+    sentinel.insertAdjacentHTML('beforebegin', batch.map(n => tileHtml(n, o)).join(''))
   }
 
   function renderIcons() {
     if (!libReady) { gridEl.innerHTML = '<p class="ic-empty">Loading icons…</p>'; ensureLib().then(renderIcons); return }
     populateCats()
     const base = ic_iconsInCategory(window.LUCIDE_CATS, Object.keys(window.LUCIDE_ICONS), catSel.value || 'all')
-    const matched = ic_search(base, window.LUCIDE_TAGS, searchEl.value, MAX + 1)
-    const shown = matched.slice(0, MAX)
-    const o = iconOpts()
-    gridEl.innerHTML = shown.length
-      ? shown.map(n => '<button type="button" class="ic-icon" data-name="' + n + '" title="' + esc(n) + '">' +
-          ic_svg(window.LUCIDE_ICONS[n], { size: 24, stroke: o.stroke, color: o.color }) + '</button>').join('')
-      : '<p class="ic-empty">No matching icons.</p>'
-    countEl.textContent = matched.length > MAX ? ('Showing first ' + MAX + ' — refine your search') : (shown.length + ' icon' + (shown.length === 1 ? '' : 's'))
+    const matched = ic_search(base, window.LUCIDE_TAGS, searchEl.value)
+    countEl.textContent = matched.length + ' icon' + (matched.length === 1 ? '' : 's')
+    if (io) io.disconnect()
+    if (!matched.length) { gridEl.innerHTML = '<p class="ic-empty">No matching icons.</p>'; queue = []; return }
+    gridEl.innerHTML = ''
+    gridEl.appendChild(sentinel)
+    queue = matched
+    drawChunk() // first batch
+    io = new IntersectionObserver(entries => { if (entries.some(e => e.isIntersecting)) drawChunk() }, { root: appMain, rootMargin: '250px' })
+    io.observe(sentinel)
   }
 
   function svgToPng(svg, size) {
@@ -255,6 +276,7 @@ var IC_SYMBOLS = [
     symWrap.hidden = !sym
     ctrlsEl.hidden = sym
     gridEl.hidden = sym
+    catSel.hidden = sym
     searchEl.placeholder = sym ? 'Search symbols…' : 'Search 1,700+ icons…'
     if (sym) renderSymbols(); else renderIcons()
   }
@@ -265,7 +287,7 @@ var IC_SYMBOLS = [
 
   modeSeg.addEventListener('click', e => {
     const b = e.target.closest('.seg-btn'); if (!b) return
-    applyMode(b.dataset.value); syncSet({ 'icons-mode': b.dataset.value })
+    applyMode(b.dataset.value) // mode is intentionally not persisted — see init
   })
   searchEl.addEventListener('input', () => { mode() === 'symbols' ? renderSymbols() : renderIcons() })
   ;[sizeSeg, strokeSeg].forEach(seg => seg.addEventListener('click', e => {
@@ -290,7 +312,7 @@ var IC_SYMBOLS = [
     setSeg(sizeSeg, 24); setSeg(strokeSeg, 2); setSeg(fmtSeg, 'svg')
     colorEl.value = defaultColor()
     savedCat = 'all'; if (catSel.dataset.filled) catSel.value = 'all'
-    saveCtrls(); applyMode('symbols'); syncSet({ 'icons-mode': 'symbols' })
+    saveCtrls(); applyMode('symbols')
   })
 
   // Lazy-render icons the first time the tab is shown in icons mode (library loads on demand).
@@ -301,13 +323,13 @@ var IC_SYMBOLS = [
     return /^#[0-9a-f]{6}$/i.test(c) ? c : '#111827'
   }
 
-  // Init: default to Symbols; restore saved mode + controls.
+  // Init: ALWAYS open in the light Symbols mode so opening myTool never loads the heavy Lucide set —
+  // that only loads when the user switches to SVG icons. Mode isn't remembered on purpose; the SVG
+  // controls (size/stroke/colour/category) still are, ready for when they do switch.
   colorEl.value = defaultColor()
   applyMode('symbols')
-  syncGet(['icons-mode', CTRL_KEY]).then(d => {
+  syncGet([CTRL_KEY]).then(d => {
     const c = d[CTRL_KEY]
     if (c) { if (c.size) setSeg(sizeSeg, c.size); if (c.stroke) setSeg(strokeSeg, c.stroke); if (c.fmt) setSeg(fmtSeg, c.fmt); if (c.color) colorEl.value = c.color; if (c.cat) savedCat = c.cat }
-    const m = d['icons-mode']
-    if (m && m !== 'symbols') applyMode(m); else if (c) { /* controls updated; nothing to re-render in symbols mode */ }
   })
 })()
