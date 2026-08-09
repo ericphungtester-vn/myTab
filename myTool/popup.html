@@ -145,6 +145,13 @@
           </div>
         </div>
         <div class="guide-section">
+          <button class="guide-section-header">Unicode <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>Breaks text down <strong>code point by code point</strong>: the glyph, its <strong>U+ code point</strong>, a category (with proper names for the notable invisible/control characters), and its <strong>UTF-8 bytes</strong>. A <strong>⚠</strong> marks hidden or suspicious characters — zero-width spaces, bidi overrides, no-break space, soft hyphen, BOM — the ones you can't see but that break equality checks and validation.</p>
+            <p>The summary shows the string's length four ways: <strong>code points</strong>, <strong>UTF-16</strong> units, <strong>bytes</strong>, and user-perceived <strong>graphemes</strong> — which is why an emoji can count as 1, 2, or more depending on how a field measures it. Useful for spotting precomposed vs combining accents (é as one char vs e + ◌́) and characters pasted invisibly from Word/PDF.</p>
+          </div>
+        </div>
+        <div class="guide-section">
           <button class="guide-section-header">URL <span class="guide-arrow">▾</span></button>
           <div class="guide-section-body">
             <p>Splits a URL into <strong>protocol, host, port, path, query, and fragment</strong>, and lists each <strong>query parameter</strong> percent-decoded (with <code>+</code> read as a space). Copy any part with its button. A missing scheme is tolerated (<code>https://</code> is assumed); an unparseable URL shows an error. Updates as you type.</p>
@@ -326,6 +333,10 @@
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="timezone">Timezone</button>
         <button id="tz-reset-btn" class="tool-reset-btn" aria-label="Reset Timezone" title="Reset Timezone">⟲</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="unicode">Unicode</button>
+        <button id="uc-reset-btn" class="tool-reset-btn" aria-label="Reset Unicode" title="Reset Unicode">⟲</button>
       </div>
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="url">URL</button>
@@ -732,6 +743,15 @@
         <div id="cp-output" class="cp-output" hidden></div>
         <button id="cp-download" class="tt-generate-btn cp-download-btn" hidden>Download HTML report</button>
       </section>
+      <section id="tab-unicode" class="tab-content">
+        <div class="tt-row tt-row--top">
+          <label for="uc-input">Text</label>
+          <textarea id="uc-input" class="cp-input" rows="3" placeholder="Paste text to inspect character by character…" spellcheck="false"></textarea>
+        </div>
+        <p class="tt-field-hint" id="uc-hint">Paste text to see each character's code point, UTF-8 bytes, and any hidden/invisible characters.</p>
+        <p class="ft-result" id="uc-summary" hidden></p>
+        <div id="uc-output" class="uc-wrap"></div>
+      </section>
       <section id="tab-url" class="tab-content">
         <div class="tt-row tt-row--top">
           <label for="ur-input">URL</label>
@@ -986,6 +1006,7 @@
   <script src="js/vendor/zxing.js"></script>
   <script src="js/scan-tool.js"></script>
   <script src="js/responsive-tool.js"></script>
+  <script src="js/unicode-tool.js"></script>
   <script src="js/url-tool.js"></script>
   <script src="js/validator-tool.js"></script>
   <script src="js/json-tool.js"></script>
