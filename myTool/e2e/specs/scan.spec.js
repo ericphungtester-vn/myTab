@@ -4,6 +4,7 @@ const { test, expect } = require('@playwright/test')
 // its bytes, so the test can feed a real image into the Scan tool's file input.
 async function qrPng(page, text) {
   const bytes = await page.evaluate(async (t) => {
+    await window.loadScriptOnce('js/vendor/qrcode.js') // vendor libs are lazy-loaded now
     const qr = qrcode(0, 'M'); qr.addData(t); qr.make()
     const n = qr.getModuleCount(), cell = 8, margin = 4, dim = (n + margin * 2) * cell
     const c = document.createElement('canvas'); c.width = c.height = dim
@@ -18,6 +19,7 @@ async function qrPng(page, text) {
 
 async function barcodePng(page, text, format) {
   const bytes = await page.evaluate(async ({ t, f }) => {
+    await window.loadScriptOnce('js/vendor/jsbarcode.js') // vendor libs are lazy-loaded now
     const c = document.createElement('canvas')
     JsBarcode(c, t, { format: f, height: 80, margin: 10 })
     const blob = await new Promise(res => c.toBlob(res, 'image/png'))

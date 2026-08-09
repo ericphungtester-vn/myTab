@@ -59,6 +59,23 @@ if (popoutBtn) {
   }
 }
 
+// Lazy-load a script once, resolving when it's ready. Lets heavy vendor libraries (ZXing, qrcode,
+// JsBarcode — ~450KB together) load only when their tab is actually used, instead of on every popup
+// open. Cached by src so repeated calls share one load.
+const _scriptPromises = {}
+function loadScriptOnce(src) {
+  if (_scriptPromises[src]) return _scriptPromises[src]
+  _scriptPromises[src] = new Promise((resolve, reject) => {
+    const s = document.createElement('script')
+    s.src = src
+    s.onload = () => resolve()
+    s.onerror = () => { delete _scriptPromises[src]; reject(new Error('Failed to load ' + src)) }
+    document.head.appendChild(s)
+  })
+  return _scriptPromises[src]
+}
+window.loadScriptOnce = loadScriptOnce
+
 // Tab Navigation
 const tabBtns = document.querySelectorAll('.tab-btn')
 
@@ -70,6 +87,8 @@ function activateTab(tab) {
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'))
   btn.classList.add('active')
   content.classList.add('active')
+  // Signal tools (e.g. QR/Barcode) so they can lazy-load their library the first time they're shown.
+  document.dispatchEvent(new CustomEvent('tool-shown', { detail: tab }))
 }
 
 // Scroll position of the content area — persisted so reopening the popup lands where you left off.

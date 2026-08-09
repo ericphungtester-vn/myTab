@@ -49,6 +49,9 @@ function bc_sampleFor(formatValue) {
 
   function currentFormat() { return BC_FORMATS.find(f => f.value === formatSel.value) || BC_FORMATS[0] }
 
+  // Load the JsBarcode library on demand — only when the tab is shown / a barcode is rendered.
+  function ensureLib() { return window.loadScriptOnce('js/vendor/jsbarcode.js') }
+
   function clearOutput() {
     svg.innerHTML = ''
     svg.removeAttribute('width')
@@ -56,7 +59,8 @@ function bc_sampleFor(formatValue) {
     pngBtn.disabled = svgBtn.disabled = true
   }
 
-  function render() {
+  function render() { ensureLib().then(renderNow) }
+  function renderNow() {
     const fmt = currentFormat()
     hintEl.textContent = fmt.hint
     errorEl.hidden = true
@@ -135,5 +139,14 @@ function bc_sampleFor(formatValue) {
   function applySettings(s) { formatSel.value = s.format; input.value = s.text }
   resetBtn.addEventListener('click', () => { applySettings(DEFAULTS); saveSettings(); render() })
 
-  syncGet([SETTINGS_KEY]).then(d => { applySettings({ ...DEFAULTS, ...(d[SETTINGS_KEY] || {}) }); render() })
+  // Render (and load JsBarcode) only once settings are applied AND the tab has been shown.
+  let settingsApplied = false, shown = false
+  function maybeRender() { if (settingsApplied && shown) render() }
+  document.addEventListener('tool-shown', e => { if (e.detail === 'barcode') { shown = true; maybeRender() } })
+  syncGet([SETTINGS_KEY]).then(d => {
+    applySettings({ ...DEFAULTS, ...(d[SETTINGS_KEY] || {}) })
+    settingsApplied = true
+    if (document.getElementById('tab-barcode').classList.contains('active')) shown = true
+    maybeRender()
+  })
 })()

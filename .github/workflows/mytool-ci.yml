@@ -1,0 +1,33 @@
+name: myTool CI
+
+on:
+  push:
+    paths: ['myTool/**', '.github/workflows/mytool-ci.yml']
+  pull_request:
+    paths: ['myTool/**', '.github/workflows/mytool-ci.yml']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Unit tests (node:test)
+        working-directory: myTool
+        run: node --test test/*.test.js
+
+      - name: Install e2e dependencies
+        working-directory: myTool/e2e
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        working-directory: myTool/e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E tests (Playwright)
+        working-directory: myTool/e2e
+        run: npx playwright test

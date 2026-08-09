@@ -36,10 +36,12 @@ function qr_version(count) { return (count - 17) / 4 }
   const input = document.getElementById('qr-input')
   if (!input) return // QR tab not present in this build
 
-  // Encode input as UTF-8 so non-ASCII (Vietnamese, emoji, CJK) survives — the library defaults to
-  // a Latin-1 byte mapping otherwise.
-  if (typeof qrcode !== 'undefined' && qrcode.stringToBytesFuncs && qrcode.stringToBytesFuncs['UTF-8']) {
-    qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8']
+  // Load the qrcode library on demand (first time the tab is shown or generated), and set UTF-8 byte
+  // encoding once so non-ASCII (Vietnamese, emoji, CJK) survives — the library defaults to Latin-1.
+  function ensureLib() {
+    return window.loadScriptOnce('js/vendor/qrcode.js').then(() => {
+      if (!qrcode.__utf8) { qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8']; qrcode.__utf8 = true }
+    })
   }
 
   const ecSeg = document.getElementById('qr-ec')
@@ -62,7 +64,8 @@ function qr_version(count) { return (count - 17) / 4 }
     ecSeg.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.value === level))
   }
 
-  function render() {
+  function render() { ensureLib().then(renderNow) }
+  function renderNow() {
     const text = input.value
     errorEl.hidden = true
     if (text === '') {
@@ -145,5 +148,15 @@ function qr_version(count) { return (count - 17) / 4 }
   function applySettings(s) { input.value = s.text; setEc(s.ec) }
   resetBtn.addEventListener('click', () => { applySettings(DEFAULTS); saveSettings(); render() })
 
-  syncGet([SETTINGS_KEY]).then(d => { applySettings({ ...DEFAULTS, ...(d[SETTINGS_KEY] || {}) }); render() })
+  // Render (and thus load the library) only once settings are applied AND the tab has been shown, so
+  // qrcode.js isn't fetched on popup open unless the user is actually looking at the QR tab.
+  let settingsApplied = false, shown = false
+  function maybeRender() { if (settingsApplied && shown) render() }
+  document.addEventListener('tool-shown', e => { if (e.detail === 'qr') { shown = true; maybeRender() } })
+  syncGet([SETTINGS_KEY]).then(d => {
+    applySettings({ ...DEFAULTS, ...(d[SETTINGS_KEY] || {}) })
+    settingsApplied = true
+    if (document.getElementById('tab-qr').classList.contains('active')) shown = true
+    maybeRender()
+  })
 })()

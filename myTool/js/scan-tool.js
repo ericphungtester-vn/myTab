@@ -55,11 +55,14 @@ function sc_friendlyFormat(name) {
     lastUrl = URL.createObjectURL(blob)
     preview.src = lastUrl
     preview.hidden = false
-    new ZXing.BrowserMultiFormatReader().decodeFromImageUrl(lastUrl).then(res => {
-      errorEl.hidden = true
-      resultEl.innerHTML = fieldRow('Format', sc_friendlyFormat(formatName(res.getBarcodeFormat()))) + fieldRow('Content', res.getText())
-      resultEl.hidden = false
-    }).catch(() => {
+    // Load the 328KB ZXing library only now, the first time an image is actually decoded.
+    window.loadScriptOnce('js/vendor/zxing.js')
+      .then(() => new ZXing.BrowserMultiFormatReader().decodeFromImageUrl(lastUrl))
+      .then(res => {
+        errorEl.hidden = true
+        resultEl.innerHTML = fieldRow('Format', sc_friendlyFormat(formatName(res.getBarcodeFormat()))) + fieldRow('Content', res.getText())
+        resultEl.hidden = false
+      }).catch(() => {
       // ZXing rejects (NotFoundException etc.) when it can't read a code; the class name is mangled by
       // minification, so don't branch on it — a failed decode means "no readable code" either way.
       showError('No QR code or barcode found in this image. Try a clearer, straight-on, higher-contrast image.')

@@ -1054,11 +1054,10 @@
   <script src="js/timestamp-tool.js"></script>
   <script src="js/timezone-zones.js"></script>
   <script src="js/timezone-tool.js"></script>
-  <script src="js/vendor/qrcode.js"></script>
+  <!-- Vendor libs (qrcode, jsbarcode, zxing) are lazy-loaded by their tools via loadScriptOnce on
+       first use, so ~450KB isn't parsed on every popup open. -->
   <script src="js/qr-tool.js"></script>
-  <script src="js/vendor/jsbarcode.js"></script>
   <script src="js/barcode-tool.js"></script>
-  <script src="js/vendor/zxing.js"></script>
   <script src="js/scan-tool.js"></script>
   <script src="js/responsive-tool.js"></script>
   <script src="js/number-tool.js"></script>
