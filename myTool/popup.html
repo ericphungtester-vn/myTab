@@ -233,6 +233,14 @@
           </div>
         </div>
         <div class="guide-section">
+          <button class="guide-section-header">Icons <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>Grab an icon and paste it anywhere. Two modes via the <strong>Type</strong> toggle:</p>
+            <p><strong>Symbols</strong> — emoji and Unicode glyphs (arrows, ticks, maths, currency, punctuation…). Click one to copy the <strong>character</strong>; it pastes as text into literally any field (chat, docs, filenames, code).</p>
+            <p><strong>SVG icons</strong> — the Lucide set (1,700+), searchable by name or keyword. Set <strong>Copy as</strong> to <strong>SVG</strong> (markup), <strong>PNG</strong> (image on the clipboard — paste into Docs, Slack, Figma, email) or <strong>Data-URI</strong> (for CSS <code>url()</code>), then adjust <strong>Size</strong>, <strong>Stroke</strong> and <strong>Color</strong> and click an icon to copy it in that form. The icon library loads the first time you open this mode. Everything is offline; nothing is uploaded.</p>
+          </div>
+        </div>
+        <div class="guide-section">
           <button class="guide-section-header">JSON <span class="guide-arrow">▾</span></button>
           <div class="guide-section-body">
             <p>Formats, minifies, or validates JSON. Paste into the box, pick an <strong>Indent</strong> (2, 4, or Tab), and click <strong>Format</strong> to pretty-print or <strong>Minify</strong> to strip whitespace. If the JSON is invalid, the parser's <strong>error message</strong> is shown (with the position it choked on) instead of output. Copy the result with the icon.</p>
@@ -323,6 +331,10 @@
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="iban">IBAN</button>
         <button id="ib-reset-btn" class="tool-reset-btn" aria-label="Reset IBAN settings" title="Reset IBAN settings">⟲</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="icons">Icons</button>
+        <button id="ic-reset-btn" class="tool-reset-btn" aria-label="Reset Icons" title="Reset Icons">⟲</button>
       </div>
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="json">JSON</button>
@@ -827,6 +839,55 @@
         <p class="tt-error" id="cal-error" hidden></p>
         <div id="cal-fields"></div>
       </section>
+      <section id="tab-icons" class="tab-content">
+        <div class="tt-row">
+          <label>Type</label>
+          <div class="segmented" id="ic-mode">
+            <button class="seg-btn active" data-value="symbols">Symbols</button>
+            <button class="seg-btn" data-value="icons">SVG icons</button>
+          </div>
+        </div>
+        <div class="tt-row">
+          <label for="ic-search">Search</label>
+          <input type="text" id="ic-search" class="tool-input" placeholder="Search symbols…" spellcheck="false">
+        </div>
+        <div id="ic-icon-ctrls" hidden>
+          <div class="tt-row">
+            <label>Copy as</label>
+            <div class="segmented" id="ic-format">
+              <button class="seg-btn active" data-value="svg">SVG</button>
+              <button class="seg-btn" data-value="png">PNG</button>
+              <button class="seg-btn" data-value="uri">Data-URI</button>
+            </div>
+          </div>
+          <div class="tt-row">
+            <label>Size</label>
+            <div class="segmented" id="ic-size">
+              <button class="seg-btn" data-value="16">16</button>
+              <button class="seg-btn active" data-value="24">24</button>
+              <button class="seg-btn" data-value="32">32</button>
+              <button class="seg-btn" data-value="48">48</button>
+            </div>
+          </div>
+          <div class="tt-row">
+            <label>Stroke</label>
+            <div class="segmented" id="ic-stroke">
+              <button class="seg-btn" data-value="1">1</button>
+              <button class="seg-btn" data-value="1.5">1.5</button>
+              <button class="seg-btn active" data-value="2">2</button>
+              <button class="seg-btn" data-value="2.5">2.5</button>
+            </div>
+          </div>
+          <div class="tt-row">
+            <label for="ic-color">Color</label>
+            <input type="color" id="ic-color" class="ic-color" value="#111827">
+          </div>
+          <p class="ic-count" id="ic-count"></p>
+        </div>
+        <div id="ic-symbols" class="ic-symbols"></div>
+        <div id="ic-grid" class="ic-grid" hidden></div>
+        <div id="ic-toast" class="ic-toast" role="status" aria-live="polite"></div>
+      </section>
       <section id="tab-tree" class="tab-content">
         <div class="tt-row tt-row--top">
           <label for="tr-input">Indented</label>
@@ -1112,6 +1173,7 @@
   <script src="js/responsive-tool.js"></script>
   <script src="js/number-tool.js"></script>
   <script src="js/tree-tool.js"></script>
+  <script src="js/icons-tool.js"></script>
   <script src="js/unicode-tool.js"></script>
   <script src="js/url-tool.js"></script>
   <script src="js/validator-tool.js"></script>

@@ -77,8 +77,8 @@ if (panelBtn && !isDetached && !inPanel && hasExt && chrome.sidePanel && chrome.
 }
 
 // Lazy-load a script once, resolving when it's ready. Lets heavy vendor libraries (ZXing, qrcode,
-// JsBarcode — ~450KB together) load only when their tab is actually used, instead of on every popup
-// open. Cached by src so repeated calls share one load.
+// JsBarcode, the Lucide icon set — ~950KB together) load only when their tab is actually used,
+// instead of on every popup open. Cached by src so repeated calls share one load.
 const _scriptPromises = {}
 function loadScriptOnce(src) {
   if (_scriptPromises[src]) return _scriptPromises[src]
@@ -132,7 +132,7 @@ const NAV_GROUPS = {
   action: {
     order: [['generate', 'Generate'], ['convert', 'Convert'], ['inspect', 'Inspect'], ['check', 'Check'], ['other', 'Other']],
     map: {
-      barcode: 'generate', bban: 'generate', card: 'generate', file: 'generate', iban: 'generate', noniban: 'generate', profile: 'generate', qr: 'generate', text: 'generate', uuid: 'generate',
+      barcode: 'generate', bban: 'generate', card: 'generate', file: 'generate', iban: 'generate', icons: 'generate', noniban: 'generate', profile: 'generate', qr: 'generate', text: 'generate', uuid: 'generate',
       base: 'convert', calendar: 'convert', color: 'convert', encode: 'convert', number: 'convert', timestamp: 'convert', timezone: 'convert', tree: 'convert',
       json: 'inspect', jwt: 'inspect', scan: 'inspect', unicode: 'inspect', url: 'inspect',
       compare: 'check', regex: 'check', validator: 'check',
@@ -149,7 +149,7 @@ const NAV_GROUPS = {
       calendar: 'time', timestamp: 'time', timezone: 'time',
       file: 'file', resize: 'file',
       profile: 'identity', uuid: 'identity',
-      color: 'other', number: 'other', responsive: 'other', tree: 'other'
+      color: 'other', icons: 'other', number: 'other', responsive: 'other', tree: 'other'
     }
   }
 }

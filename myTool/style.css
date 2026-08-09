@@ -977,6 +977,22 @@ tr.cp-mod td:nth-of-type(4) { background: rgba(47, 158, 68, 0.10); }
 .cal-num--yr { width: 4.4em; }
 .cal-sep { color: var(--text-secondary); }
 
+/* ---- Icons tool ---- */
+.ic-color { width: 40px; height: 28px; padding: 2px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); cursor: pointer; }
+.ic-count { margin: 2px 0 0; font-size: 11px; color: var(--text-secondary); }
+.ic-empty { margin: 10px 2px; font-size: 12px; color: var(--text-secondary); }
+.ic-group { margin: 12px 0 5px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+.ic-group:first-child { margin-top: 4px; }
+.ic-sym-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 4px; }
+.ic-sym { display: flex; align-items: center; justify-content: center; height: 38px; font-size: 18px; line-height: 1; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; }
+.ic-sym:hover { border-color: var(--hover-border); background: var(--hover-bg); }
+.ic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 4px; margin-top: 4px; }
+.ic-icon { display: flex; align-items: center; justify-content: center; height: 44px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; }
+.ic-icon:hover { border-color: var(--hover-border); background: var(--hover-bg); }
+.ic-icon svg { pointer-events: none; }
+.ic-toast { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%) translateY(8px); padding: 7px 14px; font-size: 12px; font-weight: 500; color: #fff; background: rgba(17,24,39,0.92); border-radius: 999px; opacity: 0; pointer-events: none; transition: opacity 0.15s, transform 0.15s; z-index: 1200; }
+.ic-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
 /* ---- Profile tool ---- */
 .pf-disclaimer {
   font-size: 10.5px;
