@@ -892,6 +892,9 @@ tr.cp-mod td:nth-of-type(4) { background: rgba(47, 158, 68, 0.10); }
 .nf-mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
 .nf-dim { color: var(--text-secondary); }
 
+/* Tree tool: the rendered directory tree. */
+.tr-output { margin: 0 0 6px; padding: 8px 10px; min-height: 40px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.5; color: var(--text); white-space: pre; overflow-x: auto; }
+
 /* ---- Profile tool ---- */
 .pf-disclaimer {
   font-size: 10.5px;

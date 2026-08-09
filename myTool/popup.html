@@ -152,6 +152,13 @@
           </div>
         </div>
         <div class="guide-section">
+          <button class="guide-section-header">Tree <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>Turns an <strong>indented list</strong> of files/folders into a pretty <strong>directory tree</strong> (the <code>├── └── │</code> kind) for READMEs and docs. Type or paste the list — indent with spaces or tabs to nest (2-space, 4-space, and tab all work); deeper indent = deeper level. Blank lines are ignored, and you can have more than one top-level root.</p>
+            <p>Pick <strong>Unicode</strong> (<code>├──</code>) or <strong>ASCII</strong> (<code>|--</code>, safer for plain-text terminals) branch style, and <strong>Copy</strong> the result. It's pure text — nothing reads your real filesystem.</p>
+          </div>
+        </div>
+        <div class="guide-section">
           <button class="guide-section-header">Unicode <span class="guide-arrow">▾</span></button>
           <div class="guide-section-body">
             <p>Breaks text down <strong>code point by code point</strong>: the glyph, its <strong>U+ code point</strong>, a category (with proper names for the notable invisible/control characters), and its <strong>UTF-8 bytes</strong>. A <strong>⚠</strong> marks hidden or suspicious characters — zero-width spaces, bidi overrides, no-break space, soft hyphen, BOM — the ones you can't see but that break equality checks and validation.</p>
@@ -344,6 +351,10 @@
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="timezone">Timezone</button>
         <button id="tz-reset-btn" class="tool-reset-btn" aria-label="Reset Timezone" title="Reset Timezone">⟲</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="tree">Tree</button>
+        <button id="tr-reset-btn" class="tool-reset-btn" aria-label="Reset Tree" title="Reset Tree">⟲</button>
       </div>
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="unicode">Unicode</button>
@@ -767,6 +778,26 @@
         <div id="cp-output" class="cp-output" hidden></div>
         <button id="cp-download" class="tt-generate-btn cp-download-btn" hidden>Download HTML report</button>
       </section>
+      <section id="tab-tree" class="tab-content">
+        <div class="tt-row tt-row--top">
+          <label for="tr-input">Indented</label>
+          <textarea id="tr-input" class="cp-input" rows="6" placeholder="project&#10;  src&#10;    index.js&#10;  README.md" spellcheck="false"></textarea>
+        </div>
+        <div class="tt-row">
+          <label>Style</label>
+          <div class="segmented" id="tr-style">
+            <button class="seg-btn active" data-value="unicode">Unicode ├──</button>
+            <button class="seg-btn" data-value="ascii">ASCII |--</button>
+          </div>
+        </div>
+        <div class="tt-row tt-row--top">
+          <label>Tree</label>
+          <div class="tt-amount-col">
+            <pre id="tr-output" class="tr-output"></pre>
+            <button id="tr-copy" class="tt-generate-btn tt-generate-btn--alt" type="button" disabled>Copy</button>
+          </div>
+        </div>
+      </section>
       <section id="tab-unicode" class="tab-content">
         <div class="tt-row tt-row--top">
           <label for="uc-input">Text</label>
@@ -1031,6 +1062,7 @@
   <script src="js/scan-tool.js"></script>
   <script src="js/responsive-tool.js"></script>
   <script src="js/number-tool.js"></script>
+  <script src="js/tree-tool.js"></script>
   <script src="js/unicode-tool.js"></script>
   <script src="js/url-tool.js"></script>
   <script src="js/validator-tool.js"></script>
