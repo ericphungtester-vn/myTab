@@ -143,6 +143,8 @@ body {
 }
 .help-btn:hover { background: var(--border); color: var(--text); }
 .help-btn.active { background: var(--primary); color: white; }
+/* `.help-btn { display: flex }` otherwise overrides the [hidden] attribute (author beats UA style). */
+.help-btn[hidden] { display: none; }
 
 /* ---- MAIN ---- */
 #app-main { flex: 1; min-width: 0; padding: 14px 12px; overflow-y: auto; }

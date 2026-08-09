@@ -43,6 +43,22 @@ themeToggleBtn.addEventListener('click', () => {
   syncSet({ theme: next })
 })
 
+// Pop out into a standalone window that can be moved/resized anywhere and stays open (unlike the
+// toolbar popup, which the browser closes on blur). Hidden unless we're the toolbar popup in a real
+// extension context: the detached window itself (marked ?window=1) and the http test harness (no
+// chrome.windows) both leave the button hidden.
+const popoutBtn = document.getElementById('popout-btn')
+if (popoutBtn) {
+  const isDetached = new URLSearchParams(location.search).has('window')
+  if (!isDetached && typeof chrome !== 'undefined' && chrome.windows && chrome.runtime) {
+    popoutBtn.hidden = false
+    popoutBtn.addEventListener('click', () => {
+      chrome.windows.create({ url: chrome.runtime.getURL('popup.html?window=1'), type: 'popup', width: 576, height: 540 })
+      window.close()
+    })
+  }
+}
+
 // Tab Navigation
 const tabBtns = document.querySelectorAll('.tab-btn')
 
