@@ -828,6 +828,13 @@ tr.cp-mod td:nth-of-type(4) { background: rgba(47, 158, 68, 0.10); }
 .bc-output svg { max-width: 100%; height: auto; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); }
 .bc-output svg:empty { display: none; }
 
+/* Scan tool: image drop zone + decoded result. */
+.sc-drop { border: 2px dashed var(--border); border-radius: var(--radius); padding: 22px 14px; text-align: center; color: var(--text-secondary); font-size: 12px; cursor: pointer; transition: all 0.15s; }
+.sc-drop:hover { border-color: var(--hover-border); background: var(--hover-bg); }
+.sc-drop.sc-dragover { border-color: var(--primary); background: var(--hover-bg); color: var(--text); }
+.sc-drop p { margin: 0; }
+.sc-preview { display: block; max-width: 100%; max-height: 200px; margin: 10px auto; border: 1px solid var(--border); border-radius: var(--radius); background: #fff; }
+
 /* ---- Profile tool ---- */
 .pf-disclaimer {
   font-size: 10.5px;

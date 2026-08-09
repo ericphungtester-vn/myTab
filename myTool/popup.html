@@ -27,6 +27,13 @@
       </div>
       <div class="help-panel-body">
         <div class="guide-section">
+          <button class="guide-section-header">Scan <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>Decodes a <strong>QR code or 1D barcode from an image</strong> — the reverse of the QR and Barcode tools. <strong>Drop</strong> an image on the box, <strong>click</strong> to choose a file, or <strong>paste</strong> (⌘/Ctrl+V) an image from the clipboard. Reads QR, Data Matrix, Aztec, PDF417, Code 128/39/93, EAN-13/8, UPC-A/E, ITF, Codabar and more. The decoded <strong>format</strong> and <strong>content</strong> appear with copy buttons.</p>
+            <p>Runs fully offline (bundled MIT <em>ZXing</em> library) — the image never leaves your machine, no camera, no extra permissions. QR reads reliably; a <strong>1D barcode</strong> needs a clear, straight, high-contrast image (codes you generate here scan perfectly; a blurry or skewed photo may not).</p>
+          </div>
+        </div>
+        <div class="guide-section">
           <button class="guide-section-header">Text <span class="guide-arrow">▾</span></button>
           <div class="guide-section-body">
             <p><strong>Language</strong>: English (default), Tiếng Việt, Español, Français, Deutsch, Italiano, Português, 中文, 日本語, 한국어, Русский, العربية, Ελληνικά, עברית, हिन्दी, ไทย, or classic Lorem Ipsum (Latin) — each uses a themeless bank of common words, not real sentences. Chinese, Japanese, and Thai are joined with no spaces (as normally written); the word counter below the output box counts by whitespace, so it won't be meaningful for generated text in those three — the character counter is still exact for every language. Arabic and Hebrew display right-to-left automatically. Hidden entirely when Unit is Strings, since Strings has nothing to do with any language.</p>
@@ -280,6 +287,10 @@
         <button id="rs-reset-btn" class="tool-reset-btn" aria-label="Reset Resize settings" title="Reset Resize settings">⟲</button>
       </div>
       <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="scan">Scan</button>
+        <button id="sc-reset-btn" class="tool-reset-btn" aria-label="Reset Scan" title="Reset Scan">⟲</button>
+      </div>
+      <div class="tool-nav-item">
         <button class="tab-btn active" data-tab="text">Text</button>
         <button id="tt-reset-btn" class="tool-reset-btn" aria-label="Reset Text settings" title="Reset Text settings">⟲</button>
       </div>
@@ -297,6 +308,15 @@
       </div>
     </nav>
     <main id="app-main">
+      <section id="tab-scan" class="tab-content">
+        <div id="sc-drop" class="sc-drop">
+          <p>Drop an image here, click to choose a file, or paste (⌘/Ctrl+V) an image of a QR code or barcode.</p>
+          <input type="file" id="sc-file" accept="image/*" hidden>
+        </div>
+        <img id="sc-preview" class="sc-preview" hidden alt="scanned image">
+        <p class="tt-error" id="sc-error" hidden></p>
+        <div id="sc-result" hidden></div>
+      </section>
       <section id="tab-text" class="tab-content active">
         <div class="tt-row" id="tt-lang-row">
           <label>Language</label>
@@ -897,6 +917,8 @@
   <script src="js/qr-tool.js"></script>
   <script src="js/vendor/jsbarcode.js"></script>
   <script src="js/barcode-tool.js"></script>
+  <script src="js/vendor/zxing.js"></script>
+  <script src="js/scan-tool.js"></script>
   <script src="js/json-tool.js"></script>
   <script src="js/base-tool.js"></script>
   <script src="js/color-tool.js"></script>
