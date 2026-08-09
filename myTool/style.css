@@ -78,7 +78,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 10px 8px;
+  padding: 0 8px 10px; /* no top padding — the sticky toggle owns the top edge */
   background: var(--subtle-bg);
   border-right: 1px solid var(--border);
   overflow-y: auto;
@@ -92,15 +92,20 @@ body {
 
 /* Sidebar grouping toggle (Action / Object) + group headers */
 .nav-mode {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: 0 -8px 6px; /* bleed over the sidebar's 8px side padding so the opaque bar spans full width */
+  padding: 8px;
+  background: var(--subtle-bg); /* opaque, so scrolled content passes behind it */
+  border-bottom: 1px solid var(--border);
+}
+.nav-mode-seg {
   display: flex;
   gap: 2px;
-  margin-bottom: 6px;
   padding: 2px;
   background: var(--border);
   border-radius: var(--radius);
-  position: sticky;
-  top: 0;
-  z-index: 1;
 }
 .nav-mode-btn {
   flex: 1;
