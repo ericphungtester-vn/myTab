@@ -13,7 +13,7 @@ const tabsUnder = (page, headerText) => page.evaluate(h => {
 
 test('Sidebar: groups by Action by default, and every tab is kept', async ({ page }) => {
   await page.goto('/popup.html')
-  await expect(page.locator('#nav-items .tool-nav-item')).toHaveCount(27) // no tab lost in the regroup
+  await expect(page.locator('#nav-items .tool-nav-item')).toHaveCount(28) // no tab lost in the regroup
 
   await expect(page.locator('.nav-mode-btn[data-value="action"]')).toHaveClass(/active/)
   for (const g of ['Generate', 'Convert', 'Inspect', 'Check', 'Other']) {

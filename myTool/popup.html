@@ -217,6 +217,14 @@
           </div>
         </div>
         <div class="guide-section">
+          <button class="guide-section-header">Calendar <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>A month <strong>grid calendar</strong> for the Vietnamese lunar calendar: each day shows the solar date (large) over the lunar date (small); the first day of a lunar month shows as day/month (e.g. "1/7", with "L" for a leap month). Use <strong>‹ ›</strong> to change month, <strong>Today</strong> to jump to today (highlighted), and click any day to see its full detail below.</p>
+            <p>The date box in the header (day / month / year) also acts as a jump box: type a <strong>solar date</strong> and the grid moves to it and shows its detail — handy without scrolling months.</p>
+            <p>The detail shows the matching <strong>Solar</strong> / <strong>Lunar</strong> dates, the <strong>weekday</strong>, the <strong>Can Chi</strong> (sexagenary) name of the year / month / day, and the Julian day. Conversions use the Hồ Ngọc Đức astronomical algorithm evaluated at Vietnam's UTC+7, so leap months match the official Vietnamese calendar.</p>
+          </div>
+        </div>
+        <div class="guide-section">
           <button class="guide-section-header">Timezone <span class="guide-arrow">▾</span></button>
           <div class="guide-section-body">
             <p>Converts an instant between <strong>time zones</strong>. Type an <strong>epoch</strong> or a date (blank = now), then pick a <strong>From</strong> and <strong>To</strong> zone. Zones are labeled <strong>Country — City</strong> and sorted by country, so you can type a country name in the dropdown to jump to it (UTC is pinned at the top). Results update as you type.</p>
@@ -286,6 +294,10 @@
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="bban">BBAN</button>
         <button id="bb-reset-btn" class="tool-reset-btn" aria-label="Reset BBAN settings" title="Reset BBAN settings">⟲</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="calendar">Calendar</button>
+        <button id="cal-reset-btn" class="tool-reset-btn" aria-label="Reset Calendar" title="Reset Calendar">⟲</button>
       </div>
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="card">Card</button>
@@ -789,6 +801,31 @@
         <div id="cp-output" class="cp-output" hidden></div>
         <button id="cp-download" class="tt-generate-btn cp-download-btn" hidden>Download HTML report</button>
       </section>
+      <section id="tab-calendar" class="tab-content">
+        <div class="cal-cal">
+          <div class="cal-cal-head">
+            <div class="cal-nav">
+              <button type="button" id="cal-prev" class="cal-nav-btn" aria-label="Tháng trước">‹</button>
+              <span id="cal-title" class="cal-title"></span>
+              <button type="button" id="cal-next" class="cal-nav-btn" aria-label="Tháng sau">›</button>
+            </div>
+            <div class="cal-jump">
+              <div class="cal-date-inputs">
+                <input type="number" id="cal-d" class="tool-input cal-num" min="1" max="31" placeholder="DD" aria-label="Day" spellcheck="false">
+                <span class="cal-sep">/</span>
+                <input type="number" id="cal-m" class="tool-input cal-num" min="1" max="12" placeholder="MM" aria-label="Month" spellcheck="false">
+                <span class="cal-sep">/</span>
+                <input type="number" id="cal-y" class="tool-input cal-num cal-num--yr" min="1" max="9999" placeholder="YYYY" aria-label="Year" spellcheck="false">
+              </div>
+              <button type="button" id="cal-today" class="tool-mini-btn">Today</button>
+            </div>
+          </div>
+          <div class="cal-grid" id="cal-grid"></div>
+          <p class="cal-hint">Large number = solar date, small number = lunar date (the first day of a lunar month shows as day/month, "L" = leap month). Type a solar date above to jump, or click a day for its detail.</p>
+        </div>
+        <p class="tt-error" id="cal-error" hidden></p>
+        <div id="cal-fields"></div>
+      </section>
       <section id="tab-tree" class="tab-content">
         <div class="tt-row tt-row--top">
           <label for="tr-input">Indented</label>
@@ -1063,6 +1100,7 @@
   <script src="js/encode-tool.js"></script>
   <script src="js/jwt-tool.js"></script>
   <script src="js/timestamp-tool.js"></script>
+  <script src="js/calendar-tool.js"></script>
   <script src="js/timezone-zones.js"></script>
   <script src="js/timezone-tool.js"></script>
   <!-- Vendor libs (qrcode, jsbarcode, zxing) are lazy-loaded by their tools via loadScriptOnce on

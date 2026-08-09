@@ -133,7 +133,7 @@ const NAV_GROUPS = {
     order: [['generate', 'Generate'], ['convert', 'Convert'], ['inspect', 'Inspect'], ['check', 'Check'], ['other', 'Other']],
     map: {
       barcode: 'generate', bban: 'generate', card: 'generate', file: 'generate', iban: 'generate', noniban: 'generate', profile: 'generate', qr: 'generate', text: 'generate', uuid: 'generate',
-      base: 'convert', color: 'convert', encode: 'convert', number: 'convert', timestamp: 'convert', timezone: 'convert', tree: 'convert',
+      base: 'convert', calendar: 'convert', color: 'convert', encode: 'convert', number: 'convert', timestamp: 'convert', timezone: 'convert', tree: 'convert',
       json: 'inspect', jwt: 'inspect', scan: 'inspect', unicode: 'inspect', url: 'inspect',
       compare: 'check', regex: 'check', validator: 'check',
       resize: 'other', responsive: 'other'
@@ -146,7 +146,7 @@ const NAV_GROUPS = {
       base: 'web', encode: 'web', json: 'web', jwt: 'web', url: 'web',
       compare: 'text', regex: 'text', text: 'text', unicode: 'text',
       barcode: 'codes', qr: 'codes', scan: 'codes',
-      timestamp: 'time', timezone: 'time',
+      calendar: 'time', timestamp: 'time', timezone: 'time',
       file: 'file', resize: 'file',
       profile: 'identity', uuid: 'identity',
       color: 'other', number: 'other', responsive: 'other', tree: 'other'
