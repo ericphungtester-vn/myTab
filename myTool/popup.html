@@ -71,6 +71,13 @@
           </div>
         </div>
         <div class="guide-section">
+          <button class="guide-section-header">Number <span class="guide-arrow">▾</span></button>
+          <div class="guide-section-body">
+            <p>Formats a number the way it renders in different <strong>locales</strong> and <strong>currencies</strong> (via <code>Intl.NumberFormat</code>) — for checking how amounts display across regions. Enter a plain number (dot for decimals; spaces/commas are ignored as grouping) and pick a currency.</p>
+            <p>Each row shows the locale's <strong>Number</strong> (thousand/decimal separators — e.g. <code>1,234.5</code> in en-US vs <code>1.234,5</code> in de-DE), a <strong>Compact</strong> form (<code>1.2M</code>), and the amount in the chosen <strong>Currency</strong> — which reveals symbol placement and each currency's own decimal rules (VND, JPY and KRW have no minor unit, so no decimals). Handy for catching money-formatting bugs when the app switches language.</p>
+          </div>
+        </div>
+        <div class="guide-section">
           <button class="guide-section-header">Profile <span class="guide-arrow">▾</span></button>
           <div class="guide-section-body">
             <p><strong>Synthetic test data only.</strong> Every value is randomly generated on the spot and recombined from real name/address data — nothing is ever derived from or matched to an actual person, and nothing here is ever rendered as a visual ID/passport mockup, only plain text fields. This tool exists to test form/validation logic (does your form accept correctly-formatted names, addresses, phone numbers, IDs — does it correctly compute/verify a check digit), not to produce anything resembling a real document or a real person's data.</p>
@@ -298,6 +305,10 @@
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="noniban">Non-IBAN</button>
         <button id="nb-reset-btn" class="tool-reset-btn" aria-label="Reset Non-IBAN settings" title="Reset Non-IBAN settings">⟲</button>
+      </div>
+      <div class="tool-nav-item">
+        <button class="tab-btn" data-tab="number">Number</button>
+        <button id="nf-reset-btn" class="tool-reset-btn" aria-label="Reset Number" title="Reset Number">⟲</button>
       </div>
       <div class="tool-nav-item">
         <button class="tab-btn" data-tab="profile">Profile</button>
@@ -559,6 +570,19 @@
         <p class="ft-result" id="ft-result" hidden></p>
       </section>
 
+      <section id="tab-number" class="tab-content">
+        <div class="tt-row">
+          <label for="nf-input">Number</label>
+          <input type="text" id="nf-input" class="tool-input" placeholder="1234567.89" spellcheck="false">
+        </div>
+        <div class="tt-row">
+          <label for="nf-currency">Currency</label>
+          <select id="nf-currency"></select>
+        </div>
+        <p class="tt-error" id="nf-error" hidden></p>
+        <p class="tt-field-hint" id="nf-hint">Enter a number to see it formatted across locales and currencies.</p>
+        <div id="nf-output" class="nf-wrap"></div>
+      </section>
       <section id="tab-profile" class="tab-content">
         <p class="pf-disclaimer">Synthetic test data only — not real people, not real documents. For form/validation testing.</p>
         <div class="tt-row">
@@ -1006,6 +1030,7 @@
   <script src="js/vendor/zxing.js"></script>
   <script src="js/scan-tool.js"></script>
   <script src="js/responsive-tool.js"></script>
+  <script src="js/number-tool.js"></script>
   <script src="js/unicode-tool.js"></script>
   <script src="js/url-tool.js"></script>
   <script src="js/validator-tool.js"></script>
