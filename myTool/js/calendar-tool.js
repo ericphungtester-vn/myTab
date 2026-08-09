@@ -277,17 +277,17 @@ var CAL_HOLIDAYS = [
   { type: 'solar', d: 20, m: 11, cat: 'vn', name: "Vietnamese Teachers' Day (Nhà giáo Việt Nam)" },
   { type: 'solar', d: 22, m: 12, cat: 'vn', name: "People's Army Foundation Day (Thành lập QĐND VN)" },
   // International
-  { type: 'solar', d: 14, m: 2, cat: 'intl', name: "Valentine's Day" },
-  { type: 'solar', d: 8, m: 3, cat: 'intl', name: "International Women's Day" },
-  { type: 'solar', d: 20, m: 3, cat: 'intl', name: 'International Day of Happiness' },
-  { type: 'solar', d: 1, m: 4, cat: 'intl', name: "April Fools' Day" },
-  { type: 'solar', d: 22, m: 4, cat: 'intl', name: 'Earth Day' },
-  { type: 'solar', d: 1, m: 6, cat: 'intl', name: "International Children's Day" },
-  { type: 'solar', d: 5, m: 6, cat: 'intl', name: 'World Environment Day' },
-  { type: 'solar', d: 1, m: 10, cat: 'intl', name: 'International Day of Older Persons' },
-  { type: 'solar', d: 5, m: 10, cat: 'intl', name: "World Teachers' Day" },
+  { type: 'solar', d: 14, m: 2, cat: 'intl', name: "Valentine's Day (Lễ tình nhân)" },
+  { type: 'solar', d: 8, m: 3, cat: 'intl', name: "International Women's Day (Quốc tế Phụ nữ)" },
+  { type: 'solar', d: 20, m: 3, cat: 'intl', name: 'International Day of Happiness (Quốc tế Hạnh phúc)' },
+  { type: 'solar', d: 1, m: 4, cat: 'intl', name: "April Fools' Day (Cá tháng Tư)" },
+  { type: 'solar', d: 22, m: 4, cat: 'intl', name: 'Earth Day (Ngày Trái Đất)' },
+  { type: 'solar', d: 1, m: 6, cat: 'intl', name: "International Children's Day (Quốc tế Thiếu nhi)" },
+  { type: 'solar', d: 5, m: 6, cat: 'intl', name: 'World Environment Day (Môi trường Thế giới)' },
+  { type: 'solar', d: 1, m: 10, cat: 'intl', name: 'International Day of Older Persons (Quốc tế Người cao tuổi)' },
+  { type: 'solar', d: 5, m: 10, cat: 'intl', name: "World Teachers' Day (Nhà giáo Thế giới)" },
   { type: 'solar', d: 31, m: 10, cat: 'intl', name: 'Halloween' },
-  { type: 'solar', d: 25, m: 12, cat: 'intl', name: 'Christmas' }
+  { type: 'solar', d: 25, m: 12, cat: 'intl', name: 'Christmas (Giáng Sinh)' }
 ]
 
 // Holidays on a grid cell (needs its solar d/m and lunar ld/lm) — matched by solar or lunar date.

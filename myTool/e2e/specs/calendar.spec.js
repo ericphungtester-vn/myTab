@@ -48,7 +48,7 @@ test('Calendar: holidays are dotted, listed, and shown in the detail', async ({ 
   const xmas = page.locator('#cal-grid .cal-cell[data-d="25"][data-m="12"][data-y="2026"]')
   await expect(xmas.locator('.cal-dot--intl')).toHaveCount(1)
   await expect(page.locator('#cal-holidays')).toContainText('Christmas')
-  await expect(page.locator('#cal-fields .pf-field', { hasText: 'Holiday' }).locator('.pf-field-value')).toHaveValue('Christmas')
+  await expect(page.locator('#cal-fields .pf-field', { hasText: 'Holiday' }).locator('.pf-field-value')).toHaveValue(/Christmas/)
 
   // Reunification Day 30/4 is a Vietnamese holiday -> red dot.
   await page.fill('#cal-d', '30')

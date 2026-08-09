@@ -83,7 +83,7 @@ test('cal_holidaysOn covers Vietnamese commemorative days', () => {
 test('holidays surface on the right calendar days via cal_monthGrid', () => {
   // Christmas 2026 is a real grid cell in December carrying the intl holiday.
   const xmas = cal.cal_monthGrid(2026, 12).find(c => c.inMonth && c.d === 25)
-  assert.equal(cal.cal_holidaysOn(xmas).some(h => h.name === 'Christmas'), true)
+  assert.equal(cal.cal_holidaysOn(xmas).some(h => h.name.startsWith('Christmas')), true)
 })
 
 test('cal_solarInfo bundles lunar date, weekday and Can Chi together', () => {
